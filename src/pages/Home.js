@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
 import Logo from '../assets/images/logo GRUPO LAVORO-02.png'; // Logo Grupo Lavoro
@@ -12,6 +12,18 @@ const Button = ({ children, primary, className = '', href, onClick }) => (
   >
     {children}
   </a>
+);
+
+// Componente do Popup
+const Popup = ({ solution, onClose }) => (
+  <div className="popup-overlay" onClick={onClose}>
+    <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+      <button className="popup-close" onClick={onClose}>&times;</button>
+      <h2 className="popup-title">{solution.title}</h2>
+      <p className="popup-description">{solution.description}</p>
+      <Button primary href="#contact" onClick={onClose}>Fale Conosco</Button>
+    </div>
+  </div>
 );
 
 // --- Componentes de Seção (Modularizados) ---
@@ -41,11 +53,33 @@ const Hero = () => (
 
 // Seção 2: Solutions
 const Solutions = () => {
+  const [selectedSolution, setSelectedSolution] = useState(null);
+
   const solutionsData = [
-    { title: 'Construção Civil', subtitle: 'Projetos que inspiram e edificam o futuro.', color: '#ff69b4' }, // Rosa
-    { title: 'Lavoro Tech', subtitle: 'Soluções em software para a gestão pública.', color: '#1e90ff' }, // Azul
-    { title: 'Seguros', subtitle: 'Sua tranquilidade e patrimônio protegidos.', color: '#ffa500' }, // Laranja
-    { title: 'Consórcios', subtitle: 'O caminho inteligente para suas conquistas.', color: '#3cb371' }, // Verde
+    { 
+      title: 'Construção Civil', 
+      subtitle: 'Projetos que inspiram e edificam o futuro.', 
+      color: '#ff69b4',
+      description: 'Na Lavoro Constrói, transformamos terrenos em marcos de sucesso. Com uma equipe de especialistas e foco em inovação, gerenciamos projetos de construção civil do início ao fim, garantindo qualidade, cumprimento de prazos e orçamentos rigorosos. Desde residenciais a grandes complexos comerciais, edificamos o futuro.'
+    },
+    { 
+      title: 'Lavoro Tech', 
+      subtitle: 'Soluções em software para a gestão pública.', 
+      color: '#1e90ff',
+      description: 'A Lavoro Tech desenvolve sistemas e softwares sob medida para otimizar a gestão pública. Nossas soluções tecnológicas modernizam processos, aumentam a eficiência, promovem a transparência e melhoram o atendimento ao cidadão, capacitando municípios e órgãos governamentais para os desafios do futuro.'
+    },
+    { 
+      title: 'Seguros', 
+      subtitle: 'Sua tranquilidade e patrimônio protegidos.', 
+      color: '#ffa500',
+      description: 'Com a Lavoro Protege, oferecemos consultoria especializada para encontrar os melhores seguros para você, sua família ou sua empresa. Analisamos suas necessidades para garantir a proteção do seu patrimônio e a segurança do seu futuro, com apólices de vida, saúde, automóvel, residencial e empresarial.'
+    },
+    { 
+      title: 'Consórcios', 
+      subtitle: 'O caminho inteligente para suas conquistas.', 
+      color: '#3cb371',
+      description: 'Planeje suas grandes conquistas sem juros com os consórcios do Grupo Lavoro. Seja para adquirir um imóvel, um veículo ou contratar serviços, oferecemos planos flexíveis e as melhores taxas de administração do mercado. Uma forma inteligente e segura de realizar seus sonhos.'
+    },
   ];
 
   return (
@@ -58,13 +92,14 @@ const Solutions = () => {
       </div>
       <div className="cards-container">
         {solutionsData.map((sol, index) => (
-          <div key={index} className="solution-card" style={{ backgroundColor: sol.color }}>
+          <div key={index} className="solution-card" style={{ backgroundColor: sol.color }} onClick={() => setSelectedSolution(sol)}>
             {/* Ícone placeholder para cada serviço */}
             <h3 className="card-title">{sol.title}</h3>
             <p className="card-subtitle">{sol.subtitle}</p>
           </div>
         ))}
       </div>
+      {selectedSolution && <Popup solution={selectedSolution} onClose={() => setSelectedSolution(null)} />}
     </section>
   );
 };
@@ -89,9 +124,9 @@ const About = () => (
 const Testimonials = () => {
     const testimonialsData = [
         { 
-            quote: "A Lavoro Constrói entregou nosso projeto comercial com uma eficiência surpreendente. Qualidade impecável e gestão transparente do início ao fim. Profissionalismo exemplar!", 
-            name: "J. Costa", 
-            title: "CEO, Costa Empreendimentos" 
+            quote: "A Lavoro Constrói entregou nosso projeto com uma eficiência surpreendente. Qualidade impecável e gestão transparente do início ao fim. Profissionalismo exemplar!", 
+            name: "Fernando Matos Santana", 
+            title: "Secretario de Recursos Hidricos do Ceará" 
         },
         { 
             quote: "Com o software da Lavoro Tech, a gestão de nosso departamento público se tornou muito mais ágil e eficiente. Uma verdadeira revolução para nossos processos e atendimento.", 
@@ -101,7 +136,7 @@ const Testimonials = () => {
         { 
             quote: "Sempre tive dificuldade em entender seguros, mas a Lavoro Protege simplificou tudo. Encontraram a cobertura perfeita para minha família, com um atendimento que superou as expectativas.", 
             name: "A. Santos", 
-            title: "Cliente Satisfeita" 
+            title: "Shirley Santos" 
         },
     ];
 
@@ -167,12 +202,7 @@ const Footer = () => (
             <a href="#gallery">Portfólio</a>
             <a href="#contact">Contato</a>
         </div>
-        <div className="social-media">
-             {/* Ícones de Mídias Sociais - placeholders */}
-            <a href="https://facebook.com/grupolavoro" target="_blank" rel="noopener noreferrer" aria-label="Facebook">F</a>
-            <a href="https://instagram.com/grupolavoro" target="_blank" rel="noopener noreferrer" aria-label="Instagram">I</a>
-            <a href="https://linkedin.com/company/grupolavoro" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">L</a>
-        </div>
+       
         <p className="copyright">
             Grupo Lavoro © 2025. Todos os Direitos Reservados.
         </p>

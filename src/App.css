@@ -483,6 +483,56 @@ section {
     opacity: 0.6;
 }
 
+/* --- Popup/Modal Styles --- */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.popup-content {
+    background-color: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    text-align: center;
+}
+
+.popup-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #888;
+    cursor: pointer;
+}
+
+.popup-title {
+    font-size: 2rem;
+    color: #1e90ff;
+    margin-bottom: 20px;
+}
+
+.popup-description {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #555;
+    margin-bottom: 30px;
+}
+
 /* --- Responsividade (Ajustes para Mobile/Tablet) --- */
 @media (max-width: 1024px) {
     .hero-title {
