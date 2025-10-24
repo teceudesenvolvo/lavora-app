@@ -163,20 +163,7 @@ const Testimonials = () => {
     );
 };
 
-// Seção 5: Gallery (Portfólio em Destaque)
-const Gallery = () => (
-    <section id="gallery" className="gallery-section">
-        <div className="gallery-grid">
-            {/* 4 Imagens Placeholder para portfólio */}
-            <div className="gallery-item item-1"></div>
-            <div className="gallery-item item-2"></div>
-            <div className="gallery-item item-3"></div>
-            <div className="gallery-item item-4"></div>
-        </div>
-    </section>
-);
-
-// Seção 6: Contact (Fale Conosco)
+// Seção 5: Contact (Fale Conosco)
 const Contact = () => (
     <section id="contact" className="contact-section">
         <h2 className="section-title">Fale Conosco</h2>
@@ -219,7 +206,7 @@ const Home = () => {
             <Solutions />
             <About />
             <Testimonials />
-            <Gallery />
+            
             <Contact />
             <Footer />
         </div>
