@@ -1,38 +1,571 @@
-.App {
-  text-align: center;
+/* --- Estilos Globais e Reset --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    scroll-behavior: smooth;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+    background-color: #ffffff;
+    overflow-x: hidden;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+section {
+    padding: 100px 0;
+    min-height: 50vh;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #333;
+    text-align: center;
+    margin-bottom: 10px;
 }
 
-.App-link {
-  color: #61dafb;
+.section-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    text-align: center;
+    margin-bottom: 60px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.content-wrapper {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- Botões --- */
+.btn {
+    font-weight: 600;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #1e90ff, #00bfff); /* Azul degradê vibrante */
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, #00bfff, #1e90ff);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 191, 255, 0.6);
+}
+
+/* --- 1. Hero Section --- */
+.hero-section {
+    background: linear-gradient(135deg, #1e90ff 0%, #3a38cd 100%); /* Azul forte */
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    padding: 0; /* Remove o padding da seção padrão */
+}
+
+.hero-section .content-wrapper {
+    display: flex;
+    align-items: center;
+    min-height: 100vh;
+    z-index: 10;
+}
+
+.hero-text-container {
+    max-width: 550px;
+    padding: 20px; /* Adiciona um pouco de padding interno */
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.hero-title {
+    font-size: 4rem; /* Um pouco maior para impacto */
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+    margin-bottom: 40px;
+    opacity: 0.9;
+    text-align: left;
+}
+
+.hero-image-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100%;
+    background: url('https://placehold.co/800x1200/52528c/ffffff?text=Imagem+Grupo+Lavoro') no-repeat right center / cover;
+    /* Imagem recortada (simulando o design) */
+    clip-path: polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%); 
+    z-index: 5;
+}
+
+/* --- 2. Solutions Section --- */
+.solutions-section {
+    padding-top: 50px;
+    padding-bottom: 100px;
+    background-color: #f7f9fc; /* Fundo cinza claro */
+    /* Simula o gradiente de cor clara no topo (do design original) */
+    position: relative;
+    z-index: 20;
+    /* clip-path: polygon(0 10%, 100% 0, 100% 100%, 0% 100%); Não aplicável aqui pois a seção Hero é grande */
+}
+
+.solutions-header {
+    margin-bottom: 60px;
+}
+
+.cards-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.solution-card {
+    color: white;
+    padding: 30px 20px;
+    border-radius: 15px;
+    text-align: left;
+    width: 25%;
+    min-height: 300px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Conteúdo no rodapé do card */
+    background-size: cover;
+    background-position: center;
+    
+    /* Overlay para garantir a legibilidade do texto */
+    position: relative;
+    overflow: hidden;
+}
+
+.solution-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2); /* Sutil escurecimento */
+    transition: background 0.3s ease;
+}
+
+.solution-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+.solution-card:hover::before {
+    background: rgba(0, 0, 0, 0.1); 
+}
+
+.solution-card h3, .solution-card p {
+    position: relative;
+    z-index: 2;
+}
+
+.solution-card .card-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: white;
+}
+
+.solution-card .card-subtitle {
+    opacity: 0.8;
+    font-weight: 300;
+    margin: 0;
+    text-align: left;
+}
+
+/* --- 3. About Section --- */
+.about-section {
+    background: linear-gradient(135deg, #f7f9fc 0%, #e2eaf7 100%); /* Fundo mais suave que o Hero */
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 100px 5%;
+}
+
+.about-image-container {
+    width: 40%;
+    height: 500px;
+    background: url('https://placehold.co/500x700/87ceeb/ffffff?text=Imagem+Visão+Lavoro') no-repeat center center / cover;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    
+    /* Placeholder para o Homem em pose de alongamento */
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%); 
+}
+
+.about-content {
+    width: 50%;
+    max-width: 600px;
+    padding: 20px;
+}
+
+.about-content .section-title {
+    text-align: left;
+    font-size: 3rem;
+    color: #1e90ff;
+    margin-bottom: 20px;
+}
+
+.about-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #444;
+    margin-bottom: 40px;
+}
+
+.about-button {
+    /* Usar o estilo de botão primário, mas sem o degradê, apenas a cor de fundo */
+    background-color: #3a38cd; 
+    box-shadow: none;
+}
+
+.about-button:hover {
+    background-color: #1e90ff; 
+    transform: translateY(-1px);
+}
+
+/* --- 4. Testimonials Section --- */
+.testimonials-section {
+    padding: 100px 0;
+    background-color: #ffffff;
+    text-align: center;
+}
+
+.testimonials-section .section-title {
+    font-size: 2.5rem;
+    position: relative;
+    display: inline-block;
+    color: #333;
+}
+
+.testimonials-section .blue-text {
+    color: #1e90ff;
+}
+
+.testimonials-section .quote-icon {
+    font-size: 4rem;
+    color: #1e90ff;
+    line-height: 0;
+    position: absolute;
+    top: 50%;
+    left: -60px;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    font-weight: 300;
+}
+
+.testimonials-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    width: 90%;
+    max-width: 1200px;
+    margin: 60px auto 0;
+}
+
+.testimonial-card {
+    background-color: #f7f9fc;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    flex: 1;
+    text-align: left;
+    border-top: 5px solid #1e90ff;
+}
+
+.testimonial-quote {
+    font-size: 1rem;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+.client-info {
+    display: flex;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.client-details {
+    margin-left: 10px;
+}
+
+.client-name {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.client-title {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+/* --- 5. Gallery Section --- */
+.gallery-section {
+    background-color: #f0f3f7;
+    padding: 50px 0;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.gallery-item {
+    height: 300px;
+    background-color: #ccc;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover {
+    transform: scale(1.03);
+}
+
+/* Placeholder Imagens da Galeria - Simulação */
+.item-1 { background-image: url('https://placehold.co/600x600/1e90ff/ffffff?text=Construção'); }
+.item-2 { background-image: url('https://placehold.co/600x600/3a38cd/ffffff?text=Software'); }
+.item-3 { background-image: url('https://placehold.co/600x600/ffa500/ffffff?text=Seguros'); }
+.item-4 { background-image: url('https://placehold.co/600x600/3cb371/ffffff?text=Consórcios'); }
+
+/* --- 6. Contact Section --- */
+.contact-section {
+    background: linear-gradient(135deg, #1e90ff 0%, #3a38cd 100%);
+    color: white;
+    padding: 80px 0;
+}
+
+.contact-section .section-title {
+    color: white;
+}
+
+.contact-section .section-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.contact-form {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    width: 90%;
+    max-width: 800px;
+    margin: 40px auto 0;
+}
+
+.input-field {
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: none;
+    font-size: 1rem;
+    width: 30%;
+    transition: all 0.3s ease;
+}
+
+.input-field:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+
+.submit-button {
+    width: 40%;
+    /* Estilo primário já definido, mas garantindo o contraste */
+}
+
+/* --- Footer --- */
+.footer-section {
+    background-color: #222;
+    color: white;
+    padding: 30px 5%;
+    text-align: center;
+    border-top: 5px solid #1e90ff;
+}
+
+.footer-links a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.footer-links a:hover {
+    opacity: 1;
+    color: #00bfff;
+}
+
+.social-media a {
+    color: white;
+    margin: 20px 10px;
+    display: inline-block;
+    border: 1px solid white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    font-size: 0.8rem;
+    transition: background-color 0.3s ease;
+}
+
+.social-media a:hover {
+    background-color: #1e90ff;
+    border-color: #1e90ff;
+}
+
+.copyright {
+    margin-top: 15px;
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+/* --- Responsividade (Ajustes para Mobile/Tablet) --- */
+@media (max-width: 1024px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+    
+    .hero-image-container {
+        width: 50%;
+        clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+
+    .cards-container {
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .solution-card {
+        width: 45%;
+        min-height: 250px;
+    }
+
+    .about-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .about-image-container {
+        width: 80%;
+        margin-bottom: 40px;
+        clip-path: polygon(5% 0, 95% 0, 100% 100%, 0% 100%);
+    }
+
+    .about-content {
+        width: 100%;
+    }
+    
+    .about-content .section-title {
+        text-align: center;
+    }
+
+    .testimonials-container {
+        flex-direction: column;
+    }
+    
+    .testimonials-section .quote-icon {
+        left: 0;
+        top: -10px;
+        transform: none;
+    }
+
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .hero-section {
+        min-height: 80vh;
+    }
+    
+    .hero-image-container {
+        opacity: 0.3; /* Torna a imagem de fundo mais sutil */
+        width: 100%;
+        height: 100%;
+        clip-path: none;
+    }
+    
+    .hero-text-container {
+        max-width: none;
+        text-align: center;
+        width: 100%;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    .solution-card {
+        width: 100%;
+    }
+
+    .gallery-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-form {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .input-field, .submit-button {
+        width: 100%;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
 }
