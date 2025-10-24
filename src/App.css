@@ -71,6 +71,14 @@ section {
 }
 
 /* --- 1. Hero Section --- */
+.hero-logo{
+    position: absolute;
+    top: 0px;
+    left: 20px;
+    width: 200px;
+    height: auto;
+    z-index: 15;
+}
 .hero-section {
     background: linear-gradient(135deg, #1e90ff 0%, #3a38cd 100%); /* Azul forte */
     color: white;

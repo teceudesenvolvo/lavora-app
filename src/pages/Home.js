@@ -1,6 +1,7 @@
 import React from 'react';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
+import Logo from '../assets/images/logo GRUPO LAVORO-02.png'; // Logo Grupo Lavoro
 
 // Componente Básico de Botão
 const Button = ({ children, primary, className = '', href, onClick }) => (
@@ -18,6 +19,7 @@ const Button = ({ children, primary, className = '', href, onClick }) => (
 // Seção 1: Hero
 const Hero = () => (
   <section id="hero" className="hero-section">
+    <img src={Logo} alt="Logo Grupo Lavoro" className="hero-logo" />
     <div className="content-wrapper">
       <div className="hero-text-container">
         <h1 className="hero-title">
