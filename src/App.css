@@ -271,8 +271,9 @@ section {
 
 .about-button {
     /* Usar o estilo de botão primário, mas sem o degradê, apenas a cor de fundo */
-    background-color: #3a38cd; 
+    background-color: #9a98ff; 
     box-shadow: none;
+    color: #ffffff !important;
 }
 
 .about-button:hover {
