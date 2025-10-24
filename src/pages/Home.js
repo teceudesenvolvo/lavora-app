@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
-import Logo from '../assets/images/logo GRUPO LAVORO-02.png'; // Logo Grupo Lavoro
+import Logo from '../assets/images/logo-GL.png'; // Logo Grupo Lavoro
 
 // Componente Básico de Botão
 const Button = ({ children, primary, className = '', href, onClick }) => (

@@ -74,8 +74,8 @@ section {
 .hero-logo{
     position: absolute;
     top: 0px;
-    left: 20px;
-    width: 200px;
+    left: 0px;
+    width: 130px;
     height: auto;
     z-index: 15;
 }
