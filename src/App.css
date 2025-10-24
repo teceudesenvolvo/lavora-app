@@ -73,8 +73,8 @@ section {
 /* --- 1. Hero Section --- */
 .hero-logo{
     position: absolute;
-    top: 0px;
-    left: 0px;
+    top: 13%;
+    left: 7%;
     width: 130px;
     height: auto;
     z-index: 15;
@@ -97,7 +97,7 @@ section {
 }
 
 .hero-text-container {
-    max-width: 550px;
+    max-width: 400px;
     padding: 20px; /* Adiciona um pouco de padding interno */
 }
 
@@ -109,7 +109,7 @@ section {
 }
 
 .hero-title {
-    font-size: 4rem; /* Um pouco maior para impacto */
+    font-size: 30px; /* Um pouco maior para impacto */
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 20px;
@@ -128,7 +128,7 @@ section {
     position: absolute;
     top: 0;
     right: 0;
-    width: 50%;
+    width: 70%;
     height: 100%;
    /* Imagem recortada (simulando o design) */
     clip-path: polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%); 
@@ -535,9 +535,13 @@ section {
 }
 
 /* --- Responsividade (Ajustes para Mobile/Tablet) --- */
-@media (max-width: 1024px) {
+@media (max-width: 900px) {
     .hero-title {
         font-size: 3rem;
+    }
+    .hero-logo{
+      left: 40%;
+      margin: 0 auto;
     }
     
     .hero-image-container {
