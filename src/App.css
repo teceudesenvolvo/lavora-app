@@ -237,7 +237,6 @@ section {
 }
 
 .about-image{
-  position: absolute;
   object-position: 50% 50%;
   background-position: 0% 0%;
 }
