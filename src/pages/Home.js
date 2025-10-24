@@ -1,5 +1,6 @@
 import React from 'react';
-import ImageHero from '../assets/images/mulher.png'; // Imagem da Mulher em movimento
+import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
+import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
 
 // Componente Básico de Botão
 const Button = ({ children, primary, className = '', href, onClick }) => (
@@ -70,7 +71,7 @@ const Solutions = () => {
 const About = () => (
     <section id="about" className="about-section">
         <div className="about-image-container">
-             {/* Placeholder para a imagem do Homem se alongando */}
+             <img src={ImageSectionAbout} alt="Visao" className="about-image" />
         </div>
         <div className="about-content">
             <h2 className="section-title">Quem Somos?</h2>

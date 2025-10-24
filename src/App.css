@@ -122,10 +122,15 @@ section {
     right: 0;
     width: 50%;
     height: 100%;
-    background: url('https://placehold.co/800x1200/52528c/ffffff?text=Imagem+Grupo+Lavoro') no-repeat right center / cover;
-    /* Imagem recortada (simulando o design) */
+   /* Imagem recortada (simulando o design) */
     clip-path: polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%); 
     z-index: 5;
+}
+
+.hero-image{
+  position: relative;
+  object-position: 50% 50%;
+  background-position: 50% 50%;
 }
 
 /* --- 2. Solutions Section --- */
@@ -224,12 +229,17 @@ section {
 .about-image-container {
     width: 40%;
     height: 500px;
-    background: url('https://placehold.co/500x700/87ceeb/ffffff?text=Imagem+Visão+Lavoro') no-repeat center center / cover;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    
+    object-fit: contain !important;
     /* Placeholder para o Homem em pose de alongamento */
     clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%); 
+}
+
+.about-image{
+  position: absolute;
+  object-position: 50% 50%;
+  background-position: 0% 0%;
 }
 
 .about-content {
