@@ -63,10 +63,10 @@ const Solutions = () => {
       description: 'Na Lavoro Constrói, transformamos terrenos em marcos de sucesso. Com uma equipe de especialistas e foco em inovação, gerenciamos projetos de construção civil do início ao fim, garantindo qualidade, cumprimento de prazos e orçamentos rigorosos. Desde residenciais a grandes complexos comerciais, edificamos o futuro.'
     },
     { 
-      title: 'Lavoro Tech', 
+      title: 'Tecnologias', 
       subtitle: 'Soluções em software para a gestão pública.', 
       color: '#1e90ff',
-      description: 'A Lavoro Tech desenvolve sistemas e softwares sob medida para otimizar a gestão pública. Nossas soluções tecnológicas modernizam processos, aumentam a eficiência, promovem a transparência e melhoram o atendimento ao cidadão, capacitando municípios e órgãos governamentais para os desafios do futuro.'
+      description: 'A Lavoro desenvolve sistemas e softwares sob medida para otimizar a gestão pública. Nossas soluções tecnológicas modernizam processos, aumentam a eficiência, promovem a transparência e melhoram o atendimento ao cidadão, capacitando municípios e órgãos governamentais para os desafios do futuro.'
     },
     { 
       title: 'Seguros', 
