@@ -114,11 +114,175 @@ section {
   color: #1e90ff; /* Azul para o hover */
 }
 
+/* --- Header Responsivo (Mobile) --- */
+.nav-toggle {
+  display: none; /* Escondido por padrão */
+  position: absolute;
+  right: 5%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 1001;
+}
+
+.hamburger {
+  display: block;
+  position: relative;
+  width: 25px;
+  height: 3px;
+  background: #333;
+  transition: transform 0.3s ease;
+}
+
+.hamburger::before,
+.hamburger::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #333;
+  transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease;
+}
+
+.hamburger::before {
+  top: -8px;
+}
+
+.hamburger::after {
+  bottom: -8px;
+}
+
+.nav--visible + .nav-toggle .hamburger {
+  transform: rotate(45deg);
+}
+
+.nav--visible + .nav-toggle .hamburger::before {
+  top: 0;
+  transform: rotate(90deg);
+}
+
+.nav--visible + .nav-toggle .hamburger::after {
+  bottom: 0;
+  transform: rotate(90deg);
+}
+
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: block;
+  }
+
+  .site-header .nav {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Começa fora da tela */
+    width: 60%;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: right 0.4s ease-in-out;
+  }
+
+  .site-header .nav.nav--visible {
+    right: 0; /* Entra na tela */
+  }
+}
+
 /* Ajuste para o conteúdo não ficar sob o header */
 .hero-section {
   padding-top: 80px; /* Altura aproximada do header */
 }
 
+/* --- Header Responsivo (Mobile) --- */
+.nav-toggle {
+  display: none; /* Escondido por padrão */
+  position: absolute;
+  right: 5%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 1001;
+}
+
+.hamburger {
+  display: block;
+  position: relative;
+  width: 25px;
+  height: 3px;
+  background: #333;
+  transition: transform 0.3s ease;
+}
+
+.hamburger::before,
+.hamburger::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #333;
+  transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease;
+}
+
+.hamburger::before {
+  top: -8px;
+}
+
+.hamburger::after {
+  bottom: -8px;
+}
+
+.nav--visible + .nav-toggle .hamburger {
+  transform: rotate(45deg);
+}
+
+.nav--visible + .nav-toggle .hamburger::before {
+  top: 0;
+  transform: rotate(90deg);
+}
+
+.nav--visible + .nav-toggle .hamburger::after {
+  bottom: 0;
+  transform: rotate(90deg);
+}
+
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: block;
+  }
+
+  .site-header .nav {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Começa fora da tela */
+    width: 60%;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: right 0.4s ease-in-out;
+  }
+
+  .site-header .nav.nav--visible {
+    right: 0; /* Entra na tela */
+  }
+}
+
+/* Ajuste para o conteúdo não ficar sob o header */
+.hero-section {
+  padding-top: 80px; /* Altura aproximada do header */
+}
 /* Botão Flutuante do WhatsApp */
 .whatsapp-float {
   position: fixed;

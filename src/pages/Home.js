@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
-import Logo from '../assets/images/logo-GL.png'; // Logo Grupo Lavoro
+import Logo from '../assets/images/logo-GL-M.png'; // Logo Grupo Lavoro
 
 // Componente Button reutilizável
 const Button = ({ children, primary, className = '', href, onClick }) => (
@@ -30,19 +30,30 @@ const Popup = ({ solution, onClose }) => (
 // --- Componentes Globais ---
 
 // Header
-const Header = () => (
-  <header className="site-header">
-    <div className="container header-container">
-      <a href="#hero" className="logo-link"><img src={Logo} alt="Logo Grupo Lavoro" className="logo" /></a>
-      <nav className="nav">
-        <a className="nav-link" href="#solutions">Soluções</a>
-        <a className="nav-link" href="#about">Sobre</a>
-        <a className="nav-link" href="#testimonials">Depoimentos</a>
-        <a className="nav-link" href="#contact">Contato</a>
-      </nav>
-    </div>
-  </header>
-);
+const Header = () => {
+  const [navVisible, setNavVisible] = useState(false);
+
+  const toggleNav = () => {
+    setNavVisible(!navVisible);
+  };
+
+  return (
+    <header className="site-header">
+      <div className="header-container">
+        <a href="#hero" className="logo-link"><img src={Logo} alt="Logo Grupo Lavoro" className="logo" /></a>
+        <nav className={`nav ${navVisible ? 'nav--visible' : ''}`}>
+          <a className="nav-link" href="#solutions" onClick={toggleNav}>Soluções</a>
+          <a className="nav-link" href="#about" onClick={toggleNav}>Sobre</a>
+          <a className="nav-link" href="#testimonials" onClick={toggleNav}>Depoimentos</a>
+          <a className="nav-link" href="#contact" onClick={toggleNav}>Contato</a>
+        </nav>
+        <button className="nav-toggle" aria-label="toggle navigation" onClick={toggleNav}>
+          <span className="hamburger"></span>
+        </button>
+      </div>
+    </header>
+  );
+};
 
 // --- Componentes de Seção (Modularizados) ---
 
@@ -55,7 +66,7 @@ const Hero = () => (
           Transforme sua visão em Realidade
         </h1>
         <p className="hero-subtitle">
-          Mais do que serviços, entregamos soluções integradas em Construção Civil, Tecnologia, Seguros e Consórcios. Sua próxima grande conquista começa aqui.
+          Mais do que serviços, entregamos soluções integradas utilizando tecnologia de ponta em todos os serviços.
         </p>
         <Button primary href="#solutions">
           Explore Nossas Soluções
@@ -77,7 +88,7 @@ const Solutions = () => {
       title: 'Construção Civil', 
       subtitle: 'Projetos que inspiram e edificam o futuro.', 
       color: '#ff69b4',
-      description: 'Na Lavoro Constrói, transformamos terrenos em marcos de sucesso. Com uma equipe de especialistas e foco em inovação, gerenciamos projetos de construção civil do início ao fim, garantindo qualidade, cumprimento de prazos e orçamentos rigorosos. Desde residenciais a grandes complexos comerciais, edificamos o futuro.'
+      description: 'Na Lavoro, transformamos terrenos em marcos de sucesso. Com uma equipe de especialistas e foco em inovação, gerenciamos projetos de construção civil do início ao fim, garantindo qualidade, cumprimento de prazos e orçamentos rigorosos. Desde residenciais a grandes complexos comerciais, edificamos o futuro.'
     },
     { 
       title: 'Tecnologias', 
@@ -89,7 +100,7 @@ const Solutions = () => {
       title: 'Seguros', 
       subtitle: 'Sua tranquilidade e patrimônio protegidos.', 
       color: '#ffa500',
-      description: 'Com a Lavoro Protege, oferecemos consultoria especializada para encontrar os melhores seguros para você, sua família ou sua empresa. Analisamos suas necessidades para garantir a proteção do seu patrimônio e a segurança do seu futuro, com apólices de vida, saúde, automóvel, residencial e empresarial.'
+      description: 'Com a Lavoro, oferecemos consultoria especializada para encontrar os melhores seguros para você, sua família ou sua empresa. Analisamos suas necessidades para garantir a proteção do seu patrimônio e a segurança do seu futuro, com apólices de vida, saúde, automóvel, residencial e empresarial.'
     },
     { 
       title: 'Consórcios', 
