@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
 import Logo from '../assets/images/logo-GL.png'; // Logo Grupo Lavoro
-
-// Componente Básico de Botão
+// Componente Button reutilizável
 const Button = ({ children, primary, className = '', href, onClick }) => (
   <a 
     href={href} 
@@ -206,7 +205,6 @@ const Home = () => {
             <Solutions />
             <About />
             <Testimonials />
-            
             <Contact />
             <Footer />
         </div>
