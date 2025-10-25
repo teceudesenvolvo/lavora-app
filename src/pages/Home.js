@@ -34,7 +34,7 @@ const Hero = () => (
     <div className="content-wrapper">
       <div className="hero-text-container">
         <h1 className="hero-title">
-          Transforme sua visão em Realidade.
+          Transforme sua visão em Realidade
         </h1>
         <p className="hero-subtitle">
           Mais do que serviços, entregamos soluções integradas em Construção Civil, Tecnologia, Seguros e Consórcios. Sua próxima grande conquista começa aqui.
