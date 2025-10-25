@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { FaWhatsapp } from 'react-icons/fa';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
 import Logo from '../assets/images/logo-GL.png'; // Logo Grupo Lavoro
+
 // Componente Button reutilizável
 const Button = ({ children, primary, className = '', href, onClick }) => (
   <a 
@@ -25,12 +27,28 @@ const Popup = ({ solution, onClose }) => (
   </div>
 );
 
+// --- Componentes Globais ---
+
+// Header
+const Header = () => (
+  <header className="site-header">
+    <div className="container header-container">
+      <a href="#hero" className="logo-link"><img src={Logo} alt="Logo Grupo Lavoro" className="logo" /></a>
+      <nav className="nav">
+        <a className="nav-link" href="#solutions">Soluções</a>
+        <a className="nav-link" href="#about">Sobre</a>
+        <a className="nav-link" href="#testimonials">Depoimentos</a>
+        <a className="nav-link" href="#contact">Contato</a>
+      </nav>
+    </div>
+  </header>
+);
+
 // --- Componentes de Seção (Modularizados) ---
 
 // Seção 1: Hero
 const Hero = () => (
   <section id="hero" className="hero-section">
-    <img src={Logo} alt="Logo Grupo Lavoro" className="hero-logo" />
     <div className="content-wrapper">
       <div className="hero-text-container">
         <h1 className="hero-title">
@@ -200,13 +218,16 @@ const Footer = () => (
 const Home = () => {
     return (
         <div className="lavoro-app-container">
-            {/* Não incluí o Header (Menu Fixo) para manter a simplicidade da SPA, mas ele viria aqui */}
+            <Header />
             <Hero />
             <Solutions />
             <About />
             <Testimonials />
             <Contact />
             <Footer />
+            <a href="https://wa.me/5585987864953" className="whatsapp-float" target="_blank" rel="noopener noreferrer" aria-label="Contato via WhatsApp">
+                <FaWhatsapp />
+            </a>
         </div>
     );
 };
