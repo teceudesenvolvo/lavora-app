@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ClientMenu from '../../components/menu-client';
+import { FaSignOutAlt } from 'react-icons/fa';
 
 const ClientDashboard = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -12,10 +13,10 @@ const ClientDashboard = () => {
   return (
     <div className="dashboard-container">
       <aside className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''}`}>
-        
+       
         <ClientMenu />
         <div className="sidebar-footer">
-            <Link to="/login"><span>🚪</span> Sair</Link>
+            <Link to="/login"><FaSignOutAlt /> Sair</Link>
         </div>
       </aside>
 

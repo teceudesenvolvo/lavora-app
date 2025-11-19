@@ -1310,6 +1310,11 @@ section {
     border-left: 4px solid transparent;
 }
 
+.sidebar-nav a svg {
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
 .sidebar-nav a span {
     font-size: 1.2rem;
 }
