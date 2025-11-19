@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Logo from '../assets/images/logo-GL.png';
+import Logo from '../../assets/images/logo GRUPO LAVORO-01.png'; // Importação mantida para passar como prop
+import MenuAdmin from '../../components/menu-admin';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -70,23 +71,7 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      <aside className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''}`}>
-        <div className="sidebar-header">
-          <img src={Logo} alt="Lavoro" className="dashboard-logo" />
-        </div>
-        <nav className="sidebar-nav">
-          <ul>
-            <li><a href="#overview" className="active"><span>📊</span> Visão Geral</a></li>
-            <li><a href="#analytics"><span>📈</span> Análises</a></li>
-            <li><a href="#reports"><span>📄</span> Relatórios</a></li>
-            <li><a href="#users"><span>👥</span> Usuários</a></li>
-            <li><a href="#settings"><span>⚙️</span> Configurações</a></li>
-          </ul>
-        </nav>
-        <div className="sidebar-footer">
-            <a href="#logout"><span>🚪</span> Sair</a>
-        </div>
-      </aside>
+      <MenuAdmin isSidebarOpen={isSidebarOpen} Logo={Logo} />
 
       <main className="main-content">
         <header className="main-header">
