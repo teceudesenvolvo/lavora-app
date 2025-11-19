@@ -12,7 +12,8 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      <MenuAdmin isSidebarOpen={isSidebarOpen} Logo={Logo} />
+      {isSidebarOpen && <div className="sidebar-overlay" onClick={toggleSidebar}></div>}
+      <MenuAdmin isSidebarOpen={isSidebarOpen} Logo={Logo} toggleSidebar={toggleSidebar} />
 
       <main className="main-content">
         <header className="main-header">

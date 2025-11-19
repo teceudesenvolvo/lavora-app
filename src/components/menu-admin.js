@@ -9,7 +9,7 @@ import {
   FaSignOutAlt,
 } from 'react-icons/fa';
 
-const MenuAdmin = ({ isSidebarOpen, Logo }) => {
+const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar }) => {
   return (
     <aside className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar-header">
@@ -17,11 +17,11 @@ const MenuAdmin = ({ isSidebarOpen, Logo }) => {
         </div>
         <nav className="sidebar-nav">
           <ul>
-            <li><NavLink to="/dashboard-admin" end><FaChartPie /> Visão Geral</NavLink></li>
-            <li><NavLink to="/dashboard-admin/analises"><FaChartLine /> Análises</NavLink></li>
-            <li><NavLink to="/dashboard-admin/relatorios"><FaFileAlt /> Relatórios</NavLink></li>
-            <li><NavLink to="/dashboard-admin/clientes"><FaUsers /> Clientes</NavLink></li>
-            <li><NavLink to="/dashboard-admin/configuracoes"><FaCog /> Configurações</NavLink></li>
+            <li><NavLink to="/dashboard-admin" end onClick={toggleSidebar}><FaChartPie /> Visão Geral</NavLink></li>
+            <li><NavLink to="/dashboard-admin/analises" onClick={toggleSidebar}><FaChartLine /> Análises</NavLink></li>
+            <li><NavLink to="/dashboard-admin/relatorios" onClick={toggleSidebar}><FaFileAlt /> Relatórios</NavLink></li>
+            <li><NavLink to="/dashboard-admin/clientes" onClick={toggleSidebar}><FaUsers /> Clientes</NavLink></li>
+            <li><NavLink to="/dashboard-admin/configuracoes" onClick={toggleSidebar}><FaCog /> Configurações</NavLink></li>
           </ul>
         </nav>
         <div className="sidebar-footer">

@@ -13,11 +13,12 @@ const ClientDashboard = () => {
 
   return (
     <div className="dashboard-container">
+      {isSidebarOpen && <div className="sidebar-overlay" onClick={toggleSidebar}></div>}
       <aside className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar-header">
           <img src={Logo} alt="Lavoro" className="dashboard-logo" />
         </div>
-        <ClientMenu />
+        <ClientMenu toggleSidebar={toggleSidebar} />
         <div className="sidebar-footer">
             <Link to="/login"><FaSignOutAlt /> Sair</Link>
         </div>
