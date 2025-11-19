@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import ClientMenu from '../../components/menu-client';
-import Logo from '../../assets/images/logo-GL.png';
+import Logo from '../../assets/images/logo GRUPO LAVORO-01.png';
 import { FaSignOutAlt } from 'react-icons/fa';
 
 const ClientDashboard = () => {
