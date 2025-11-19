@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { NavLink } from 'react-router-dom';
 import {
   FaChartPie,
   FaChartLine,
@@ -17,11 +17,11 @@ const MenuAdmin = ({ isSidebarOpen, Logo }) => {
         </div>
         <nav className="sidebar-nav">
           <ul>
-            <li><a href="#overview" className="active"><FaChartPie /> Visão Geral</a></li>
-            <li><a href="#analytics"><FaChartLine /> Análises</a></li>
-            <li><a href="#reports"><FaFileAlt /> Relatórios</a></li>
-            <li><a href="#users"><FaUsers /> Clientes</a></li>
-            <li><a href="#settings"><FaCog /> Configurações</a></li>
+            <li><NavLink to="/dashboard-admin" end><FaChartPie /> Visão Geral</NavLink></li>
+            <li><NavLink to="/dashboard-admin/analises"><FaChartLine /> Análises</NavLink></li>
+            <li><NavLink to="/dashboard-admin/relatorios"><FaFileAlt /> Relatórios</NavLink></li>
+            <li><NavLink to="/dashboard-admin/clientes"><FaUsers /> Clientes</NavLink></li>
+            <li><NavLink to="/dashboard-admin/configuracoes"><FaCog /> Configurações</NavLink></li>
           </ul>
         </nav>
         <div className="sidebar-footer">

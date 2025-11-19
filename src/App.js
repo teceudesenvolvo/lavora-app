@@ -4,10 +4,24 @@ import Home from './pages/Home';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/pages-admin/Dashboard';
+import ClientDashboard from './pages/pages-client/Dashboard';
 import RegisterPage from './pages/RegisterPage';
 
-// Importando páginas do cliente
-import ClientDashboard from './pages/pages-client/Dashboard';
+// Páginas do Cliente
+import VisaoGeralCliente from './pages/pages-client/VisaoGeral';
+import FaturasCliente from './pages/pages-client/Faturas';
+import ContratosCliente from './pages/pages-client/Contratos';
+import CotacaoCliente from './pages/pages-client/Cotacao';
+import DocumentacaoCliente from './pages/pages-client/Documentacao';
+import MinhaContaCliente from './pages/pages-client/MinhaConta';
+import AjudaCliente from './pages/pages-client/Ajuda';
+
+// Páginas do Admin
+import VisaoGeralAdmin from './pages/pages-admin/VisaoGeralAdmin';
+import AnalisesAdmin from './pages/pages-admin/Analises';
+import RelatoriosAdmin from './pages/pages-admin/Relatorios';
+import ClientesAdmin from './pages/pages-admin/Clientes';
+import ConfiguracoesAdmin from './pages/pages-admin/Configuracoes';
 
 import './App.css'; // Importa o CSS global
   
@@ -19,9 +33,23 @@ function App() {
         <Route path="/politica-de-privacidade-cm-pacatuba" element={<PrivacyPolicy />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard-admin" element={<AdminDashboard />} />
-        {/* Rota para o cliente */}
-        <Route path="/dashboard" element={<ClientDashboard />} />
+
+        <Route path="/dashboard-admin" element={<AdminDashboard />}>
+          <Route index element={<VisaoGeralAdmin />} />
+          <Route path="analises" element={<AnalisesAdmin />} />
+          <Route path="relatorios" element={<RelatoriosAdmin />} />
+          <Route path="clientes" element={<ClientesAdmin />} />
+          <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
+        </Route>
+        <Route path="/dashboard" element={<ClientDashboard />}>
+          <Route index element={<VisaoGeralCliente />} />
+          <Route path="faturas" element={<FaturasCliente />} />
+          <Route path="contratos" element={<ContratosCliente />} />
+          <Route path="cotacao" element={<CotacaoCliente />} />
+          <Route path="documentacao" element={<DocumentacaoCliente />} />
+          <Route path="conta" element={<MinhaContaCliente />} />
+          <Route path="ajuda" element={<AjudaCliente />} />
+        </Route>
       </Routes>
     </Router>
   );

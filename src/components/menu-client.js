@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import Logo from '../assets/images/logo-GL.png';
+import { NavLink } from 'react-router-dom';
+
 
 import {
+  FaChartPie,
   FaCreditCard,
   FaFileContract,
   FaCommentDots,
@@ -14,16 +15,14 @@ import {
 const ClientMenu = () => {
   return (
     <nav className="sidebar-nav">
-      <div className="sidebar-header">
-        <img src={Logo} alt="Lavoro" className="dashboard-logo" />
-      </div>
       <ul>
-        <li><Link to="#faturas" className="active"><FaCreditCard /> Minhas Faturas</Link></li>
-        <li><Link to="#contratos"><FaFileContract /> Meus Contratos</Link></li>
-        <li><Link to="#cotacao"><FaCommentDots /> Solicitar Cotação</Link></li>
-        <li><Link to="#documentacao"><FaFolderOpen /> Documentação</Link></li>
-        <li><Link to="#conta"><FaUserCircle /> Minha Conta</Link></li>
-        <li><Link to="#ajuda"><FaQuestionCircle /> Ajuda</Link></li>
+        <li><NavLink to="/dashboard" end><FaChartPie /> Visão Geral</NavLink></li>
+        <li><NavLink to="/dashboard/faturas"><FaCreditCard /> Minhas Faturas</NavLink></li>
+        <li><NavLink to="/dashboard/contratos"><FaFileContract /> Meus Contratos</NavLink></li>
+        <li><NavLink to="/dashboard/cotacao"><FaCommentDots /> Solicitar Cotação</NavLink></li>
+        <li><NavLink to="/dashboard/documentacao"><FaFolderOpen /> Documentação</NavLink></li>
+        <li><NavLink to="/dashboard/conta"><FaUserCircle /> Minha Conta</NavLink></li>
+        <li><NavLink to="/dashboard/ajuda"><FaQuestionCircle /> Ajuda</NavLink></li>
       </ul>
     </nav>
   );
