@@ -36,7 +36,10 @@ const LoginPage = () => {
             <form className="auth-form">
               <input type="email" placeholder="E-mail" required className="input-field" />
               <input type="password" placeholder="Senha" required className="input-field" />
-              <Button primary type="submit" className="auth-button">Entrar</Button>
+              <Button primary type="submit" className="auth-button"
+              onClick={(e) => {window.location.href = '/dashboard'; e.preventDefault();}}
+              >
+              Entrar</Button>
             </form>
             <p className="auth-link-text">
               Não tem uma conta? <Link to="/register">Cadastre-se</Link>
