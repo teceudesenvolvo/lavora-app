@@ -2,18 +2,8 @@ import React, { useState } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
-import Logo from '../assets/images/logo-GL-M.png'; // Logo Grupo Lavoro
-
-// Componente Button reutilizável
-const Button = ({ children, primary, className = '', href, onClick }) => (
-  <a 
-    href={href} 
-    onClick={onClick}
-    className={`btn ${primary ? 'btn-primary' : 'btn-secondary'} ${className}`}
-  >
-    {children}
-  </a>
-);
+import Button from './Button';
+import Header from '../components/Header'; // Import the reusable Header component
 
 // Componente do Popup
 const Popup = ({ solution, onClose }) => (
@@ -26,34 +16,6 @@ const Popup = ({ solution, onClose }) => (
     </div>
   </div>
 );
-
-// --- Componentes Globais ---
-
-// Header
-const Header = () => {
-  const [navVisible, setNavVisible] = useState(false);
-
-  const toggleNav = () => {
-    setNavVisible(!navVisible);
-  };
-
-  return (
-    <header className="site-header">
-      <div className="header-container">
-        <a href="#hero" className="logo-link"><img src={Logo} alt="Logo Grupo Lavoro" className="logo" /></a>
-        <nav className={`nav ${navVisible ? 'nav--visible' : ''}`}>
-          <a className="nav-link" href="#solutions" onClick={toggleNav}>Soluções</a>
-          <a className="nav-link" href="#about" onClick={toggleNav}>Sobre</a>
-          <a className="nav-link" href="#testimonials" onClick={toggleNav}>Depoimentos</a>
-          <a className="nav-link" href="#contact" onClick={toggleNav}>Contato</a>
-        </nav>
-        <button className="nav-toggle" aria-label="toggle navigation" onClick={toggleNav}>
-          <span className="hamburger"></span>
-        </button>
-      </div>
-    </header>
-  );
-};
 
 // --- Componentes de Seção (Modularizados) ---
 
