@@ -1278,6 +1278,608 @@ section {
     display: block; /* Mostra o overlay quando o sidebar está aberto */
 }
 
+/* --- Estilos da Página de Faturas --- */
+.faturas-container {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.faturas-section {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.faturas-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 15px;
+}
+
+.faturas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.fatura-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    transition: box-shadow 0.3s ease;
+}
+
+.fatura-item:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.fatura-info {
+    flex-grow: 1;
+}
+
+.fatura-descricao {
+    font-weight: 600;
+    color: #343a40;
+}
+
+.fatura-vencimento {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.fatura-valor {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e90ff;
+    margin: 0 20px;
+}
+
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.status--pendente {
+    background-color: #ffc107; /* Amarelo */
+    color: #333;
+}
+
+.status--pago {
+    background-color: #28a745; /* Verde */
+}
+
+.status--vencido {
+    background-color: #dc3545; /* Vermelho */
+}
+
+.fatura-actions .btn-pagar {
+    background: linear-gradient(90deg, #1e90ff, #00bfff);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.fatura-actions .btn-pagar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.historico-tabela {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.historico-tabela th, .historico-tabela td {
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.historico-tabela th {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.btn-download {
+    background: none;
+    border: 1px solid #ced4da;
+    color: #6c757d;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.btn-download:hover {
+    background-color: #e9ecef;
+    color: #1e90ff;
+}
+
+@media (max-width: 768px) {
+    .fatura-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+}
+
+/* --- Estilos da Página de Contratos --- */
+.contratos-container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.contratos-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.contrato-card {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.contrato-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
+}
+
+.contrato-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.contrato-header h3 {
+    font-size: 1.2rem;
+    color: #343a40;
+    font-weight: 600;
+}
+
+.contrato-details p {
+    color: #6c757d;
+    line-height: 1.6;
+}
+
+.contrato-actions {
+    margin-top: auto; /* Empurra o botão para o final do card */
+    padding-top: 20px;
+}
+
+.btn-visualizar {
+    width: 100%;
+    /* Reutiliza o estilo do botão de pagar */
+    composes: btn-pagar from global;
+}
+
+/* --- Estilos da Página de Cotação --- */
+.cotacao-container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.cotacao-subtitle {
+    color: #6c757d;
+    margin-top: -20px;
+    margin-bottom: 30px;
+}
+
+.cotacao-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #1e90ff;
+    box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.2);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.btn-enviar-cotacao {
+    align-self: flex-start;
+    margin-top: 10px;
+    /* Reutiliza o estilo do botão de pagar */
+    composes: btn-pagar from global;
+    padding: 12px 30px;
+}
+
+@media (min-width: 768px) {
+    .cotacao-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+
+    .form-group.full-width,
+    .form-group:last-of-type,
+    .cotacao-form > .btn-enviar-cotacao {
+        grid-column: 1 / -1; /* Ocupa todas as colunas */
+    }
+}
+
+/* --- Estilos da Página Minha Conta --- */
+.minha-conta-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.profile-section {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.profile-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.btn-salvar-perfil {
+    align-self: flex-start;
+    /* Reutiliza o estilo do botão de pagar */
+    composes: btn-pagar from global;
+    padding: 12px 30px;
+}
+
+@media (min-width: 768px) {
+    .profile-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .profile-form .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+}
+
+/* --- Estilos da Lista de Cotações Solicitadas --- */
+.solicitacoes-container {
+    margin-top: 40px;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+/* Novos status para cotações */
+.status--em-análise {
+    background-color: #17a2b8; /* Azul claro/ciano */
+}
+
+.status--concluída {
+    background-color: #6c757d; /* Cinza */
+}
+
+.status--enviada {
+    background-color: #1e90ff; /* Azul padrão */
+}
+
+/* --- Estilos da Página de Ajuda --- */
+.ajuda-container {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.faq-container, .ajuda-contato-container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.faq-item {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+}
+
+.faq-question {
+    padding: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none; /* Remove o marcador padrão */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.faq-question::-webkit-details-marker {
+    display: none; /* Remove o marcador no Chrome/Safari */
+}
+
+.faq-question::after {
+    content: '+';
+    font-size: 1.5rem;
+    color: #1e90ff;
+    transition: transform 0.3s ease;
+}
+
+.faq-item[open] .faq-question::after {
+    transform: rotate(45deg);
+}
+
+.faq-answer {
+    padding: 0 20px 20px;
+    color: #6c757d;
+    line-height: 1.6;
+}
+
+.contato-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.contato-card {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    text-decoration: none;
+    color: #343a40;
+    transition: all 0.3s ease;
+}
+
+.contato-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
+    border-color: #1e90ff;
+}
+
+.contato-icon {
+    font-size: 2.5rem;
+    color: #1e90ff;
+    margin-bottom: 15px;
+}
+
+/* --- Estilos da Página de Documentação --- */
+.documentacao-container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.documentacao-subtitle {
+    color: #6c757d;
+    margin-top: -20px;
+    margin-bottom: 30px;
+}
+
+.documentos-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.documento-card {
+    border: 1px solid #e9ecef;
+    border-left-width: 5px;
+    border-radius: 10px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.documento-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
+}
+
+/* Cores da borda baseadas no status */
+.status-border--pendente { border-left-color: #ffc107; }
+.status-border--aprovado { border-left-color: #28a745; }
+.status-border--rejeitado { border-left-color: #dc3545; }
+.status-border--enviado { border-left-color: #1e90ff; }
+
+.documento-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.documento-icon {
+    font-size: 1.5rem;
+    color: #6c757d;
+}
+.documento-info .status--pago { color: #28a745; }
+.documento-info .status--pendente { color: #ffc107; }
+.documento-info .status--vencido { color: #dc3545; }
+.documento-info .status--enviado { color: #1e90ff; }
+
+.documento-nome {
+    flex-grow: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+.documento-filename {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-style: italic;
+    margin-bottom: 10px;
+    word-break: break-all;
+}
+
+.documento-motivo {
+    font-size: 0.85rem;
+    color: #dc3545;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.btn-upload {
+    /* Reutiliza o estilo do botão de pagar */
+    composes: btn-pagar from global;
+    width: 100%;
+    justify-content: center;
+    margin-top: auto; /* Empurra para o final do card */
+}
+
+/* Novo status para 'Enviado' */
+.status--enviado {
+    background-color: #1e90ff;
+}
+
+
+
+/* --- Estilos do Popup de Contrato --- */
+.contrato-popup {
+    text-align: left;
+    max-width: 800px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.contrato-texto {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    overflow-y: auto;
+    max-height: 30vh;
+    white-space: pre-wrap; /* Mantém as quebras de linha do texto */
+    line-height: 1.6;
+    color: #495057;
+}
+
+.assinatura-container {
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.assinatura-container p {
+    text-align: center;
+    color: #6c757d;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.assinatura-canvas {
+    width: 100%;
+    height: 150px;
+    cursor: crosshair;
+}
+
+.popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: auto;
+}
+
+.btn-limpar, .btn-assinar {
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-limpar {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    color: #495057;
+}
+
+.btn-limpar:hover {
+    background-color: #e9ecef;
+}
+
+.btn-assinar {
+    /* Reutiliza o estilo do botão primário */
+    composes: btn-primary from global;
+}
+
 
 /* --- Estilos da Página de Dashboard --- */
 

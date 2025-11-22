@@ -31,8 +31,8 @@ const ClientDashboard = () => {
           </button>
           <h1>Minha Área</h1>
           <div className="user-profile">
-            <span>Cliente</span>
-            <div className="user-avatar">C</div>
+            <span>Nome Sobrenome</span>
+            <div className="user-avatar">NS</div>
           </div>
         </header>
 
