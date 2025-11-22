@@ -5,13 +5,14 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/pages-admin/Dashboard';
 import ClientDashboard from './pages/pages-client/Dashboard';
+import CotacaoPage from './pages/pages-client/CotacaoPage';
+
 import RegisterPage from './pages/RegisterPage';
 
 // Páginas do Cliente
 import VisaoGeralCliente from './pages/pages-client/VisaoGeral';
 import FaturasCliente from './pages/pages-client/Faturas';
 import ContratosCliente from './pages/pages-client/Contratos';
-import CotacaoCliente from './pages/pages-client/Cotacao';
 import DocumentacaoCliente from './pages/pages-client/Documentacao';
 import MinhaContaCliente from './pages/pages-client/MinhaConta';
 import AjudaCliente from './pages/pages-client/Ajuda';
@@ -45,7 +46,7 @@ function App() {
           <Route index element={<VisaoGeralCliente />} />
           <Route path="faturas" element={<FaturasCliente />} />
           <Route path="contratos" element={<ContratosCliente />} />
-          <Route path="cotacao" element={<CotacaoCliente />} />
+          <Route path="cotacao" element={<CotacaoPage />} />
           <Route path="documentacao" element={<DocumentacaoCliente />} />
           <Route path="conta" element={<MinhaContaCliente />} />
           <Route path="ajuda" element={<AjudaCliente />} />

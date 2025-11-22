@@ -1,9 +1,9 @@
-/* --- Estilos Globais e Reset --- */
+/* ==========================================================================
+   0. ESTILOS GLOBAIS E RESET
+   ========================================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
 
 * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
     scroll-behavior: smooth;
@@ -12,6 +12,8 @@
 body {
     background-color: #ffffff;
     overflow-x: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 section {
@@ -43,7 +45,10 @@ section {
     margin: 0 auto;
 }
 
-/* --- Botões --- */
+/* ==========================================================================
+   1. COMPONENTES GLOBAIS (HEADER, BOTÕES, POPUP)
+   ========================================================================== */
+
 .btn {
     font-weight: 600;
     padding: 12px 30px;
@@ -69,9 +74,8 @@ section {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 191, 255, 0.6);
 }
-/* Adicione este código ao final do seu arquivo App.css */
 
-/* Estilos do Header Fixo */
+/* --- Header do Site --- */
 .site-header {
   position: fixed;
   top: 0;
@@ -115,7 +119,6 @@ section {
   color: #1e90ff; /* Azul para o hover */
 }
 
-/* --- Header Responsivo (Mobile) --- */
 .nav-toggle {
   display: none; /* Escondido por padrão */
   position: absolute;
@@ -171,120 +174,7 @@ section {
   transform: rotate(90deg);
 }
 
-@media (max-width: 768px) {
-  .nav-toggle {
-    display: block;
-  }
-
-  .site-header .nav {
-    position: fixed;
-    top: 0;
-    right: -100%; /* Começa fora da tela */
-    width: 60%;
-    height: 100vh;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(15px);
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: right 0.4s ease-in-out;
-  }
-
-  .site-header .nav.nav--visible {
-    right: 0; /* Entra na tela */
-  }
-}
-
-/* Ajuste para o conteúdo não ficar sob o header */
-.hero-section {
-  padding-top: 80px; /* Altura aproximada do header */
-}
-
-/* --- Header Responsivo (Mobile) --- */
-.nav-toggle {
-  display: none; /* Escondido por padrão */
-  position: absolute;
-  right: 5%;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  padding: 10px;
-  z-index: 1001;
-}
-
-.hamburger {
-  display: block;
-  position: relative;
-  width: 25px;
-  height: 3px;
-  background: #333;
-  transition: transform 0.3s ease;
-}
-
-.hamburger::before,
-.hamburger::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: #333;
-  transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease;
-}
-
-.hamburger::before {
-  top: -8px;
-}
-
-.hamburger::after {
-  bottom: -8px;
-}
-
-.nav--visible + .nav-toggle .hamburger {
-  transform: rotate(45deg);
-}
-
-.nav--visible + .nav-toggle .hamburger::before {
-  top: 0;
-  transform: rotate(90deg);
-}
-
-.nav--visible + .nav-toggle .hamburger::after {
-  bottom: 0;
-  transform: rotate(90deg);
-}
-
-@media (max-width: 768px) {
-  .nav-toggle {
-    display: block;
-  }
-
-  .site-header .nav {
-    position: fixed;
-    top: 0;
-    right: -100%; /* Começa fora da tela */
-    width: 60%;
-    height: 100vh;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(15px);
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: right 0.4s ease-in-out;
-  }
-
-  .site-header .nav.nav--visible {
-    right: 0; /* Entra na tela */
-  }
-}
-
-/* Ajuste para o conteúdo não ficar sob o header */
-.hero-section {
-  padding-top: 80px; /* Altura aproximada do header */
-}
-/* Botão Flutuante do WhatsApp */
+/* --- Botão Flutuante WhatsApp --- */
 .whatsapp-float {
   position: fixed;
   width: 60px;
@@ -308,8 +198,46 @@ section {
   transform: scale(1.1);
 }
 
+/* --- Popup/Modal Genérico --- */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
 
-/* --- 1. Hero Section --- */
+.popup-content {
+    background-color: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    text-align: center;
+}
+
+.popup-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #888;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   2. SEÇÕES DA PÁGINA PRINCIPAL (SITE)
+   ========================================================================== */
 .hero-logo{
     position: absolute;
     top: 13%;
@@ -325,6 +253,7 @@ section {
     display: flex;
     position: relative;
     overflow: hidden;
+    padding-top: 80px; /* Altura aproximada do header */
     padding: 0; /* Remove o padding da seção padrão */
 }
 
@@ -380,7 +309,6 @@ section {
   background-position: 50% 50%;
 }
 
-/* --- 2. Solutions Section --- */
 .solutions-section {
     padding-top: 50px;
     padding-bottom: 100px;
@@ -464,7 +392,6 @@ section {
     text-align: left;
 }
 
-/* --- 3. About Section --- */
 .about-section {
     background: linear-gradient(135deg, #f7f9fc 0%, #e2eaf7 100%); /* Fundo mais suave que o Hero */
     display: flex;
@@ -520,7 +447,6 @@ section {
     transform: translateY(-1px);
 }
 
-/* --- 4. Testimonials Section --- */
 .testimonials-section {
     padding: 100px 0;
     background-color: #ffffff;
@@ -598,7 +524,6 @@ section {
     color: #888;
 }
 
-/* --- 5. Gallery Section --- */
 .gallery-section {
     background-color: #f0f3f7;
     padding: 50px 0;
@@ -633,7 +558,6 @@ section {
 .item-3 { background-image: url('https://placehold.co/600x600/ffa500/ffffff?text=Seguros'); }
 .item-4 { background-image: url('https://placehold.co/600x600/3cb371/ffffff?text=Consórcios'); }
 
-/* --- 6. Contact Section --- */
 .contact-section {
     background: linear-gradient(135deg, #1e90ff 0%, #3a38cd 100%);
     color: white;
@@ -682,7 +606,6 @@ section {
     /* Estilo primário já definido, mas garantindo o contraste */
 }
 
-/* --- Footer --- */
 .footer-section {
     background-color: #222;
     color: white;
@@ -729,165 +652,9 @@ section {
     opacity: 0.6;
 }
 
-/* --- Popup/Modal Styles --- */
-.popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px);
-}
-
-.popup-content {
-    background-color: white;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    width: 90%;
-    max-width: 600px;
-    position: relative;
-    text-align: center;
-}
-
-.popup-close {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    background: none;
-    border: none;
-    font-size: 2rem;
-    color: #888;
-    cursor: pointer;
-}
-
-.popup-title {
-    font-size: 2rem;
-    color: #1e90ff;
-    margin-bottom: 20px;
-}
-
-.popup-description {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: #555;
-    margin-bottom: 30px;
-}
-
-/* --- Responsividade (Ajustes para Mobile/Tablet) --- */
-@media (max-width: 900px) {
-    .hero-title {
-        font-size: 3rem;
-    }
-    .hero-logo{
-      left: 40%;
-      margin: 0 auto;
-    }
-    
-    .hero-image-container {
-        width: 50%;
-        clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);
-    }
-
-    .cards-container {
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-
-    .solution-card {
-        width: 45%;
-        min-height: 250px;
-    }
-
-    .about-section {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .about-image-container {
-        width: 80%;
-        margin-bottom: 40px;
-        clip-path: polygon(5% 0, 95% 0, 100% 100%, 0% 100%);
-    }
-
-    .about-content {
-        width: 100%;
-    }
-    
-    .about-content .section-title {
-        text-align: center;
-    }
-
-    .testimonials-container {
-        flex-direction: column;
-    }
-    
-    .testimonials-section .quote-icon {
-        left: 0;
-        top: -10px;
-        transform: none;
-    }
-
-    .gallery-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 600px) {
-    .hero-section {
-        min-height: 80vh;
-    }
-    
-    .hero-image-container {
-        opacity: 0.3; /* Torna a imagem de fundo mais sutil */
-        width: 100%;
-        height: 100%;
-        clip-path: none;
-    }
-    
-    .hero-text-container {
-        max-width: none;
-        text-align: center;
-        width: 100%;
-    }
-    
-    .hero-title {
-        font-size: 2.5rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1rem;
-        text-align: center;
-    }
-
-    .solution-card {
-        width: 100%;
-    }
-
-    .gallery-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .contact-form {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .input-field, .submit-button {
-        width: 100%;
-    }
-    
-    .section-title {
-        font-size: 2rem;
-    }
-}
-
-/* --- Páginas de Autenticação (Login/Registro) --- */
+/* ==========================================================================
+   3. PÁGINAS DE AUTENTICAÇÃO (LOGIN/REGISTRO)
+   ========================================================================== */
 .auth-main {
   display: flex;
   min-height: calc(100vh - 80px); /* Subtrai a altura do header */
@@ -944,15 +711,9 @@ section {
   font-size: 0.9rem;
 }
 
-/* Exibe a imagem em telas maiores */
-@media (min-width: 900px) {
-  .auth-image-container {
-    display: block;
-  }
-}
-
-/* --- Estilos da Página de Dashboard --- */
-
+/* ==========================================================================
+   4. LAYOUT DO DASHBOARD (ESTRUTURA COMUM)
+   ========================================================================== */
 .dashboard-container {
     display: flex;
     min-height: 100vh;
@@ -960,7 +721,6 @@ section {
     font-family: 'Poppins', sans-serif;
 }
 
-/* --- Barra Lateral (Sidebar) --- */
 .sidebar {
     width: 260px;
     background-color: #ffffff;
@@ -974,11 +734,6 @@ section {
     padding: 25px;
     text-align: center;
     border-bottom: 1px solid #e9ecef;
-}
-
-.sidebar-header h2 {
-    color: #1e90ff;
-    font-weight: 700;
 }
 
 .sidebar-nav {
@@ -1015,6 +770,11 @@ section {
     background-color: #e9f5ff;
 }
 
+.sidebar-nav a svg {
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
 .sidebar-nav a span {
     font-size: 1.2rem;
 }
@@ -1038,7 +798,6 @@ section {
     color: #d9534f; /* Vermelho para 'Sair' */
 }
 
-/* --- Conteúdo Principal --- */
 .main-content {
     flex-grow: 1;
     padding: 30px;
@@ -1076,7 +835,6 @@ section {
     font-weight: 600;
 }
 
-/* --- Widgets --- */
 .dashboard-widgets {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1088,7 +846,6 @@ section {
     background-color: #ffffff;
     padding: 25px;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
     position: relative;
 }
 
@@ -1124,7 +881,6 @@ section {
     color: #721c24;
 }
 
-/* --- Gráficos --- */
 .dashboard-charts {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1135,7 +891,6 @@ section {
     background-color: #ffffff;
     padding: 25px;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
 }
 
 .chart-container h3 {
@@ -1155,7 +910,6 @@ section {
     font-style: italic;
 }
 
-/* --- Responsividade --- */
 .sidebar-toggle {
     display: none; /* Escondido em telas grandes */
     background: none;
@@ -1165,45 +919,18 @@ section {
     color: #343a40;
 }
 
-@media (max-width: 992px) {
-    .sidebar {
-        position: fixed;
-        left: 0;
-        top: 0;
-        height: 100%;
-        transform: translateX(-100%);
-        z-index: 1001;
-    }
-
-    .sidebar.sidebar--open {
-        transform: translateX(0);
-    }
-
-    .main-content {
-        padding: 20px;
-    }
-
-    .sidebar-toggle {
-        display: block;
-    }
-
-    .dashboard-charts {
-        grid-template-columns: 1fr;
-    }
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000; /* Abaixo do sidebar, mas acima do resto */
+    display: none; /* Escondido por padrão */
 }
 
-@media (max-width: 576px) {
-    .main-header h1 {
-        font-size: 1.4rem;
-    }
-
-    .user-profile span {
-        display: none; /* Esconde o nome do usuário em telas muito pequenas */
-    }
-}
-
-/* --- Estilos Adicionais para o Dashboard --- */
-
+/* --- Estilos Adicionais para o Dashboard (Comuns) --- */
 .dashboard-logo {
     height: 150px;
     width: auto;
@@ -1245,10 +972,6 @@ section {
     width: 100%;
 }
 
-.dashboard-content-placeholder {
-    margin-top: 30px;
-}
-
 .placeholder-card {
     background-color: #ffffff;
     padding: 40px;
@@ -1262,17 +985,22 @@ section {
     color: #343a40;
 }
 
-.sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000; /* Abaixo do sidebar, mas acima do resto */
-    display: none; /* Escondido por padrão */
+/* ==========================================================================
+   5. PÁGINAS ESPECÍFICAS DO DASHBOARD
+   ========================================================================== */
+.dashboard-content-placeholder {
+    margin-top: 30px;
 }
 
+.placeholder-card {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+/* --- Overlay do Sidebar (Mobile) --- */
 .sidebar--open + .main-content .sidebar-overlay,
 .sidebar--open ~ .sidebar-overlay {
     display: block; /* Mostra o overlay quando o sidebar está aberto */
@@ -1417,19 +1145,6 @@ section {
     transition: all 0.3s ease;
 }
 
-.btn-download:hover {
-    background-color: #e9ecef;
-    color: #1e90ff;
-}
-
-@media (max-width: 768px) {
-    .fatura-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-}
-
 /* --- Estilos da Página de Contratos --- */
 .contratos-container {
     background-color: #ffffff;
@@ -1489,14 +1204,6 @@ section {
     composes: btn-pagar from global;
 }
 
-/* --- Estilos da Página de Cotação --- */
-.cotacao-container {
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
-}
-
 .cotacao-subtitle {
     color: #6c757d;
     margin-top: -20px;
@@ -1553,21 +1260,6 @@ section {
     padding: 12px 30px;
 }
 
-@media (min-width: 768px) {
-    .cotacao-form {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 25px;
-    }
-
-    .form-group.full-width,
-    .form-group:last-of-type,
-    .cotacao-form > .btn-enviar-cotacao {
-        grid-column: 1 / -1; /* Ocupa todas as colunas */
-    }
-}
-
-/* --- Estilos da Página Minha Conta --- */
 .minha-conta-container {
     display: flex;
     flex-direction: column;
@@ -1594,17 +1286,6 @@ section {
     padding: 12px 30px;
 }
 
-@media (min-width: 768px) {
-    .profile-form {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .profile-form .form-group.full-width {
-        grid-column: 1 / -1;
-    }
-}
-
-/* --- Estilos da Lista de Cotações Solicitadas --- */
 .solicitacoes-container {
     margin-top: 40px;
     background-color: #ffffff;
@@ -1626,11 +1307,26 @@ section {
     background-color: #1e90ff; /* Azul padrão */
 }
 
-/* --- Estilos da Página de Ajuda --- */
-.ajuda-container {
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
+/* --- Página de Cotação (Standalone) --- */
+.cotacao-page-section {
+    padding-top: 120px; /* Espaço para o header */
+    padding-bottom: 100px;
+    background-color: #f7f9fc;
+}
+
+.solicitacoes-section {
+    padding-top: 0;
+    padding-bottom: 100px;
+}
+
+.solicitacoes-section {
+    padding-top: 0;
+    padding-bottom: 100px;
+}
+
+.solicitacoes-section {
+    padding-top: 0;
+    padding-bottom: 100px;
 }
 
 .faq-container, .ajuda-contato-container {
@@ -1710,14 +1406,6 @@ section {
     font-size: 2.5rem;
     color: #1e90ff;
     margin-bottom: 15px;
-}
-
-/* --- Estilos da Página de Documentação --- */
-.documentacao-container {
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
 }
 
 .documentacao-subtitle {
@@ -1804,8 +1492,6 @@ section {
     background-color: #1e90ff;
 }
 
-
-
 /* --- Estilos do Popup de Contrato --- */
 .contrato-popup {
     text-align: left;
@@ -1880,205 +1566,11 @@ section {
     composes: btn-primary from global;
 }
 
+/* ==========================================================================
+   6. RESPONSIVIDADE
+   ========================================================================== */
 
-/* --- Estilos da Página de Dashboard --- */
-
-.dashboard-container {
-    display: flex;
-    min-height: 100vh;
-    background-color: #f4f7fa;
-    font-family: 'Poppins', sans-serif;
-}
-
-/* --- Barra Lateral (Sidebar) --- */
-.sidebar {
-    width: 260px;
-    background-color: #ffffff;
-    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease-in-out;
-}
-
-.sidebar-header {
-    padding: 25px;
-    text-align: center;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.sidebar-nav {
-    flex-grow: 1;
-    padding: 20px 0;
-}
-
-.sidebar-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.sidebar-nav a {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px 25px;
-    text-decoration: none;
-    color: #5a6a85;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    border-left: 4px solid transparent;
-}
-
-.sidebar-nav a svg {
-    vertical-align: middle;
-    margin-right: 5px;
-}
-
-.sidebar-nav a span {
-    font-size: 1.2rem;
-}
-
-.sidebar-footer {
-    padding: 25px;
-    border-top: 1px solid #e9ecef;
-}
-
-.sidebar-footer a {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    text-decoration: none;
-    color: #5a6a85;
-    font-weight: 500;
-    transition: color 0.3s ease;
-}
-
-.sidebar-footer a:hover {
-    color: #d9534f; /* Vermelho para 'Sair' */
-}
-
-/* --- Conteúdo Principal --- */
-.main-content {
-    flex-grow: 1;
-    padding: 30px;
-    overflow-y: auto;
-}
-
-.main-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.main-header h1 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    color: #343a40;
-}
-
-.user-profile {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-}
-
-/* --- Widgets --- */
-.dashboard-widgets {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 30px;
-    margin-bottom: 30px;
-}
-
-.widget {
-    background-color: #ffffff;
-    padding: 25px;
-    position: relative;
-}
-
-.widget h3 {
-    font-size: 1rem;
-    color: #6c757d;
-    margin-bottom: 10px;
-}
-
-.widget-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #343a40;
-}
-
-.widget-trend {
-    position: absolute;
-    top: 25px;
-    right: 25px;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.widget-trend[class*="+"] {
-    background-color: #d4edda; /* Verde */
-    color: #155724;
-}
-
-.widget-trend[class*="-"] {
-    background-color: #f8d7da; /* Vermelho */
-    color: #721c24;
-}
-
-/* --- Gráficos --- */
-.dashboard-charts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-}
-
-.chart-container {
-    background-color: #ffffff;
-    padding: 25px;
-}
-
-.chart-container h3 {
-    font-size: 1.2rem;
-    color: #343a40;
-    margin-bottom: 20px;
-}
-
-.chart-placeholder {
-    height: 250px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #e9ecef;
-    border-radius: 8px;
-    color: #6c757d;
-    font-style: italic;
-}
-
-/* --- Responsividade --- */
-.sidebar-toggle {
-    display: none; /* Escondido em telas grandes */
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #343a40;
-}
-
+/* --- Dashboard (Telas Médias) --- */
 @media (max-width: 992px) {
     .sidebar {
         position: fixed;
@@ -2106,6 +1598,163 @@ section {
     }
 }
 
+/* --- Site (Telas Médias) --- */
+@media (max-width: 900px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+    .hero-logo{
+      left: 40%;
+      margin: 0 auto;
+    }
+    
+    .hero-image-container {
+        width: 50%;
+        clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+
+    .cards-container {
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .solution-card {
+        width: 45%;
+        min-height: 250px;
+    }
+
+    .about-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .about-image-container {
+        width: 80%;
+        margin-bottom: 40px;
+        clip-path: polygon(5% 0, 95% 0, 100% 100%, 0% 100%);
+    }
+
+    .about-content {
+        width: 100%;
+    }
+    
+    .about-content .section-title {
+        text-align: center;
+    }
+
+    .testimonials-container {
+        flex-direction: column;
+    }
+    
+    .testimonials-section .quote-icon {
+        left: 0;
+        top: -10px;
+        transform: none;
+    }
+
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .auth-image-container {
+        display: none;
+    }
+}
+
+/* --- Geral (Telas Pequenas) --- */
+@media (max-width: 576px) {
+    /* Header do Site */
+    .nav-toggle {
+        display: block;
+    }
+
+    .site-header .nav {
+        position: fixed;
+        top: 0;
+        right: -100%; /* Começa fora da tela */
+        width: 60%;
+        height: 100vh;
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(15px);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: right 0.4s ease-in-out;
+    }
+
+    .site-header .nav.nav--visible {
+        right: 0; /* Entra na tela */
+    }
+
+    /* Página de Faturas */
+    .fatura-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    /* Formulários */
+    .cotacao-form, .profile-form {
+        grid-template-columns: 1fr;
+    }
+
+    .cotacao-form .form-group,
+    .profile-form .form-group {
+        grid-column: 1 / -1;
+    }
+}
+
+/* --- Site (Telas Muito Pequenas) --- */
+@media (max-width: 600px) {
+    .section-title {
+        font-size: 2rem;
+    }
+
+    .hero-section {
+        min-height: 80vh;
+    }
+    
+    .hero-image-container {
+        opacity: 0.3; /* Torna a imagem de fundo mais sutil */
+        width: 100%;
+        height: 100%;
+        clip-path: none;
+    }
+    
+    .hero-text-container {
+        max-width: none;
+        text-align: center;
+        width: 100%;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    .solution-card {
+        width: 100%;
+    }
+
+    .gallery-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-form {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .input-field, .submit-button {
+        width: 100%;
+    }
+}
+
+/* --- Dashboard (Telas Muito Pequenas) --- */
 @media (max-width: 576px) {
     .main-header h1 {
         font-size: 1.4rem;
@@ -2268,16 +1917,18 @@ section {
     font-size: 2rem;
     font-weight: 700;
     color: #343a40;
+    margin-top: -10px;
 }
 
 .widget-trend {
     position: absolute;
-    top: 25px;
+    top: 130px;
     right: 25px;
     padding: 3px 8px;
     border-radius: 12px;
-    font-size: 0.8rem;
+    font-size: 10px;
     font-weight: 600;
+    margin-bottom: 20px;
 }
 
 .widget-trend[class*="+"] {

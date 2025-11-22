@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const Cotacao = () => {
+const CotacaoPage = () => {
   const [produto, setProduto] = useState('Plano de Saude');
   const [detalhesProduto, setDetalhesProduto] = useState({});
   const [mensagem, setMensagem] = useState('');
@@ -25,7 +25,6 @@ const Cotacao = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Lógica de envio para API (usando o ID do usuário logado)
     const dadosCotacao = {
       produto,
       detalhes: detalhesProduto,
@@ -122,8 +121,8 @@ const Cotacao = () => {
   };
 
   return (
-    <>
-      <div className="cotacao-container">
+    <div className="cotacao-page-container">
+      <div className="cotacao-container profile-section">
         <h2 className="faturas-section-title">Solicitar Cotação</h2>
         <p className="cotacao-subtitle">Preencha o formulário abaixo e nossa equipe entrará em contato com a melhor proposta para você.</p>
         <form className="cotacao-form" onSubmit={handleSubmit}>
@@ -143,11 +142,11 @@ const Cotacao = () => {
             <label htmlFor="mensagem">Mensagem (opcional)</label>
             <textarea id="mensagem" name="mensagem" rows="4" value={mensagem} onChange={(e) => setMensagem(e.target.value)}></textarea>
           </div>
-          <button type="submit" className="btn-enviar-cotacao">Enviar Solicitação</button>
+          <button type="submit" className="btn btn-primary">Enviar Solicitação</button>
         </form>
       </div>
 
-      <div className="solicitacoes-container">
+      <div className="solicitacoes-container profile-section">
         <h2 className="faturas-section-title">Minhas Cotações Solicitadas</h2>
         <div className="table-container">
           <table className="historico-tabela">
@@ -172,8 +171,8 @@ const Cotacao = () => {
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
-export default Cotacao;
+export default CotacaoPage;
