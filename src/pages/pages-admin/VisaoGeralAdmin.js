@@ -62,16 +62,42 @@ const VisaoGeralAdmin = () => {
   };
 
   return (
-    <div className="dashboard-charts">
-      <div className="chart-container">
-        <h3>Estatísticas de Crescimento</h3>
-        <div className="chart-wrapper"><Line options={lineChartOptions} data={lineChartData} /></div>
+    <>
+      <h1 className="main-header-title">Visão Geral</h1>
+      <div className="dashboard-widgets">
+        <div className="widget">
+          <h3>Visitas no Mês</h3>
+          <p className="widget-value">1,234</p>
+          <span className="widget-trend">+5%</span>
+        </div>
+        <div className="widget">
+          <h3>Novos Usuários</h3>
+          <p className="widget-value">56</p>
+          <span className="widget-trend">+12%</span>
+        </div>
+        <div className="widget">
+          <h3>Receita</h3>
+          <p className="widget-value">R$ 5.432,10</p>
+          <span className="widget-trend">-2%</span>
+        </div>
+        <div className="widget">
+          <h3>Taxa de Rejeição</h3>
+          <p className="widget-value">30%</p>
+          <span className="widget-trend">+1%</span>
+        </div>
       </div>
-      <div className="chart-container">
-        <h3>Distribuição de Usuários</h3>
-        <div className="chart-wrapper"><Pie data={pieChartData} options={{ responsive: true, maintainAspectRatio: false }} /></div>
+
+      <div className="dashboard-charts">
+        <div className="chart-container">
+          <h3>Estatísticas de Crescimento</h3>
+          <div className="chart-wrapper"><Line options={lineChartOptions} data={lineChartData} /></div>
+        </div>
+        <div className="chart-container">
+          <h3>Distribuição de Usuários</h3>
+          <div className="chart-wrapper"><Pie data={pieChartData} options={{ responsive: true, maintainAspectRatio: false }} /></div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
