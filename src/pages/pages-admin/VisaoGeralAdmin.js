@@ -5,18 +5,20 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
   ArcElement,
 } from 'chart.js';
-import { Line, Pie } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -24,7 +26,7 @@ ChartJS.register(
 );
 
 const VisaoGeralAdmin = () => {
-  const lineChartOptions = {
+  const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -32,31 +34,38 @@ const VisaoGeralAdmin = () => {
     },
   };
 
-  const lineChartData = {
-    labels: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho'],
+  // Gráfico de Evolução de Entradas de Clientes
+  const clientesData = {
+    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
     datasets: [
       {
-        label: 'Usuários',
-        data: [65, 59, 80, 81, 56, 55, 40],
+        label: 'Novos Clientes',
+        data: [12, 19, 15, 25, 22, 30, 35, 32, 40, 45, 50, 55],
         borderColor: 'rgb(30, 144, 255)',
         backgroundColor: 'rgba(30, 144, 255, 0.5)',
+        tension: 0.4,
       },
     ],
   };
 
-  const pieChartData = {
-    labels: ['Desktop', 'Mobile', 'Tablet'],
+  // Gráfico de Evolução Financeira (Receitas, Custos, Lucro)
+  const financeiroData = {
+    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
     datasets: [
       {
-        label: 'Acessos por Dispositivo',
-        data: [300, 150, 50],
-        backgroundColor: [
-          'rgba(30, 144, 255, 0.8)',
-          'rgba(0, 191, 255, 0.8)',
-          'rgba(154, 152, 255, 0.8)',
-        ],
-        borderColor: '#ffffff',
-        borderWidth: 2,
+        label: 'Receitas',
+        data: [12000, 15000, 14000, 18000, 20000, 22000, 24000, 23000, 25000, 28000, 30000, 32000],
+        backgroundColor: 'rgba(40, 167, 69, 0.7)', // Verde
+      },
+      {
+        label: 'Custos',
+        data: [8000, 9000, 8500, 10000, 11000, 12000, 13000, 12500, 14000, 15000, 16000, 17000],
+        backgroundColor: 'rgba(220, 53, 69, 0.7)', // Vermelho
+      },
+      {
+        label: 'Lucro',
+        data: [4000, 6000, 5500, 8000, 9000, 10000, 11000, 10500, 11000, 13000, 14000, 15000],
+        backgroundColor: 'rgba(30, 144, 255, 0.7)', // Azul
       },
     ],
   };
@@ -89,12 +98,12 @@ const VisaoGeralAdmin = () => {
 
       <div className="dashboard-charts">
         <div className="chart-container">
-          <h3>Estatísticas de Crescimento</h3>
-          <div className="chart-wrapper"><Line options={lineChartOptions} data={lineChartData} /></div>
+          <h3>Evolução de Entradas de Clientes</h3>
+          <div className="chart-wrapper"><Line options={options} data={clientesData} /></div>
         </div>
         <div className="chart-container">
-          <h3>Distribuição de Usuários</h3>
-          <div className="chart-wrapper"><Pie data={pieChartData} options={{ responsive: true, maintainAspectRatio: false }} /></div>
+          <h3>Evolução Financeira (Receitas, Custos e Lucro)</h3>
+          <div className="chart-wrapper"><Bar data={financeiroData} options={options} /></div>
         </div>
       </div>
     </>

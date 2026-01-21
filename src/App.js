@@ -37,7 +37,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
 
         <Route path="/dashboard-admin" element={<AdminDashboard />}>
-          <Route element={<VisaoGeralAdmin />} />
+          <Route index element={<VisaoGeralAdmin />} />
           <Route path="analises" element={<AnalisesAdmin />} />
           <Route path="relatorios" element={<RelatoriosAdmin />} />
           <Route path="clientes" element={<ClientesAdmin />} />
