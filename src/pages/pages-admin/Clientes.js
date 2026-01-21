@@ -12,7 +12,7 @@ const Clientes = () => {
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: '', valor: '', vendedor: '' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: '', valor: '', vendedor: '', status: 'Ativo' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
@@ -179,7 +179,7 @@ const Clientes = () => {
 
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: '', valor: '', vendedor: '' });
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: '', valor: '', vendedor: '', status: 'Ativo' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -213,7 +213,7 @@ const Clientes = () => {
       CONTRATO: newClientData.tipo,
       MENSALIDADE: removeCurrencyMask(newClientData.valor),
       VENDEDOR: newClientData.vendedor,
-      STATUS: 'Ativo',
+      STATUS: newClientData.status,
       'ADESÃO': new Date().toLocaleDateString('pt-BR'),
       itensPlano: planItems.map(item => ({ ...item, valor: removeCurrencyMask(item.valor) })),
       documentos: newClientDocs
@@ -348,6 +348,14 @@ const Clientes = () => {
             <div className="form-group"><label>Email</label><input name="email" value={newClientData.email} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Titular?</label><input name="tipo" value={newClientData.tipo} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Vendedor</label><input name="vendedor" value={newClientData.vendedor} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Classificação</label>
+              <select name="status" value={newClientData.status} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                <option value="Ativo">Ativo</option>
+                <option value="Inativo">Inativo</option>
+                <option value="Contato">Contato</option>
+                <option value="Cotação">Cotação</option>
+              </select>
+            </div>
           </div>
         );
       case 'documentacao':
