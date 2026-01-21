@@ -25,6 +25,7 @@ const Financeiro = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [rawData, setRawData] = useState({ clientes: {}, cobrancas: {} });
   const [transacoes, setTransacoes] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('todos');
   const [metrics, setMetrics] = useState({
     custoTotal: 5000, // Custo total fixo como exemplo
@@ -138,6 +139,7 @@ const Financeiro = () => {
             return {
               id: key,
               descricao: `${item.USUARIO}`,
+              cpf: item.CPF ? String(item.CPF) : '',
               valor: valor,
               valorFormatado: `R$ ${item.MENSALIDADE}`,
               tipo: item.CONTRATO,
@@ -191,6 +193,7 @@ const Financeiro = () => {
             return {
               id: key,
               descricao: `${item.descricao} - ${item.cliente}`,
+              cpf: '',
               valor: valor,
               valorFormatado: `R$ ${valor.toFixed(2).replace('.', ',')}`,
               tipo: 'Cobrança Avulsa',
@@ -234,13 +237,18 @@ const Financeiro = () => {
 
   const transacoesFiltradas = useMemo(() => {
     return transacoes.filter(t => {
-        if (filterTab === 'todos') return true;
-        if (filterTab === 'atraso') return t.status === 'Atrasado';
-        if (filterTab === 'pagos') return t.status === 'Pago';
-        if (filterTab === 'a_vencer') return t.status === 'A Vencer' || t.status === 'Pendente';
-        return true;
+        let matchesTab = true;
+        if (filterTab === 'atraso') matchesTab = t.status === 'Atrasado';
+        else if (filterTab === 'pagos') matchesTab = t.status === 'Pago';
+        else if (filterTab === 'a_vencer') matchesTab = t.status === 'A Vencer' || t.status === 'Pendente';
+        
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = t.descricao.toLowerCase().includes(searchLower) || 
+                              (t.cpf && String(t.cpf).toLowerCase().includes(searchLower));
+
+        return matchesTab && matchesSearch;
     });
-  }, [transacoes, filterTab]);
+  }, [transacoes, filterTab, searchTerm]);
 
   const previsaoLucro = useMemo(() => {
     return metrics.receitaMensal - metrics.custoTotal;
@@ -424,11 +432,20 @@ const Financeiro = () => {
             </div>
         </div>
         
-        <div className="tabs-container" style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+        <div className="tabs-container" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button className={`btn-tab ${filterTab === 'todos' ? 'active' : ''}`} onClick={() => setFilterTab('todos')}><FaList /> Todos</button>
           <button className={`btn-tab ${filterTab === 'atraso' ? 'active' : ''}`} onClick={() => setFilterTab('atraso')}><FaExclamationCircle /> Em Atraso</button>
           <button className={`btn-tab ${filterTab === 'pagos' ? 'active' : ''}`} onClick={() => setFilterTab('pagos')}><FaCheckCircle /> Pagos</button>
           <button className={`btn-tab ${filterTab === 'a_vencer' ? 'active' : ''}`} onClick={() => setFilterTab('a_vencer')}><FaClock /> A Vencer</button>
+          
+          <input 
+            type="text" 
+            placeholder="Buscar por nome ou CPF..." 
+            className="filtro-input"
+            style={{ marginLeft: 'auto', padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd', minWidth: '250px' }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
 
         <div className="table-container">
