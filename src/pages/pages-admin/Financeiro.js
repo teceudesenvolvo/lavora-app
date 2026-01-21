@@ -143,6 +143,7 @@ const Financeiro = () => {
               tipo: item.CONTRATO,
               data: diaVencimento,
               dataObj: vencimentoDate,
+              dataPagamento: '-',
               status: status,
               origem: 'assinatura'
             };
@@ -195,6 +196,7 @@ const Financeiro = () => {
               tipo: 'Cobrança Avulsa',
               data: diaVencimento,
               dataObj: vencimentoDate,
+              dataPagamento: item.dataPagamento || '-',
               status: status,
               origem: 'avulsa'
             };
@@ -274,14 +276,15 @@ const Financeiro = () => {
       return;
     }
     if (window.confirm(`Confirmar pagamento de ${trx.descricao}?`)) {
+      const dataPagamento = new Date().toLocaleDateString('pt-BR');
       try {
         await fetch(`https://lavoro-servicos-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'Pago' })
+          body: JSON.stringify({ status: 'Pago', dataPagamento })
         });
         // Atualiza localmente
-        setTransacoes(prev => prev.map(t => t.id === trx.id ? { ...t, status: 'Pago' } : t));
+        setTransacoes(prev => prev.map(t => t.id === trx.id ? { ...t, status: 'Pago', dataPagamento } : t));
         setMetrics(prev => ({ ...prev, pagosVal: prev.pagosVal + trx.valor, pagosCount: prev.pagosCount + 1 }));
       } catch (error) {
         console.error("Erro ao atualizar status", error);
@@ -306,30 +309,60 @@ const Financeiro = () => {
     alert(`Lembrete de cobrança enviado para ${trx.descricao} via WhatsApp/Email!`);
   };
 
-  const dataGrafico = {
-    labels: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho'],
-    datasets: [
-      {
-        label: 'Receitas',
-        data: [12500, 15000, 18000, 14000, 20000, 22000],
-        backgroundColor: 'rgba(30, 144, 255, 0.7)',
-      },
-      {
-        label: 'Despesas',
-        data: [8000, 9500, 10000, 8500, 11000, 10500],
-        backgroundColor: 'rgba(220, 53, 69, 0.7)',
-      },
-    ],
-  };
+  const pagamentosDoMesGrafico = useMemo(() => {
+    const diasNoMes = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    const labels = Array.from({ length: diasNoMes }, (_, i) => String(i + 1));
+    const data = Array(diasNoMes).fill(0);
+
+    transacoes.forEach(trx => {
+        if (trx.dataPagamento && trx.dataPagamento !== '-') {
+            const parts = trx.dataPagamento.split('/');
+            if (parts.length === 3) {
+                const dia = parseInt(parts[0], 10);
+                const mes = parseInt(parts[1], 10) - 1;
+                const ano = parseInt(parts[2], 10);
+
+                if (mes === currentDate.getMonth() && ano === currentDate.getFullYear()) {
+                    data[dia - 1] += trx.valor;
+                }
+            }
+        }
+    });
+
+    return {
+        labels,
+        datasets: [
+            {
+                label: 'Pagamentos Realizados',
+                data: data,
+                backgroundColor: 'rgba(40, 167, 69, 0.7)', // Verde para pagamentos
+            },
+        ],
+    };
+  }, [transacoes, currentDate]);
 
   const optionsGrafico = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'top',
-      },
+      legend: { position: 'top' },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) { label += ': '; }
+            if (context.parsed.y !== null) {
+              label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+            }
+            return label;
+          }
+        }
+      }
     },
+    scales: {
+        x: { title: { display: true, text: 'Dia do Mês' } },
+        y: { ticks: { callback: (value) => 'R$ ' + value.toLocaleString('pt-BR') } }
+    }
   };
 
   return (
@@ -373,13 +406,11 @@ const Financeiro = () => {
         </div>
       </div>
 
-      <div className="dashboard-charts" style={{ marginTop: '30px' }}>
-        <div className="chart-container" style={{ width: '100%' }}>
-          <h3>Fluxo de Caixa Semestral</h3>
-          <div className="chart-wrapper" style={{ height: '300px' }}>
-            <Bar data={dataGrafico} options={optionsGrafico} />
+      <div className="faturas-section" style={{ marginTop: '30px' }}>
+          <h3 className="faturas-section-title">Evolução de Pagamentos no Mês</h3>
+          <div className="chart-wrapper" style={{ height: '300px', width: '100%' }}>
+            <Bar data={pagamentosDoMesGrafico} options={optionsGrafico} />
           </div>
-        </div>
       </div>
 
       <div className="faturas-section" style={{ marginTop: '30px' }}>
@@ -404,7 +435,7 @@ const Financeiro = () => {
           <table className="historico-tabela">
             <thead>
               <tr>
-                <th>Descrição</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Ações</th>
+                <th>Descrição</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Pagamento</th><th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -419,9 +450,7 @@ const Financeiro = () => {
                   <td>{trx.data}</td>
                   <td>{trx.valorFormatado}</td>
                   <td>
-                    <span className={`status-badge status--${trx.status.toLowerCase().replace(' ', '_')}`}>
-                      {trx.status}
-                    </span>
+                    {trx.dataPagamento}
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '10px' }}>
