@@ -64,7 +64,8 @@ section {
 }
 
 .btn-primary {
-    background: linear-gradient(90deg, #1e90ff, #00bfff); /* Azul degradê vibrante */
+    background: linear-gradient(90deg, #1e90ff, #00bfff);
+    /* Azul degradê vibrante */
     color: white;
     box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
 }
@@ -77,125 +78,127 @@ section {
 
 /* --- Header do Site --- */
 .site-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 10px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px 0;
 }
 
 .header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 90%;
-  max-width: 1200px;
-  margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .site-header .logo {
-  height: 50px;
-  width: auto;
+    height: 50px;
+    width: auto;
 }
 
 .site-header .nav {
-  display: flex;
-  gap: 25px;
+    display: flex;
+    gap: 25px;
 }
 
 .site-header .nav-link {
-  text-decoration: none;
-  color: #333;
-  font-weight: 500;
-  transition: color 0.3s ease;
-  padding-top: 15px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    padding-top: 15px;
 }
 
 .site-header .nav-link:hover {
-  color: #1e90ff; /* Azul para o hover */
+    color: #1e90ff;
+    /* Azul para o hover */
 }
 
 .nav-toggle {
-  display: none; /* Escondido por padrão */
-  position: absolute;
-  right: 5%;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  padding: 10px;
-  z-index: 1001;
+    display: none;
+    /* Escondido por padrão */
+    position: absolute;
+    right: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1001;
 }
 
 .hamburger {
-  display: block;
-  position: relative;
-  width: 25px;
-  height: 3px;
-  background: #333;
-  transition: transform 0.3s ease;
+    display: block;
+    position: relative;
+    width: 25px;
+    height: 3px;
+    background: #333;
+    transition: transform 0.3s ease;
 }
 
 .hamburger::before,
 .hamburger::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: #333;
-  transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease;
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #333;
+    transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease;
 }
 
 .hamburger::before {
-  top: -8px;
+    top: -8px;
 }
 
 .hamburger::after {
-  bottom: -8px;
+    bottom: -8px;
 }
 
-.nav--visible + .nav-toggle .hamburger {
-  transform: rotate(45deg);
+.nav--visible+.nav-toggle .hamburger {
+    transform: rotate(45deg);
 }
 
-.nav--visible + .nav-toggle .hamburger::before {
-  top: 0;
-  transform: rotate(90deg);
+.nav--visible+.nav-toggle .hamburger::before {
+    top: 0;
+    transform: rotate(90deg);
 }
 
-.nav--visible + .nav-toggle .hamburger::after {
-  bottom: 0;
-  transform: rotate(90deg);
+.nav--visible+.nav-toggle .hamburger::after {
+    bottom: 0;
+    transform: rotate(90deg);
 }
 
 /* --- Botão Flutuante WhatsApp --- */
 .whatsapp-float {
-  position: fixed;
-  width: 60px;
-  height: 60px;
-  bottom: 40px;
-  right: 40px;
-  background-color: #25d366;
-  color: #FFF;
-  border-radius: 50px;
-  text-align: center;
-  font-size: 30px;
-  box-shadow: 2px 2px 3px #999;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.3s ease;
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    bottom: 40px;
+    right: 40px;
+    background-color: #25d366;
+    color: #FFF;
+    border-radius: 50px;
+    text-align: center;
+    font-size: 30px;
+    box-shadow: 2px 2px 3px #999;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
 }
 
 .whatsapp-float:hover {
-  transform: scale(1.1);
+    transform: scale(1.1);
 }
 
 /* --- Popup/Modal Genérico --- */
@@ -238,7 +241,7 @@ section {
 /* ==========================================================================
    2. SEÇÕES DA PÁGINA PRINCIPAL (SITE)
    ========================================================================== */
-.hero-logo{
+.hero-logo {
     position: absolute;
     top: 13%;
     left: 7%;
@@ -246,15 +249,19 @@ section {
     height: auto;
     z-index: 15;
 }
+
 .hero-section {
-    background: linear-gradient(135deg, #1e90ff 0%, #3a38cd 100%); /* Azul forte */
+    background: linear-gradient(135deg, #1e90ff 0%, #3a38cd 100%);
+    /* Azul forte */
     color: white;
     min-height: 100vh;
     display: flex;
     position: relative;
     overflow: hidden;
-    padding-top: 80px; /* Altura aproximada do header */
-    padding: 0; /* Remove o padding da seção padrão */
+    padding-top: 80px;
+    /* Altura aproximada do header */
+    padding: 0;
+    /* Remove o padding da seção padrão */
 }
 
 .hero-section .content-wrapper {
@@ -266,7 +273,8 @@ section {
 
 .hero-text-container {
     max-width: 400px;
-    padding: 20px; /* Adiciona um pouco de padding interno */
+    padding: 20px;
+    /* Adiciona um pouco de padding interno */
 }
 
 .logo-text {
@@ -277,7 +285,8 @@ section {
 }
 
 .hero-title {
-    font-size: 30px; /* Um pouco maior para impacto */
+    font-size: 30px;
+    /* Um pouco maior para impacto */
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 20px;
@@ -298,21 +307,22 @@ section {
     right: 0;
     width: 70%;
     height: 100%;
-   /* Imagem recortada (simulando o design) */
-    clip-path: polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%); 
+    /* Imagem recortada (simulando o design) */
+    clip-path: polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%);
     z-index: 5;
 }
 
-.hero-image{
-  position: relative;
-  object-position: 50% 50%;
-  background-position: 50% 50%;
+.hero-image {
+    position: relative;
+    object-position: 50% 50%;
+    background-position: 50% 50%;
 }
 
 .solutions-section {
     padding-top: 50px;
     padding-bottom: 100px;
-    background-color: #f7f9fc; /* Fundo cinza claro */
+    background-color: #f7f9fc;
+    /* Fundo cinza claro */
     /* Simula o gradiente de cor clara no topo (do design original) */
     position: relative;
     z-index: 20;
@@ -344,10 +354,11 @@ section {
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* Conteúdo no rodapé do card */
+    justify-content: flex-end;
+    /* Conteúdo no rodapé do card */
     background-size: cover;
     background-position: center;
-    
+
     /* Overlay para garantir a legibilidade do texto */
     position: relative;
     overflow: hidden;
@@ -360,7 +371,8 @@ section {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.2); /* Sutil escurecimento */
+    background: rgba(0, 0, 0, 0.2);
+    /* Sutil escurecimento */
     transition: background 0.3s ease;
 }
 
@@ -370,10 +382,11 @@ section {
 }
 
 .solution-card:hover::before {
-    background: rgba(0, 0, 0, 0.1); 
+    background: rgba(0, 0, 0, 0.1);
 }
 
-.solution-card h3, .solution-card p {
+.solution-card h3,
+.solution-card p {
     position: relative;
     z-index: 2;
 }
@@ -393,7 +406,8 @@ section {
 }
 
 .about-section {
-    background: linear-gradient(135deg, #f7f9fc 0%, #e2eaf7 100%); /* Fundo mais suave que o Hero */
+    background: linear-gradient(135deg, #f7f9fc 0%, #e2eaf7 100%);
+    /* Fundo mais suave que o Hero */
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -407,12 +421,12 @@ section {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     object-fit: contain !important;
     /* Placeholder para o Homem em pose de alongamento */
-    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%); 
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
 }
 
-.about-image{
-  object-position: 50% 50%;
-  background-position: 0% 0%;
+.about-image {
+    object-position: 50% 50%;
+    background-position: 0% 0%;
 }
 
 .about-content {
@@ -437,13 +451,13 @@ section {
 
 .about-button {
     /* Usar o estilo de botão primário, mas sem o degradê, apenas a cor de fundo */
-    background-color: #9a98ff; 
+    background-color: #9a98ff;
     box-shadow: none;
     color: #ffffff !important;
 }
 
 .about-button:hover {
-    background-color: #1e90ff; 
+    background-color: #1e90ff;
     transform: translateY(-1px);
 }
 
@@ -553,10 +567,21 @@ section {
 }
 
 /* Placeholder Imagens da Galeria - Simulação */
-.item-1 { background-image: url('https://placehold.co/600x600/1e90ff/ffffff?text=Construção'); }
-.item-2 { background-image: url('https://placehold.co/600x600/3a38cd/ffffff?text=Software'); }
-.item-3 { background-image: url('https://placehold.co/600x600/ffa500/ffffff?text=Seguros'); }
-.item-4 { background-image: url('https://placehold.co/600x600/3cb371/ffffff?text=Consórcios'); }
+.item-1 {
+    background-image: url('https://placehold.co/600x600/1e90ff/ffffff?text=Construção');
+}
+
+.item-2 {
+    background-image: url('https://placehold.co/600x600/3a38cd/ffffff?text=Software');
+}
+
+.item-3 {
+    background-image: url('https://placehold.co/600x600/ffa500/ffffff?text=Seguros');
+}
+
+.item-4 {
+    background-image: url('https://placehold.co/600x600/3cb371/ffffff?text=Consórcios');
+}
 
 .contact-section {
     background: linear-gradient(135deg, #1e90ff 0%, #3a38cd 100%);
@@ -581,9 +606,12 @@ section {
     margin: 40px auto 0;
 }
 
-.contact-form > button, input{
+.contact-form>button,
+input {
     width: 100%;
     border-radius: 50px;
+    height: 45px;
+    padding: 10px;
 }
 
 
@@ -656,59 +684,62 @@ section {
    3. PÁGINAS DE AUTENTICAÇÃO (LOGIN/REGISTRO)
    ========================================================================== */
 .auth-main {
-  display: flex;
-  min-height: calc(100vh - 80px); /* Subtrai a altura do header */
-  align-items: stretch;
-  padding-top: 80px; /* Espaço para o header fixo */
+    display: flex;
+    min-height: calc(100vh - 80px);
+    /* Subtrai a altura do header */
+    align-items: stretch;
+    padding-top: 80px;
+    /* Espaço para o header fixo */
 }
 
 .auth-image-container {
-  flex: 1;
-  display: none; /* Escondido em telas pequenas por padrão */
-  background-color: #f0f3f7;
+    flex: 1;
+    display: none;
+    /* Escondido em telas pequenas por padrão */
+    background-color: #f0f3f7;
 }
 
 .auth-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .auth-form-container {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 20px;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
 }
 
-.auth-form > .input-field {
+.auth-form>.input-field {
     border-radius: 0px !important;
 }
 
-.auth-form > a{
+.auth-form>a {
     margin-top: 25px;
 }
 
 .auth-container {
-  width: 100%;
-  max-width: 400px;
+    width: 100%;
+    max-width: 400px;
 }
 
 .auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .auth-button {
-  margin-top: 10px;
+    margin-top: 10px;
 }
 
 .auth-link-text {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 0.9rem;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.9rem;
 }
 
 /* ==========================================================================
@@ -795,7 +826,8 @@ section {
 }
 
 .sidebar-footer a:hover {
-    color: #d9534f; /* Vermelho para 'Sair' */
+    color: #d9534f;
+    /* Vermelho para 'Sair' */
 }
 
 .main-content {
@@ -872,12 +904,14 @@ section {
 }
 
 .widget-trend[class*="+"] {
-    background-color: #d4edda; /* Verde */
+    background-color: #d4edda;
+    /* Verde */
     color: #155724;
 }
 
 .widget-trend[class*="-"] {
-    background-color: #f8d7da; /* Vermelho */
+    background-color: #f8d7da;
+    /* Vermelho */
     color: #721c24;
 }
 
@@ -911,7 +945,8 @@ section {
 }
 
 .sidebar-toggle {
-    display: none; /* Escondido em telas grandes */
+    display: none;
+    /* Escondido em telas grandes */
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -926,8 +961,10 @@ section {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000; /* Abaixo do sidebar, mas acima do resto */
-    display: none; /* Escondido por padrão */
+    z-index: 1000;
+    /* Abaixo do sidebar, mas acima do resto */
+    display: none;
+    /* Escondido por padrão */
 }
 
 /* --- Estilos Adicionais para o Dashboard (Comuns) --- */
@@ -937,32 +974,39 @@ section {
 }
 
 .sidebar-header h2 {
-    color: #1e90ff; /* Cor principal do site */
+    color: #1e90ff;
+    /* Cor principal do site */
     font-weight: 700;
 }
 
 .sidebar-nav a.active {
-    color: #1e90ff; /* Cor principal do site */
-    border-left-color: #1e90ff; /* Cor principal do site */
+    color: #1e90ff;
+    /* Cor principal do site */
+    border-left-color: #1e90ff;
+    /* Cor principal do site */
     background-color: #e9f5ff;
 }
 
 .sidebar-nav a:hover {
     background-color: #f8f9fa;
-    color: #1e90ff; /* Cor principal do site */
+    color: #1e90ff;
+    /* Cor principal do site */
 }
 
 .user-avatar {
-    background: linear-gradient(90deg, #1e90ff, #00bfff); /* Degradê do site */
+    background: linear-gradient(90deg, #1e90ff, #00bfff);
+    /* Degradê do site */
 }
 
 .widget {
-    border-radius: 15px; /* Bordas mais arredondadas */
+    border-radius: 15px;
+    /* Bordas mais arredondadas */
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
 }
 
 .chart-container {
-    border-radius: 15px; /* Bordas mais arredondadas */
+    border-radius: 15px;
+    /* Bordas mais arredondadas */
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
 }
 
@@ -1001,9 +1045,10 @@ section {
 }
 
 /* --- Overlay do Sidebar (Mobile) --- */
-.sidebar--open + .main-content .sidebar-overlay,
-.sidebar--open ~ .sidebar-overlay {
-    display: block; /* Mostra o overlay quando o sidebar está aberto */
+.sidebar--open+.main-content .sidebar-overlay,
+.sidebar--open~.sidebar-overlay {
+    display: block;
+    /* Mostra o overlay quando o sidebar está aberto */
 }
 
 /* --- Estilos da Página de Faturas --- */
@@ -1080,16 +1125,19 @@ section {
 }
 
 .status--pendente {
-    background-color: #ffc107; /* Amarelo */
+    background-color: #ffc107;
+    /* Amarelo */
     color: #333;
 }
 
 .status--pago {
-    background-color: #28a745; /* Verde */
+    background-color: #28a745;
+    /* Verde */
 }
 
 .status--vencido {
-    background-color: #dc3545; /* Vermelho */
+    background-color: #dc3545;
+    /* Vermelho */
 }
 
 .fatura-actions .btn-pagar {
@@ -1121,7 +1169,8 @@ section {
     text-align: left;
 }
 
-.historico-tabela th, .historico-tabela td {
+.historico-tabela th,
+.historico-tabela td {
     padding: 15px;
     border-bottom: 1px solid #e9ecef;
 }
@@ -1194,7 +1243,8 @@ section {
 }
 
 .contrato-actions {
-    margin-top: auto; /* Empurra o botão para o final do card */
+    margin-top: auto;
+    /* Empurra o botão para o final do card */
     padding-top: 20px;
 }
 
@@ -1296,20 +1346,24 @@ section {
 
 /* Novos status para cotações */
 .status--em-análise {
-    background-color: #17a2b8; /* Azul claro/ciano */
+    background-color: #17a2b8;
+    /* Azul claro/ciano */
 }
 
 .status--concluída {
-    background-color: #6c757d; /* Cinza */
+    background-color: #6c757d;
+    /* Cinza */
 }
 
 .status--enviada {
-    background-color: #1e90ff; /* Azul padrão */
+    background-color: #1e90ff;
+    /* Azul padrão */
 }
 
 /* --- Página de Cotação (Standalone) --- */
 .cotacao-page-section {
-    padding-top: 120px; /* Espaço para o header */
+    padding-top: 120px;
+    /* Espaço para o header */
     padding-bottom: 100px;
     background-color: #f7f9fc;
 }
@@ -1329,7 +1383,8 @@ section {
     padding-bottom: 100px;
 }
 
-.faq-container, .ajuda-contato-container {
+.faq-container,
+.ajuda-contato-container {
     background-color: #ffffff;
     padding: 30px;
     border-radius: 15px;
@@ -1351,14 +1406,16 @@ section {
     padding: 20px;
     font-weight: 600;
     cursor: pointer;
-    list-style: none; /* Remove o marcador padrão */
+    list-style: none;
+    /* Remove o marcador padrão */
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .faq-question::-webkit-details-marker {
-    display: none; /* Remove o marcador no Chrome/Safari */
+    display: none;
+    /* Remove o marcador no Chrome/Safari */
 }
 
 .faq-question::after {
@@ -1436,10 +1493,21 @@ section {
 }
 
 /* Cores da borda baseadas no status */
-.status-border--pendente { border-left-color: #ffc107; }
-.status-border--aprovado { border-left-color: #28a745; }
-.status-border--rejeitado { border-left-color: #dc3545; }
-.status-border--enviado { border-left-color: #1e90ff; }
+.status-border--pendente {
+    border-left-color: #ffc107;
+}
+
+.status-border--aprovado {
+    border-left-color: #28a745;
+}
+
+.status-border--rejeitado {
+    border-left-color: #dc3545;
+}
+
+.status-border--enviado {
+    border-left-color: #1e90ff;
+}
 
 .documento-info {
     display: flex;
@@ -1452,10 +1520,22 @@ section {
     font-size: 1.5rem;
     color: #6c757d;
 }
-.documento-info .status--pago { color: #28a745; }
-.documento-info .status--pendente { color: #ffc107; }
-.documento-info .status--vencido { color: #dc3545; }
-.documento-info .status--enviado { color: #1e90ff; }
+
+.documento-info .status--pago {
+    color: #28a745;
+}
+
+.documento-info .status--pendente {
+    color: #ffc107;
+}
+
+.documento-info .status--vencido {
+    color: #dc3545;
+}
+
+.documento-info .status--enviado {
+    color: #1e90ff;
+}
 
 .documento-nome {
     flex-grow: 1;
@@ -1484,7 +1564,8 @@ section {
     composes: btn-pagar from global;
     width: 100%;
     justify-content: center;
-    margin-top: auto; /* Empurra para o final do card */
+    margin-top: auto;
+    /* Empurra para o final do card */
 }
 
 /* Novo status para 'Enviado' */
@@ -1509,7 +1590,8 @@ section {
     margin-bottom: 20px;
     overflow-y: auto;
     max-height: 30vh;
-    white-space: pre-wrap; /* Mantém as quebras de linha do texto */
+    white-space: pre-wrap;
+    /* Mantém as quebras de linha do texto */
     line-height: 1.6;
     color: #495057;
 }
@@ -1543,7 +1625,8 @@ section {
     margin-top: auto;
 }
 
-.btn-limpar, .btn-assinar {
+.btn-limpar,
+.btn-assinar {
     padding: 10px 25px;
     border-radius: 50px;
     font-weight: 600;
@@ -1603,11 +1686,12 @@ section {
     .hero-title {
         font-size: 3rem;
     }
-    .hero-logo{
-      left: 40%;
-      margin: 0 auto;
+
+    .hero-logo {
+        left: 40%;
+        margin: 0 auto;
     }
-    
+
     .hero-image-container {
         width: 50%;
         clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);
@@ -1637,7 +1721,7 @@ section {
     .about-content {
         width: 100%;
     }
-    
+
     .about-content .section-title {
         text-align: center;
     }
@@ -1645,7 +1729,7 @@ section {
     .testimonials-container {
         flex-direction: column;
     }
-    
+
     .testimonials-section .quote-icon {
         left: 0;
         top: -10px;
@@ -1663,6 +1747,7 @@ section {
 
 /* --- Geral (Telas Pequenas) --- */
 @media (max-width: 576px) {
+
     /* Header do Site */
     .nav-toggle {
         display: block;
@@ -1671,7 +1756,8 @@ section {
     .site-header .nav {
         position: fixed;
         top: 0;
-        right: -100%; /* Começa fora da tela */
+        right: -100%;
+        /* Começa fora da tela */
         width: 60%;
         height: 100vh;
         background-color: rgba(255, 255, 255, 0.95);
@@ -1683,7 +1769,8 @@ section {
     }
 
     .site-header .nav.nav--visible {
-        right: 0; /* Entra na tela */
+        right: 0;
+        /* Entra na tela */
     }
 
     /* Página de Faturas */
@@ -1694,7 +1781,8 @@ section {
     }
 
     /* Formulários */
-    .cotacao-form, .profile-form {
+    .cotacao-form,
+    .profile-form {
         grid-template-columns: 1fr;
     }
 
@@ -1713,24 +1801,25 @@ section {
     .hero-section {
         min-height: 80vh;
     }
-    
+
     .hero-image-container {
-        opacity: 0.3; /* Torna a imagem de fundo mais sutil */
+        opacity: 0.3;
+        /* Torna a imagem de fundo mais sutil */
         width: 100%;
         height: 100%;
         clip-path: none;
     }
-    
+
     .hero-text-container {
         max-width: none;
         text-align: center;
         width: 100%;
     }
-    
+
     .hero-title {
         font-size: 2.5rem;
     }
-    
+
     .hero-subtitle {
         font-size: 1rem;
         text-align: center;
@@ -1748,8 +1837,9 @@ section {
         flex-direction: column;
         gap: 15px;
     }
-    
-    .input-field, .submit-button {
+
+    .input-field,
+    .submit-button {
         width: 100%;
     }
 }
@@ -1761,7 +1851,8 @@ section {
     }
 
     .user-profile span {
-        display: none; /* Esconde o nome do usuário em telas muito pequenas */
+        display: none;
+        /* Esconde o nome do usuário em telas muito pequenas */
     }
 }
 
@@ -1850,7 +1941,8 @@ section {
 }
 
 .sidebar-footer a:hover {
-    color: #d9534f; /* Vermelho para 'Sair' */
+    color: #d9534f;
+    /* Vermelho para 'Sair' */
 }
 
 /* --- Conteúdo Principal --- */
@@ -1932,12 +2024,14 @@ section {
 }
 
 .widget-trend[class*="+"] {
-    background-color: #d4edda; /* Verde */
+    background-color: #d4edda;
+    /* Verde */
     color: #155724;
 }
 
 .widget-trend[class*="-"] {
-    background-color: #f8d7da; /* Vermelho */
+    background-color: #f8d7da;
+    /* Vermelho */
     color: #721c24;
 }
 
@@ -1974,7 +2068,8 @@ section {
 
 /* --- Responsividade --- */
 .sidebar-toggle {
-    display: none; /* Escondido em telas grandes */
+    display: none;
+    /* Escondido em telas grandes */
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -2015,6 +2110,7 @@ section {
     }
 
     .user-profile span {
-        display: none; /* Esconde o nome do usuário em telas muito pequenas */
+        display: none;
+        /* Esconde o nome do usuário em telas muito pequenas */
     }
 }
