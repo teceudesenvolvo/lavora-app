@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import PrivacyPolicyOassessor from './pages/PrivacyPolicy-oassessor';
+import PageCsae from './pages/pageCSAE';
 
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/pages-admin/Dashboard';
@@ -36,6 +37,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/politica-de-privacidade-cm-pacatuba" element={<PrivacyPolicy />} />
         <Route path="/politica-de-privacidade-oassessor" element={<PrivacyPolicyOassessor />} />
+        <Route path="/pageCSAE" element={<PageCsae />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
