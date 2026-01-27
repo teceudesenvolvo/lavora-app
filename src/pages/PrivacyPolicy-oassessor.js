@@ -1,141 +1,167 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, 
-  Lock, 
-  Eye, 
-  UserCheck, 
-  Database, 
-  Mail, 
-  ArrowLeft,
-  ChevronRight,
-  Info
-} from 'lucide-react';
+import React from 'react';
 
 const App = () => {
-  const [lastUpdate] = useState(new Date().toLocaleDateString('pt-PT'));
-  
-  // Exemplo de estado para simular navegação ou interatividade
-  const [activeSection, setActiveSection] = useState(null);
-
-  const sections = [
-    {
-      id: 1,
-      title: "Informações que Recolhemos",
-      icon: <Database className="w-5 h-5" />,
-      content: "Podemos recolher dados de identificação (Nome, e-mail, telefone), dados de localização (apenas com permissão) e dados de uso para melhorar a sua experiência no aplicativo."
+  // Estilos profissionais para uma aplicação de assessoria
+  const styles = {
+    container: {
+      fontFamily: '"Inter", "Segoe UI", Roboto, sans-serif',
+      lineHeight: '1.7',
+      color: '#2d3436',
+      maxWidth: '900px',
+      margin: '0 auto',
+      padding: '60px 24px',
+      backgroundColor: '#ffffff',
     },
-    {
-      id: 2,
-      title: "Finalidade do Tratamento",
-      icon: <Eye className="w-5 h-5" />,
-      content: "Os dados são utilizados para gestão de voluntários, envio de propostas, localização de zonas eleitorais e cumprimento de obrigações legais."
+    header: {
+      textAlign: 'center',
+      marginBottom: '50px',
+      paddingBottom: '30px',
+      borderBottom: '1px solid #edf2f7',
     },
-    {
-      id: 3,
-      title: "Partilha de Dados",
-      icon: <Lock className="w-5 h-5" />,
-      content: "Não vendemos os seus dados. Partilhamos apenas com fornecedores de infraestrutura técnica necessários para o funcionamento do serviço."
+    brandName: {
+      fontSize: '28px',
+      fontWeight: '800',
+      color: '#2563eb', // Azul moderno para OAssessor
+      letterSpacing: '-0.5px',
+      textTransform: 'uppercase'
     },
-    {
-      id: 4,
-      title: "Os Seus Direitos (LGPD)",
-      icon: <UserCheck className="w-5 h-5" />,
-      content: "Tem direito a aceder, corrigir, eliminar ou revogar o consentimento do uso dos seus dados a qualquer momento."
+    title: {
+      fontSize: '2.4rem',
+      color: '#1a202c',
+      margin: '12px 0',
+      fontWeight: '700'
+    },
+    meta: {
+      color: '#718096',
+      fontSize: '0.95rem',
+    },
+    content: {
+      textAlign: 'left',
+    },
+    section: {
+      marginBottom: '40px'
+    },
+    sectionTitle: {
+      fontSize: '1.6rem',
+      color: '#1e40af',
+      marginBottom: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px'
+    },
+    paragraph: {
+      marginBottom: '18px',
+      fontSize: '1.05rem',
+    },
+    highlightBox: {
+      backgroundColor: '#f1f5f9',
+      padding: '24px',
+      borderRadius: '12px',
+      borderLeft: '5px solid #2563eb',
+      margin: '25px 0',
+    },
+    list: {
+      paddingLeft: '24px',
+      marginBottom: '20px',
+    },
+    listItem: {
+      marginBottom: '12px',
+    },
+    footer: {
+      marginTop: '60px',
+      textAlign: 'center',
+      paddingTop: '30px',
+      borderTop: '1px solid #edf2f7',
+      color: '#a0aec0',
+      fontSize: '0.9rem'
     }
-  ];
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100">
-      {/* Header / Navigation Mock */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button className="flex items-center text-slate-600 hover:text-blue-600 transition-colors">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="font-medium">Voltar</span>
-          </button>
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-6 h-6 text-blue-600" />
-            <span className="font-bold text-lg tracking-tight">Privacidade</span>
-          </div>
-          <div className="w-10"></div> {/* Spacer */}
-        </div>
-      </nav>
+    <div style={styles.container}>
+      <header style={styles.header}>
+        <div style={styles.brandName}>OAssessor</div>
+        <h1 style={styles.title}>Política de Privacidade</h1>
+        <p style={styles.meta}>Versão 1.0 — Atualizado em 03 de Novembro de 2025</p>
+      </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        {/* Hero Section */}
-        <header className="mb-12 text-center">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
-            Política de Privacidade
-          </h1>
-          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-            A sua privacidade é a nossa prioridade. Entenda como protegemos os seus dados de acordo com a LGPD.
+      <div style={styles.content}>
+        <section style={styles.section}>
+          <p style={styles.paragraph}>
+            Bem-vindo ao <strong>OAssessor</strong>. A sua privacidade é uma prioridade fundamental para nós. Esta política explica como a nossa plataforma gere as informações no contexto da prestação de serviços de assessoria e gestão.
           </p>
-          <div className="mt-6 inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium border border-blue-100">
-            Última atualização: {lastUpdate}
-          </div>
-        </header>
+          <p style={styles.paragraph}>
+            Ao utilizar o aplicativo OAssessor, o utilizador concorda com a recolha e o uso de informações de acordo com esta política, desenhada para cumprir as diretrizes da Lei Geral de Proteção de Dados (LGPD).
+          </p>
+        </section>
 
-        {/* Content Sections */}
-        <div className="space-y-6">
-          {sections.map((section) => (
-            <div 
-              key={section.id}
-              className={`bg-white rounded-2xl border transition-all duration-300 ${
-                activeSection === section.id 
-                  ? 'border-blue-400 shadow-lg ring-1 ring-blue-400' 
-                  : 'border-slate-200 shadow-sm hover:border-slate-300'
-              }`}
-            >
-              <button 
-                onClick={() => setActiveSection(activeSection === section.id ? null : section.id)}
-                className="w-full text-left p-6 flex items-center justify-between"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className={`p-2 rounded-lg ${activeSection === section.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                    {section.icon}
-                  </div>
-                  <h3 className="font-bold text-lg text-slate-800">{section.title}</h3>
-                </div>
-                <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${activeSection === section.id ? 'rotate-90' : ''}`} />
-              </button>
-              
-              {activeSection === section.id && (
-                <div className="px-6 pb-6 text-slate-600 leading-relaxed border-t border-slate-50 pt-4 animate-in fade-in slide-in-from-top-2">
-                  {section.content}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Informações de Contacto */}
-        <section className="mt-12 bg-blue-600 rounded-3xl p-8 text-white shadow-xl shadow-blue-200">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Dúvidas ou Pedidos?</h2>
-              <p className="text-blue-100">
-                A nossa equipa de proteção de dados está pronta para ajudar.
-              </p>
-            </div>
-            <a 
-              href="mailto:privacidade@campanha.com" 
-              className="flex items-center space-x-2 bg-white text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors"
-            >
-              <Mail className="w-5 h-5" />
-              <span>Contactar DPO</span>
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>1. Responsabilidade e Controlo</h2>
+          <p style={styles.paragraph}>
+            A gestão e operação dos dados no ecossistema OAssessor é coordenada pela <strong>Lavoro Serviços</strong> (CNPJ: 45.140.973/0001-64). Atuamos como operadores e controladores, garantindo que a tecnologia de assessoria respeita os limites éticos e legais.
+          </p>
+          <div style={styles.highlightBox}>
+            <strong>Contacto do Encarregado (DPO):</strong><br />
+            Para questões de privacidade, contacte-nos através do e-mail: 
+            <a href="mailto:privacidade@oassessor.com.br" style={{ color: '#2563eb', marginLeft: '5px', textDecoration: 'none' }}>
+              privacidade@oassessor.com.br
             </a>
           </div>
         </section>
 
-        {/* Footer Text */}
-        <footer className="mt-12 text-center text-slate-400 text-sm space-y-4">
-          <div className="flex items-center justify-center space-x-2">
-            <Info className="w-4 h-4" />
-            <span>Este documento segue as diretrizes da Lei Geral de Proteção de Dados (Brasil).</span>
-          </div>
-          <p>© {new Date().getFullYear()} Nome do Candidato/Partido. Todos os direitos reservados.</p>
-        </footer>
-      </main>
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>2. Dados que Processamos</h2>
+          <p style={styles.paragraph}>
+            OAssessor recolhe informações necessárias para a eficiência da sua assessoria:
+          </p>
+          <ul style={styles.list}>
+            <li style={styles.listItem}><strong>Dados de Perfil:</strong> Nome, cargo e informações de contacto fornecidas voluntariamente para personalização do serviço.</li>
+            <li style={styles.listItem}><strong>Interações de Assessoria:</strong> Conteúdos e solicitações processadas dentro do app para gerar relatórios e assistência.</li>
+            <li style={styles.listItem}><strong>Dados Técnicos:</strong> Identificadores de dispositivo, logs de acesso e métricas de desempenho para garantir a estabilidade da ferramenta.</li>
+          </ul>
+        </section>
+
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>3. Finalidade do Tratamento</h2>
+          <p style={styles.paragraph}>Utilizamos os dados para:</p>
+          <ul style={styles.list}>
+            <li style={styles.listItem}>Otimizar o fluxo de trabalho de assessoria do utilizador.</li>
+            <li style={styles.listItem}>Personalizar recomendações e automações inteligentes.</li>
+            <li style={styles.listItem}>Garantir a segurança cibernética da conta do utilizador.</li>
+            <li style={styles.listItem}>Enviar atualizações críticas de sistema e novas funcionalidades.</li>
+          </ul>
+        </section>
+
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>4. Segurança da Informação</h2>
+          <p style={styles.paragraph}>
+            Implementamos protocolos de criptografia de ponta e firewalls avançados. Os dados processados pelo OAssessor são tratados como confidenciais e protegidos contra acessos não autorizados por meio de autenticação multifator e auditorias regulares.
+          </p>
+        </section>
+
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>5. Direitos do Utilizador</h2>
+          <p style={styles.paragraph}>
+            Como utilizador do OAssessor, tem o direito pleno de solicitar:
+          </p>
+          <ul style={styles.list}>
+            <li style={styles.listItem}>Acesso aos dados que mantemos sobre a sua atividade.</li>
+            <li style={styles.listItem}>A correção de dados imprecisos ou desatualizados.</li>
+            <li style={styles.listItem}>A eliminação definitiva da sua conta e dados associados (respeitando prazos legais de retenção).</li>
+          </ul>
+        </section>
+
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>6. Jurisdição</h2>
+          <p style={styles.paragraph}>
+            Esta política é regida pelas leis da República Federativa do Brasil, especificamente pela LGPD, independentemente da localização geográfica do utilizador ao aceder ao OAssessor.
+          </p>
+        </section>
+      </div>
+
+      <footer style={styles.footer}>
+        <p>© {new Date().getFullYear()} OAssessor — Desenvolvido por Lavoro Serviços.</p>
+      </footer>
     </div>
   );
 };
