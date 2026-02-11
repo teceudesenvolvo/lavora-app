@@ -25,13 +25,25 @@ exports.createPagarmePixSplit = functions.https.onRequest((req, res) => {
 
       const { amount, description, customer, split_rules } = req.body;
 
+      // Formata as regras de split para o padrão Pagar.me V5
+      const formattedSplit = split_rules ? split_rules.map(rule => ({
+        recipient_id: rule.recipient_id,
+        amount: rule.percentage, // Na V5, se type=percentage, amount é a porcentagem (ex: 80)
+        type: "percentage",
+        options: {
+          charge_processing_fee: rule.charge_processing_fee,
+          liable: rule.liable,
+          charge_remainder_fee: rule.liable // Geralmente quem é liable absorve a diferença de arredondamento
+        }
+      })) : [];
+
       // Monta o objeto do pedido conforme a API v5 da Pagar.me
       const orderData = {
         customer: {
           name: customer.name,
-          email: "cliente@lavoro.com.br", // Email é obrigatório na v5 (pode vir do frontend se tiver)
+          email: customer.email || "cliente@lavoro.com.br",
           type: "individual",
-          document: "00000000000", // CPF é obrigatório (ideal vir do frontend)
+          document: customer.document ? customer.document.replace(/\D/g, '') : "00000000000",
           phones: {
             mobile_phone: {
               country_code: "55",
@@ -54,8 +66,8 @@ exports.createPagarmePixSplit = functions.https.onRequest((req, res) => {
             pix: {
               expires_in: 3600 // Expira em 1 hora
             },
-            // Regras de Split recebidas do frontend
-            split: split_rules 
+            // Regras de Split formatadas
+            split: formattedSplit 
           }
         ]
       };

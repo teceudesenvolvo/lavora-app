@@ -1,0 +1,60 @@
+[debug] [2026-02-11T02:14:32.511Z] ----------------------------------------------------------------------
+[debug] [2026-02-11T02:14:32.516Z] Command:       /Users/leonardoribeiro/.nvm/versions/node/v22.21.1/bin/node /Users/leonardoribeiro/.nvm/versions/node/v22.21.1/bin/firebase deploy --only functions
+[debug] [2026-02-11T02:14:32.516Z] CLI Version:   15.3.1
+[debug] [2026-02-11T02:14:32.516Z] Platform:      darwin
+[debug] [2026-02-11T02:14:32.517Z] Node Version:  v22.21.1
+[debug] [2026-02-11T02:14:32.517Z] Time:          Tue Feb 10 2026 23:14:32 GMT-0300 (Brasilia Standard Time)
+[debug] [2026-02-11T02:14:32.517Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-11T02:14:33.369Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-11T02:14:33.369Z] > authorizing via signed-in user (blutecnologiasbr@gmail.com)
+[debug] [2026-02-11T02:14:33.369Z] [iam] checking project lavoro-servicos-c10fd for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-02-11T02:14:33.369Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:33.370Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:33.370Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions [none]
+[debug] [2026-02-11T02:14:33.370Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions x-goog-quota-user=projects/lavoro-servicos-c10fd
+[debug] [2026-02-11T02:14:33.370Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-02-11T02:14:34.510Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions 200
+[debug] [2026-02-11T02:14:34.510Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-02-11T02:14:34.510Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:34.510Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:34.510Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-02-11T02:14:34.511Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-02-11T02:14:35.657Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions 404
+[debug] [2026-02-11T02:14:35.657Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions {"error":{"code":404,"message":"Unknown service account","status":"NOT_FOUND"}}
+[debug] [2026-02-11T02:14:35.658Z] [functions] service account IAM check errored, deploy may fail: Request to https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 404, Unknown service account {"name":"FirebaseError","children":[],"context":{"body":{"error":{"code":404,"message":"Unknown service account","status":"NOT_FOUND"}},"response":{"statusCode":404}},"exit":1,"message":"Request to https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 404, Unknown service account","status":404}
+[info] 
+[info] === Deploying to 'lavoro-servicos-c10fd'...
+[info] 
+[info] i  deploying functions 
+[debug] [2026-02-11T02:14:35.664Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:35.664Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:35.665Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudresourcemanager.googleapis.com [none]
+[debug] [2026-02-11T02:14:35.665Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudresourcemanager.googleapis.com x-goog-quota-user=projects/lavoro-servicos-c10fd
+[debug] [2026-02-11T02:14:36.927Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudresourcemanager.googleapis.com 200
+[debug] [2026-02-11T02:14:36.927Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudresourcemanager.googleapis.com [omitted]
+[debug] [2026-02-11T02:14:36.936Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:36.937Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:36.937Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd [none]
+[debug] [2026-02-11T02:14:37.182Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd 200
+[debug] [2026-02-11T02:14:37.182Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd {"projectNumber":"11458991995","projectId":"lavoro-servicos-c10fd","lifecycleState":"ACTIVE","name":"lavoro-servicos","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2026-02-11T01:54:50.560240Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[debug] [2026-02-11T02:14:37.183Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:37.183Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:37.183Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:37.183Z] Checked if tokens are valid: true, expires at: 1770778533166
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[debug] [2026-02-11T02:14:37.183Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:37.183Z] Checked if tokens are valid: true, expires at: 1770778533166
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2026-02-11T02:14:37.184Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:37.184Z] Checked if tokens are valid: true, expires at: 1770778533166
+[debug] [2026-02-11T02:14:37.184Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-02-11T02:14:37.184Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/lavoro-servicos-c10fd
+[debug] [2026-02-11T02:14:37.185Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/runtimeconfig.googleapis.com [none]
+[debug] [2026-02-11T02:14:37.185Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/lavoro-servicos-c10fd
+[debug] [2026-02-11T02:14:37.186Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudbuild.googleapis.com [none]
+[debug] [2026-02-11T02:14:37.186Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/cloudbuild.googleapis.com x-goog-quota-user=projects/lavoro-servicos-c10fd
+[debug] [2026-02-11T02:14:37.187Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/artifactregistry.googleapis.com [none]
+[debug] [2026-02-11T02:14:37.187Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/lavoro-servicos-c10fd/services/artifactregistry.googleapis.com x-goog-quota-user=projects/lavoro-servicos-c10fd

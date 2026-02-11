@@ -61,9 +61,13 @@ const Financeiro = () => {
       try {
         // Busca Clientes (Assinaturas) e Cobranças Avulsas em paralelo
         const [resClientes, resCobrancas] = await Promise.all([
-          fetch('https://lavoro-servicos-default-rtdb.firebaseio.com/clientes.json'),
-          fetch('https://lavoro-servicos-default-rtdb.firebaseio.com/cobrancas.json')
+          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json'),
+          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json')
         ]);
+
+        if (!resClientes.ok || !resCobrancas.ok) {
+            throw new Error('Falha ao buscar dados: Acesso negado (401). Verifique as regras do Database.');
+        }
 
         const dataClientes = await resClientes.json();
         const dataCobrancas = await resCobrancas.json();
@@ -150,7 +154,8 @@ const Financeiro = () => {
               dataPagamento: '-',
               status: status,
               origem: 'assinatura',
-              telefone: item.TELEFONE
+              telefone: item.TELEFONE,
+              email: item.EMAIL || ''
             };
           }).filter(item => item !== null);
 
@@ -204,7 +209,8 @@ const Financeiro = () => {
               dataObj: vencimentoDate,
               dataPagamento: item.dataPagamento || '-',
               status: status,
-              origem: 'avulsa'
+              origem: 'avulsa',
+              email: item.email || ''
             };
           }).filter(item => item !== null);
 
@@ -260,7 +266,7 @@ const Financeiro = () => {
   // --- Funções de Ação ---
 
   // URL base das Cloud Functions do Firebase (Substitua pela URL do seu projeto)
-  const CLOUD_FUNCTIONS_BASE = 'https://us-central1-lavoro-servicos.cloudfunctions.net';
+  const CLOUD_FUNCTIONS_BASE = 'https://us-central1-lavoro-servicos-c10fd.cloudfunctions.net';
 
   // Criação de cobrança PIX com split via Backend (Firebase Functions)
   const createPagarmePixSplit = async (charge) => {
@@ -275,7 +281,9 @@ const Financeiro = () => {
                 description: charge.descricao,
                 customer: {
                     name: charge.descricao.split(' - ')[0],
-                    phone: charge.telefone ? charge.telefone.replace(/\D/g, '') : '5511999999999'
+                    phone: charge.telefone ? charge.telefone.replace(/\D/g, '') : '5511999999999',
+                    document: charge.cpf || '',
+                    email: charge.email || ''
                 },
                 // Regras de split seriam configuradas no backend ou passadas aqui
                 split_rules: [
@@ -363,7 +371,7 @@ const Financeiro = () => {
     };
 
     try {
-      await fetch('https://lavoro-servicos-default-rtdb.firebaseio.com/cobrancas.json', {
+      await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -385,7 +393,7 @@ const Financeiro = () => {
     if (window.confirm(`Confirmar pagamento de ${trx.descricao}?`)) {
       const dataPagamento = new Date().toLocaleDateString('pt-BR');
       try {
-        await fetch(`https://lavoro-servicos-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json`, {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'Pago', dataPagamento })

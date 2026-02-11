@@ -20,7 +20,12 @@ const Clientes = () => {
   useEffect(() => {
     const fetchClientes = async () => {
       try {
-        const response = await fetch('https://lavoro-servicos-default-rtdb.firebaseio.com/clientes.json');
+        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json');
+        
+        if (!response.ok) {
+          throw new Error(`Erro HTTP: ${response.status} (Verifique as Regras do Firebase)`);
+        }
+
         const data = await response.json();
         console.log('Dados recebidos:', data);
         
@@ -220,7 +225,7 @@ const Clientes = () => {
     };
 
     try {
-      const response = await fetch('https://lavoro-servicos-default-rtdb.firebaseio.com/clientes.json', {
+      const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(clientPayload)
@@ -266,7 +271,7 @@ const Clientes = () => {
     };
 
     try {
-      const response = await fetch(`https://lavoro-servicos-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json`, {
+      const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
