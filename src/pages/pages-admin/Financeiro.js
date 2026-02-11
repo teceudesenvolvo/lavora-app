@@ -281,7 +281,7 @@ const Financeiro = () => {
                 description: charge.descricao,
                 customer: {
                     name: charge.descricao.split(' - ')[0],
-                    phone: charge.telefone ? charge.telefone.replace(/\D/g, '') : '5511999999999',
+                    phone: charge.telefone ? String(charge.telefone).replace(/\D/g, '') : '5511999999999',
                     document: charge.cpf || '',
                     email: charge.email || ''
                 },
@@ -322,7 +322,12 @@ const Financeiro = () => {
             body: JSON.stringify({ phone, message: text })
         });
 
-        if (!response.ok) throw new Error('Falha no envio via backend');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("Erro detalhado do backend:", errorData);
+            // Tenta pegar a mensagem de erro específica da Meta ou do backend
+            throw new Error(errorData.details?.error?.message || errorData.error || `Erro HTTP ${response.status}`);
+        }
         
         const result = await response.json();
         alert('Mensagem enviada com sucesso via Backend!');
@@ -330,15 +335,14 @@ const Financeiro = () => {
 
     } catch (error) {
         console.error("Erro ao enviar WhatsApp via backend:", error);
-        // Fallback para não travar a experiência do usuário
-        alert("Erro ao conectar com o backend de mensagens. (Simulação: Mensagem enviada localmente)");
-        return { success: true, mock: true };
+        alert(`Falha no envio: ${error.message}`);
+        return { success: false, error: error.message };
     }
   };
 
   const handleGeneratePix = async (trx) => {
       // Em um app real, o número de telefone do cliente seria buscado do banco de dados.
-      const mockPhoneNumber = trx.telefone ? trx.telefone.replace(/\D/g, '') : '5511999999999'; 
+      const mockPhoneNumber = trx.telefone ? String(trx.telefone).replace(/\D/g, '') : '5511999999999'; 
       
       alert('Gerando PIX com split... (Simulação)');
 
@@ -409,7 +413,7 @@ const Financeiro = () => {
 
 
   const handleNotify = async (trx) => {
-    const phone = trx.telefone ? trx.telefone.replace(/\D/g, '') : '5511999999999';
+    const phone = trx.telefone ? String(trx.telefone).replace(/\D/g, '') : '5511999999999';
     const vencimento = trx.dataObj ? trx.dataObj.toLocaleDateString('pt-BR') : trx.data;
     const message = `Olá! Lembrete de pagamento para: ${trx.descricao}. Valor: ${trx.valorFormatado}. Vencimento: ${vencimento}.`;
     

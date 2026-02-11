@@ -8,9 +8,10 @@ admin.initializeApp();
 // --- CONFIGURAÇÕES ---
 // Em produção, use: firebase functions:config:set pagarme.key="sk_..." whatsapp.token="EAAG..."
 // Para teste local, você pode substituir as strings abaixo.
-const PAGARME_API_KEY = process.env.PAGARME_KEY || "sk_test_SEU_TOKEN_PAGARME"; 
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || "SEU_TOKEN_META_WHATSAPP";
-const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || "SEU_PHONE_ID_WHATSAPP";
+// IMPORTANTE: Substitua pelos seus tokens reais obtidos em https://developers.facebook.com/apps/
+const PAGARME_API_KEY = process.env.PAGARME_KEY || "sk_test_4a33197005304bdb8ec6e602613b97ed";
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || "EAAG..."; // Cole seu Token Permanente ou Temporário aqui
+const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || "1234567890"; // Cole o ID do número de telefone aqui
 
 /**
  * Cria uma cobrança PIX com Split na Pagar.me (API v5)
