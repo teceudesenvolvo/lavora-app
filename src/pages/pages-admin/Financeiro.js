@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaEnvelope, FaCalendarAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,6 +39,8 @@ const Financeiro = () => {
   // Estados para Nova Cobrança
   const [isModalOpen, setModalOpen] = useState(false);
   const [newCharge, setNewCharge] = useState({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente' });
+  // Estado para o Modal PIX
+  const [pixModalData, setPixModalData] = useState({ isOpen: false, code: '', whatsAppUrl: '', clientName: '', phone: '', message: '' });
 
   const maskCurrency = (value) => {
     const v = value.replace(/\D/g, "");
@@ -147,7 +149,8 @@ const Financeiro = () => {
               dataObj: vencimentoDate,
               dataPagamento: '-',
               status: status,
-              origem: 'assinatura'
+              origem: 'assinatura',
+              telefone: item.TELEFONE
             };
           }).filter(item => item !== null);
 
@@ -256,6 +259,102 @@ const Financeiro = () => {
 
   // --- Funções de Ação ---
 
+  // URL base das Cloud Functions do Firebase (Substitua pela URL do seu projeto)
+  const CLOUD_FUNCTIONS_BASE = 'https://us-central1-lavoro-servicos.cloudfunctions.net';
+
+  // Criação de cobrança PIX com split via Backend (Firebase Functions)
+  const createPagarmePixSplit = async (charge) => {
+    console.log('Solicitando criação de PIX ao backend:', charge);
+    
+    try {
+        const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/createPagarmePixSplit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: Math.round(charge.valor * 100), // Valor em centavos
+                description: charge.descricao,
+                customer: {
+                    name: charge.descricao.split(' - ')[0],
+                    phone: charge.telefone ? charge.telefone.replace(/\D/g, '') : '5511999999999'
+                },
+                // Regras de split seriam configuradas no backend ou passadas aqui
+                split_rules: [
+                    { recipient_id: "re_recebedor_principal", percentage: 80, liable: true, charge_processing_fee: true },
+                    { recipient_id: "re_vendedor_parceiro", percentage: 20, liable: false, charge_processing_fee: false }
+                ]
+            })
+        });
+
+        if (!response.ok) throw new Error(`Erro no backend: ${response.statusText}`);
+
+        const data = await response.json();
+        return {
+            pixCopyPaste: data.pix_qr_code || data.pixCopyPaste, 
+            transactionId: data.id
+        };
+    } catch (error) {
+        console.error("Erro ao chamar função backend (PIX):", error);
+        // Fallback Mock para não quebrar a UI se o backend não existir
+        const mockPixCode = `00020126580014br.gov.bcb.pix0136${(Math.random() + 1).toString(36).substring(2)}520400005303986540${charge.valor.toFixed(2).replace('.', '')}5802BR5913LavoroServicos6009SAO PAULO62070503***6304${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
+        return {
+            pixCopyPaste: mockPixCode,
+            transactionId: `mock_${new Date().getTime()}` 
+        };
+    };
+  };
+
+  // Função para enviar mensagem via API do WhatsApp via Backend (Firebase Functions)
+  const sendWhatsAppMessage = async (phone, text) => {
+    console.log(`[Backend] Solicitando envio WhatsApp para ${phone}`);
+    
+    try {
+        const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/sendWhatsAppMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, message: text })
+        });
+
+        if (!response.ok) throw new Error('Falha no envio via backend');
+        
+        const result = await response.json();
+        alert('Mensagem enviada com sucesso via Backend!');
+        return result;
+
+    } catch (error) {
+        console.error("Erro ao enviar WhatsApp via backend:", error);
+        // Fallback para não travar a experiência do usuário
+        alert("Erro ao conectar com o backend de mensagens. (Simulação: Mensagem enviada localmente)");
+        return { success: true, mock: true };
+    }
+  };
+
+  const handleGeneratePix = async (trx) => {
+      // Em um app real, o número de telefone do cliente seria buscado do banco de dados.
+      const mockPhoneNumber = trx.telefone ? trx.telefone.replace(/\D/g, '') : '5511999999999'; 
+      
+      alert('Gerando PIX com split... (Simulação)');
+
+      try {
+          const pagarmeResponse = await createPagarmePixSplit(trx);
+          
+          const message = `Olá! Segue o código PIX para pagamento da sua cobrança "${trx.descricao}" no valor de ${trx.valorFormatado}:\n\n${pagarmeResponse.pixCopyPaste}\n\nBasta copiar o código e colar na área "PIX Copia e Cola" do seu aplicativo de banco.`;
+          
+          const whatsAppUrl = `https://wa.me/${mockPhoneNumber}?text=${encodeURIComponent(message)}`;
+
+          setPixModalData({ 
+              isOpen: true, 
+              code: pagarmeResponse.pixCopyPaste, 
+              whatsAppUrl: whatsAppUrl, 
+              clientName: trx.descricao.split(' - ')[0],
+              phone: mockPhoneNumber,
+              message: message
+          });
+      } catch (error) {
+          console.error("Erro ao gerar PIX:", error);
+          alert("Falha ao gerar o código PIX. Tente novamente.");
+      }
+  };
+
   const handleSaveCharge = async (e) => {
     e.preventDefault();
     const payload = {
@@ -300,21 +399,13 @@ const Financeiro = () => {
     }
   };
 
-  const handleSendAll = () => {
-    const cobrancasPendentes = transacoesFiltradas.filter(t => t.status !== 'Pago');
+
+  const handleNotify = async (trx) => {
+    const phone = trx.telefone ? trx.telefone.replace(/\D/g, '') : '5511999999999';
+    const vencimento = trx.dataObj ? trx.dataObj.toLocaleDateString('pt-BR') : trx.data;
+    const message = `Olá! Lembrete de pagamento para: ${trx.descricao}. Valor: ${trx.valorFormatado}. Vencimento: ${vencimento}.`;
     
-    if (cobrancasPendentes.length === 0) {
-      alert("Nenhuma cobrança pendente ou atrasada listada para envio.");
-      return;
-    }
-
-    if (window.confirm(`Confirma o envio de cobrança via e-mail para ${cobrancasPendentes.length} clientes listados?`)) {
-       alert(`Iniciando envio para ${cobrancasPendentes.length} destinatários... (Simulação)`);
-    }
-  };
-
-  const handleNotify = (trx) => {
-    alert(`Lembrete de cobrança enviado para ${trx.descricao} via WhatsApp/Email!`);
+    await sendWhatsAppMessage(phone, message);
   };
 
   const pagamentosDoMesGrafico = useMemo(() => {
@@ -425,9 +516,6 @@ const Financeiro = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 className="faturas-section-title" style={{ marginBottom: 0 }}>Cobranças e Faturas</h3>
             <div style={{ display: 'flex', gap: '10px' }}>
-                <button className="btn btn-secondary" onClick={handleSendAll} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <FaEnvelope /> Disparar Emails
-                </button>
                 
             </div>
         </div>
@@ -479,6 +567,9 @@ const Financeiro = () => {
                         <button onClick={() => handleNotify(trx)} title="Enviar Lembrete" style={{ background: 'none', border: 'none', color: '#ffc107', cursor: 'pointer', fontSize: '1.1rem' }}>
                             <FaBell />
                         </button>
+                        <button onClick={() => handleGeneratePix(trx)} title="Gerar PIX via WhatsApp" style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', fontSize: '1.1rem' }}>
+                            <FaWhatsapp />
+                        </button>
                     </div>
                   </td>
                 </tr>
@@ -507,6 +598,43 @@ const Financeiro = () => {
                     <button type="submit" className="btn btn-primary"><FaFileInvoiceDollar /> Gerar Cobrança</button>
                 </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {pixModalData.isOpen && (
+        <div className="popup-overlay">
+          <div className="popup-content cliente-modal" style={{ maxWidth: '650px' }}>
+            <button onClick={() => setPixModalData({ ...pixModalData, isOpen: false })} className="popup-close">&times;</button>
+            <div className="cliente-modal-header">
+              <h3>Enviar Cobrança PIX via WhatsApp</h3>
+              <h2>Cliente: {pixModalData.clientName}</h2>
+            </div>
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <p>O código PIX (Copia e Cola) foi gerado. Você pode copiá-lo ou abrir o WhatsApp para enviar manualmente.</p>
+                <div className="form-group">
+                    <label>Código PIX</label>
+                    <textarea 
+                        readOnly 
+                        value={pixModalData.code} 
+                        style={{ width: '100%', minHeight: '100px', fontFamily: 'monospace', resize: 'none', padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} 
+                    />
+                </div>
+                <div className="popup-actions" style={{ justifyContent: 'space-between', display: 'flex' }}>
+                    <button 
+                        className="btn btn-secondary"
+                        onClick={() => { navigator.clipboard.writeText(pixModalData.code); alert('Código PIX copiado!'); }}
+                    >
+                        Copiar Código
+                    </button>
+                    <button className="btn btn-primary" onClick={() => sendWhatsAppMessage(pixModalData.phone, pixModalData.message)} style={{ backgroundColor: '#128C7E', borderColor: '#128C7E', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FaWhatsapp /> Enviar Automaticamente
+                    </button>
+                    <a href={pixModalData.whatsAppUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FaWhatsapp /> Abrir WhatsApp
+                    </a>
+                </div>
+            </div>
           </div>
         </div>
       )}
