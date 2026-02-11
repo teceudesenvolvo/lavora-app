@@ -103,6 +103,30 @@ exports.createPagarmePixSplit = functions.https.onRequest((req, res) => {
 });
 
 /**
+ * Verifica status de um pedido na Pagar.me (API v5)
+ */
+exports.checkPagarmeOrderStatus = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { orderId } = req.body;
+      if (!orderId) return res.status(400).json({ error: "orderId is required" });
+
+      const response = await axios.get(`https://api.pagar.me/core/v5/orders/${orderId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Basic " + Buffer.from(PAGARME_API_KEY + ":").toString("base64")
+        }
+      });
+
+      res.status(200).json({ status: response.data.status });
+    } catch (error) {
+      console.error("Erro Pagar.me Check:", error.response?.data || error.message);
+      res.status(500).json({ error: "Erro ao verificar status", details: error.response?.data });
+    }
+  });
+});
+
+/**
  * Envia mensagem via WhatsApp Business API (Meta)
  * Documentação: https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
  */

@@ -313,7 +313,7 @@ const Clientes = () => {
             <div className="form-group"><label>Telefone</label><input type="tel" name="telefone" defaultValue={selectedClient.telefone} onChange={(e) => e.target.value = maskPhone(e.target.value)} maxLength="15" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Plano</label><input type="text" name="plano" defaultValue={selectedClient.plano} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" defaultValue={selectedClient.mensalidade} onChange={(e) => e.target.value = maskCurrency(e.target.value)} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Vencimento</label><input type="text" name="vencimento" defaultValue={selectedClient.vencimento} onChange={(e) => e.target.value = maskDate(e.target.value)} maxLength="10" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Adesão</label><input type="text" name="vencimento" defaultValue={selectedClient.vencimento} onChange={(e) => e.target.value = maskDate(e.target.value)} maxLength="10" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Status</label>
               <select name="status" defaultValue={selectedClient.status} style={{ width: '100%' }}>
                 <option value="Ativo">Ativo</option>
@@ -426,7 +426,7 @@ const Clientes = () => {
           <table className="historico-tabela">
             <thead>
               <tr>
-                <th>Usuário</th><th>CPF</th><th>Telefone</th><th>Mensalidade</th><th>Vencimento</th><th>Ações</th>
+                <th>Usuário</th><th>CPF</th><th>Telefone</th><th>Mensalidade</th><th>Adesão</th><th>Ações</th>
               </tr>
             </thead>
             <tbody>

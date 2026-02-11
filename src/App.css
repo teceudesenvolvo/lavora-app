@@ -843,6 +843,10 @@ input {
     margin-bottom: 30px;
 }
 
+.settings-fieldset{
+    margin-bottom: 20px;
+}
+
 .main-header h1 {
     font-size: 1.8rem;
     font-weight: 600;
@@ -899,20 +903,24 @@ input {
     right: 25px;
     padding: 3px 8px;
     border-radius: 12px;
-    font-size: 0.8rem;
+    font-size: 15px !important;
     font-weight: 600;
 }
 
-.widget-trend[class*="+"] {
-    background-color: #d4edda;
+.widget-trend-lucro {
+    background-color: #d4edda !important;
     /* Verde */
-    color: #155724;
+    color: #155724 !important;
 }
 
 .widget-trend[class*="-"] {
     background-color: #f8d7da;
     /* Vermelho */
     color: #721c24;
+}
+
+.lucro-widget{
+    background-color: #00bfff;
 }
 
 .dashboard-charts {
