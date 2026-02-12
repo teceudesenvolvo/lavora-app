@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode } from 'react-icons/fa';
+import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -54,6 +54,9 @@ const Financeiro = () => {
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [editMensalidade, setEditMensalidade] = useState('');
   const [editVencimento, setEditVencimento] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterTipo, setFilterTipo] = useState('');
+  const [filterVencimento, setFilterVencimento] = useState('');
 
   const maskCurrency = (value) => {
     const v = value.replace(/\D/g, "");
@@ -313,9 +316,23 @@ const Financeiro = () => {
         const matchesSearch = t.descricao.toLowerCase().includes(searchLower) || 
                               (t.cpf && String(t.cpf).toLowerCase().includes(searchLower));
 
-        return matchesTab && matchesSearch;
+        const matchesTipo = filterTipo === '' || t.tipo === filterTipo;
+
+        let matchesVencimento = true;
+        if (filterVencimento) {
+            const [y, m, d] = filterVencimento.split('-').map(Number);
+            if (t.dataObj) {
+                matchesVencimento = t.dataObj.getFullYear() === y && 
+                                    t.dataObj.getMonth() === (m - 1) && 
+                                    t.dataObj.getDate() === d;
+            } else {
+                matchesVencimento = false;
+            }
+        }
+
+        return matchesTab && matchesSearch && matchesTipo && matchesVencimento;
     });
-  }, [transacoes, filterTab, searchTerm]);
+  }, [transacoes, filterTab, searchTerm, filterTipo, filterVencimento]);
 
   
   // --- Funções de Ação ---
@@ -758,16 +775,40 @@ const Financeiro = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 className="faturas-section-title" style={{ marginBottom: 0 }}>Cobranças e Faturas</h3>
             <div style={{ display: 'flex', gap: '10px' }}>
-                
+                <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <FaFilter /> {showFilters ? 'Ocultar Filtros' : 'Filtrar'}
+                </button>
+               
             </div>
         </div>
         
+        {showFilters && (
         <div className="tabs-container" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button className={`btn-tab ${filterTab === 'todos' ? 'active' : ''}`} onClick={() => setFilterTab('todos')}><FaList /> Todos</button>
           <button className={`btn-tab ${filterTab === 'atraso' ? 'active' : ''}`} onClick={() => setFilterTab('atraso')}><FaExclamationCircle /> Em Atraso</button>
           <button className={`btn-tab ${filterTab === 'pagos' ? 'active' : ''}`} onClick={() => setFilterTab('pagos')}><FaCheckCircle /> Pagos</button>
           <button className={`btn-tab ${filterTab === 'a_vencer' ? 'active' : ''}`} onClick={() => setFilterTab('a_vencer')}><FaClock /> A Vencer</button>
           
+          <select 
+            className="filtro-input"
+            style={{ padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd' }}
+            value={filterTipo}
+            onChange={(e) => setFilterTipo(e.target.value)}
+          >
+            <option value="">Todos os Tipos</option>
+            {[...new Set(transacoes.map(t => t.tipo).filter(Boolean))].map(tipo => (
+                <option key={tipo} value={tipo}>{tipo}</option>
+            ))}
+          </select>
+
+          <input 
+            type="date" 
+            className="filtro-input"
+            style={{ padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd' }}
+            value={filterVencimento}
+            onChange={(e) => setFilterVencimento(e.target.value)}
+          />
+
           <input 
             type="text" 
             placeholder="Buscar por nome ou CPF..." 
@@ -777,6 +818,7 @@ const Financeiro = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        )}
 
         <div className="table-container">
           <table className="historico-tabela">
@@ -790,7 +832,7 @@ const Financeiro = () => {
                 <tr key={trx.id}>
                   <td>{trx.descricao}</td>
                   <td>
-                    <span style={{ color: trx.tipo === 'receita' ? '#28a745' : '#dc3545', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                    <span style={{ color: trx.tipo === 'TITULAR' ? '#28a745' : '#282aa7ff', fontWeight: 'bold', textTransform: 'capitalize' }}>
                       {trx.tipo}
                     </span>
                   </td>
