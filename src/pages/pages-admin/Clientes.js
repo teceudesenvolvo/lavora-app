@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import jsPDF from 'jspdf';
 import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck } from 'react-icons/fa';
 
 const Clientes = () => {
@@ -235,6 +236,37 @@ const Clientes = () => {
     } catch (error) {
         console.error("Erro ao excluir arquivo:", error);
         alert("Erro ao excluir arquivo.");
+    }
+  };
+
+  const handleDownloadFile = (doc) => {
+    if (doc.arquivo && doc.arquivo.startsWith('data:image')) {
+      try {
+        const pdf = new jsPDF();
+        const imgProps = pdf.getImageProperties(doc.arquivo);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        const format = doc.arquivo.includes('image/png') ? 'PNG' : 'JPEG';
+        pdf.addImage(doc.arquivo, format, 0, 0, pdfWidth, pdfHeight);
+        
+        const nameParts = doc.nome.split('.');
+        const fileName = nameParts.length > 1 ? nameParts.slice(0, -1).join('.') : doc.nome;
+        pdf.save(`${fileName}.pdf`);
+      } catch (error) {
+        console.error("Erro ao converter para PDF:", error);
+        // Fallback: tenta baixar o arquivo original se a conversão falhar
+        const link = document.createElement('a');
+        link.href = doc.arquivo;
+        link.download = doc.nome;
+        link.click();
+      }
+    } else {
+      // Se não for imagem (ex: já é PDF), baixa direto
+      const link = document.createElement('a');
+      link.href = doc.arquivo;
+      link.download = doc.nome;
+      link.click();
     }
   };
 
@@ -522,9 +554,9 @@ const Clientes = () => {
                         {(Array.isArray(selectedClient.documentos) ? selectedClient.documentos : Object.values(selectedClient.documentos)).map((doc, idx) => (
                             <li key={idx} style={{ padding: '10px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <FaFileAlt style={{ color: '#666' }} />
-                                <a href={doc.arquivo} download={doc.nome} style={{ textDecoration: 'none', color: '#007bff', flex: 1 }}>
+                                <button onClick={() => handleDownloadFile(doc)} style={{ textDecoration: 'none', color: '#007bff', flex: 1, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, fontSize: 'inherit' }}>
                                     {doc.nome}
-                                </a>
+                                </button>
                                 <small style={{ color: '#999' }}>{doc.data}</small>
                                 <button onClick={() => handleFileDelete(idx, 'documentos')} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}>
                                     <FaTrash />
@@ -547,9 +579,9 @@ const Clientes = () => {
                         {(Array.isArray(selectedClient.contratos) ? selectedClient.contratos : Object.values(selectedClient.contratos)).map((doc, idx) => (
                             <li key={idx} style={{ padding: '10px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <FaFileContract style={{ color: '#666' }} />
-                                <a href={doc.arquivo} download={doc.nome} style={{ textDecoration: 'none', color: '#007bff', flex: 1 }}>
+                                <button onClick={() => handleDownloadFile(doc)} style={{ textDecoration: 'none', color: '#007bff', flex: 1, background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, fontSize: 'inherit' }}>
                                     {doc.nome}
-                                </a>
+                                </button>
                                 <small style={{ color: '#999' }}>{doc.data}</small>
                                 <button onClick={() => handleFileDelete(idx, 'contratos')} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}>
                                     <FaTrash />
