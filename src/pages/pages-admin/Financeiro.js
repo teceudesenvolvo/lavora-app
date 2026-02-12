@@ -317,10 +317,7 @@ const Financeiro = () => {
     });
   }, [transacoes, filterTab, searchTerm]);
 
-  const previsaoLucro = useMemo(() => {
-    return metrics.receitaMensal - metrics.custoTotal;
-  }, [metrics.receitaMensal, metrics.custoTotal]);
-
+  
   // --- Funções de Ação ---
 
   // URL base das Cloud Functions do Firebase (Substitua pela URL do seu projeto)
@@ -343,10 +340,11 @@ const Financeiro = () => {
                     document: charge.cpf || '',
                     email: charge.email || ''
                 },
-                // Regras de split seriam configuradas no backend ou passadas aqui
+                // Regras de split configuradas
+                // ATENÇÃO: Substitua os IDs (re_...) pelos IDs reais dos seus recebedores na Pagar.me
                 split_rules: [
-                    { recipient_id: "re_recebedor_principal", percentage: 80, liable: true, charge_processing_fee: true },
-                    { recipient_id: "re_vendedor_parceiro", percentage: 20, liable: false, charge_processing_fee: false }
+                    { recipient_id: "re_recebedor_principal", percentage: 93, liable: true, charge_processing_fee: true },
+                    { recipient_id: "re_vendedor_parceiro", percentage: 7, liable: false, charge_processing_fee: false }
                 ]
             })
         });
@@ -379,8 +377,6 @@ const Financeiro = () => {
       }
       if (!mockPhoneNumber) mockPhoneNumber = '5511999999999';
       
-      alert('Gerando PIX com split... (Simulação)');
-
       try {
           const pagarmeResponse = await createPagarmePixSplit(trx);
           
@@ -399,7 +395,6 @@ const Financeiro = () => {
           });
       } catch (error) {
           console.error("Erro ao gerar PIX:", error);
-          alert("Falha ao gerar o código PIX. Tente novamente.");
       }
   };
 
@@ -413,8 +408,6 @@ const Financeiro = () => {
       }
       if (!mockPhoneNumber) mockPhoneNumber = '5511999999999';
       
-      alert('Gerando Boleto... (Simulação)');
-
       try {
           // Simulação de geração de boleto
           const mockBoletoCode = `34191.79001 01043.510047 91020.150008 5 898700000${Math.round(trx.valor * 100)}`;
@@ -435,7 +428,6 @@ const Financeiro = () => {
           });
       } catch (error) {
           console.error("Erro ao gerar Boleto:", error);
-          alert("Falha ao gerar o boleto. Tente novamente.");
       }
   };
 
@@ -452,7 +444,6 @@ const Financeiro = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      alert('Cobrança gerada com sucesso!');
       setModalOpen(false);
       setNewCharge({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente' });
       window.location.reload(); // Recarrega para atualizar a lista (simplificação)
@@ -463,7 +454,6 @@ const Financeiro = () => {
 
   const handleEditPaymentClick = async (trx) => {
     if (trx.origem !== 'assinatura') {
-      alert('A edição de pagamentos é suportada apenas para assinaturas.');
       return;
     }
     setEditingTransaction(trx);
@@ -480,7 +470,6 @@ const Financeiro = () => {
       setEditPaymentModalOpen(true);
     } catch (error) {
       console.error("Erro ao buscar histórico de pagamento:", error);
-      alert("Não foi possível carregar o histórico de pagamento.");
     }
   };
 
@@ -496,13 +485,11 @@ const Financeiro = () => {
           VENCIMENTO: editVencimento
         })
       });
-      alert('Dados e histórico atualizados com sucesso!');
       setEditPaymentModalOpen(false);
       setEditingTransaction(null);
       window.location.reload(); // Recarrega para atualizar a lista
     } catch (error) {
       console.error("Erro ao salvar histórico de pagamento:", error);
-      alert("Erro ao salvar o histórico.");
     }
   };
 
@@ -597,7 +584,6 @@ const Financeiro = () => {
 
     } catch (error) {
         console.error("Erro ao atualizar status", error);
-        alert("Erro ao salvar pagamento.");
     }
     setConfirmPaymentModal({ isOpen: false, trx: null, isPaidOnline: false });
   };
@@ -621,7 +607,6 @@ const Financeiro = () => {
 
   const handleSendEmail = (trx) => {
     if (!trx.email) {
-        alert('Este cliente não possui e-mail cadastrado.');
         return;
     }
     const vencimento = trx.dataObj ? trx.dataObj.toLocaleDateString('pt-BR') : trx.data;
@@ -760,12 +745,7 @@ const Financeiro = () => {
           <span className="widget-trend widget-trend-lucro lucro-widget"><FaCheckCircle /> R$ {metrics.pagosVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
-        {/* <div className="dashboard-widgets" style={{ marginTop: '20px' }}>
-        <div className="widget">
-          <h3>Previsão de Lucro (Mês)</h3>
-          <p className="widget-value" style={{ color: previsaoLucro >= 0 ? '#28a745' : '#dc3545' }}>R$ {previsaoLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-        </div>
-      </div> */}
+      
 
       <div className="faturas-section" style={{ marginTop: '30px' }}>
           <h3 className="faturas-section-title">Evolução de Pagamentos no Mês</h3>
@@ -893,7 +873,7 @@ const Financeiro = () => {
                 <div className="popup-actions" style={{ justifyContent: 'space-between', display: 'flex' }}>
                     <button 
                         className="btn btn-secondary"
-                        onClick={() => { navigator.clipboard.writeText(pixModalData.code); alert('Código copiado!'); }}
+                        onClick={() => { navigator.clipboard.writeText(pixModalData.code); }}
                     >
                         Copiar Código
                     </button>

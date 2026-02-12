@@ -9,7 +9,7 @@ admin.initializeApp();
 // Em produção, use: firebase functions:config:set pagarme.key="sk_..." whatsapp.token="EAAG..."
 // Para teste local, você pode substituir as strings abaixo.
 // IMPORTANTE: Substitua pelos seus tokens reais obtidos em https://developers.facebook.com/apps/
-const PAGARME_API_KEY = process.env.PAGARME_KEY || "sk_test_4a33197005304bdb8ec6e602613b97ed";
+const PAGARME_API_KEY = process.env.PAGARME_KEY || "sk_test_5a75852652f14d568d657f5fe7793860";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || "EAAG..."; // Cole seu Token Permanente ou Temporário aqui
 const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || "1234567890"; // Cole o ID do número de telefone aqui
 

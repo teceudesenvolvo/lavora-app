@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { // ... (imports existentes)
   Chart as ChartJS,
   CategoryScale,
@@ -22,63 +22,102 @@ ChartJS.register(
 );
 
 const Analises = () => {
-  // --- Dados Mock para os Gráficos e Tabela ---
-
-  // 1. Gráfico de Funil de Cotações (Barra)
-  const funilData = {
+  const [funilData, setFunilData] = useState({
     labels: ['Enviadas', 'Em Análise', 'Concluídas', 'Rejeitadas'],
-    datasets: [
-      {
-        label: 'Número de Cotações',
-        data: [120, 85, 60, 25], // Dados de exemplo
-        backgroundColor: [
-          'rgba(30, 144, 255, 0.7)',
-          'rgba(23, 162, 184, 0.7)',
-          'rgba(40, 167, 69, 0.7)',
-          'rgba(220, 53, 69, 0.7)',
-        ],
-        borderColor: [
-          'rgba(30, 144, 255, 1)',
-          'rgba(23, 162, 184, 1)',
-          'rgba(40, 167, 69, 1)',
-          'rgba(220, 53, 69, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
+    datasets: [{
+      label: 'Número de Cotações',
+      data: [0, 0, 0, 0],
+      backgroundColor: [
+        'rgba(30, 144, 255, 0.7)',
+        'rgba(23, 162, 184, 0.7)',
+        'rgba(40, 167, 69, 0.7)',
+        'rgba(220, 53, 69, 0.7)',
+      ],
+      borderWidth: 1,
+    }],
+  });
 
-  // 2. Gráfico de Cotações por Produto (Pizza)
-  const produtoData = {
-    labels: ['Plano de Saúde', 'Seguro Auto', 'Seguro de Vida', 'Consórcio', 'Outros'],
-    datasets: [
-      {
-        label: 'Cotações por Produto',
-        data: [45, 30, 15, 20, 10], // Dados de exemplo
-        backgroundColor: [
-          'rgba(30, 144, 255, 0.8)',
-          'rgba(0, 191, 255, 0.8)',
-          'rgba(154, 152, 255, 0.8)',
-          'rgba(255, 193, 7, 0.8)',
-          'rgba(108, 117, 125, 0.8)',
-        ],
-        borderColor: '#ffffff',
-        borderWidth: 2,
-      },
-    ],
-  };
+  const [produtoData, setProdutoData] = useState({
+    labels: [],
+    datasets: [{
+      label: 'Cotações por Produto',
+      data: [],
+      backgroundColor: [
+        'rgba(30, 144, 255, 0.8)',
+        'rgba(0, 191, 255, 0.8)',
+        'rgba(154, 152, 255, 0.8)',
+        'rgba(255, 193, 7, 0.8)',
+        'rgba(108, 117, 125, 0.8)',
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+      ],
+      borderColor: '#ffffff',
+      borderWidth: 2,
+    }],
+  });
 
-  // 3. Tabela de Cotações Recentes
-  const initialCotacoes = [
-    { id: 'COT-001', cliente: 'Ana Silva', produto: 'Plano de Saúde', data: '21/11/2025', status: 'Em Análise', detalhes: { vidas: 4, idades: '34, 28, 5, 2' }, mensagem: 'Gostaria de uma opção com boa cobertura para maternidade.' },
-    { id: 'COT-002', cliente: 'Bruno Costa', produto: 'Seguro Auto', data: '21/11/2025', status: 'Enviada', detalhes: { modeloVeiculo: 'Honda Civic', anoVeiculo: '2022' }, mensagem: '' },
-    { id: 'COT-003', cliente: 'Carla Dias', produto: 'Consórcio', data: '20/11/2025', status: 'Concluída', detalhes: { valorCredito: '150000' }, mensagem: 'Flexibilidade nas parcelas.' },
-    { id: 'COT-004', cliente: 'Daniel Martins', produto: 'Seguro de Vida', data: '19/11/2025', status: 'Rejeitada', detalhes: { dataNascimento: '1985-05-10', profissao: 'Engenheiro Civil' }, mensagem: 'Verificar cobertura para esportes radicais.' },
-  ];
-
-  const [cotacoes, setCotacoes] = useState(initialCotacoes);
+  const [cotacoes, setCotacoes] = useState([]);
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [selectedCotacao, setSelectedCotacao] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json');
+        const data = await response.json();
+        
+        if (data) {
+          const clientesData = data.Clientes || data;
+          const allCotacoes = [];
+          const funilCounts = { 'Enviada': 0, 'Em Análise': 0, 'Concluída': 0, 'Rejeitada': 0 };
+          const produtoCounts = {};
+
+          Object.keys(clientesData).forEach(clientId => {
+            const cliente = clientesData[clientId];
+            if (cliente && cliente.cotacoes) {
+              const clientCotacoes = Array.isArray(cliente.cotacoes) ? cliente.cotacoes : Object.values(cliente.cotacoes);
+              
+              clientCotacoes.forEach((cot, index) => {
+                allCotacoes.push({
+                  ...cot,
+                  id: `${clientId}-${index}`,
+                  clienteId: clientId,
+                  cotacaoIndex: index,
+                  cliente: cliente.USUARIO,
+                });
+
+                if (funilCounts[cot.status] !== undefined) funilCounts[cot.status]++;
+                const produto = cot.descricao || 'Não especificado';
+                produtoCounts[produto] = (produtoCounts[produto] || 0) + 1;
+              });
+            }
+          });
+
+          allCotacoes.sort((a, b) => {
+            const dateA = a.data ? new Date(a.data.split('/').reverse().join('-')) : new Date(0);
+            const dateB = b.data ? new Date(b.data.split('/').reverse().join('-')) : new Date(0);
+            return dateB - dateA;
+          });
+          setCotacoes(allCotacoes);
+
+          setFunilData(prev => ({
+            ...prev,
+            datasets: [{ ...prev.datasets[0], data: Object.values(funilCounts) }],
+          }));
+
+          setProdutoData(prev => ({
+            ...prev,
+            labels: Object.keys(produtoCounts),
+            datasets: [{ ...prev.datasets[0], data: Object.values(produtoCounts) }],
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados de cotações:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleAnalisarClick = (cotacao) => {
     setSelectedCotacao(cotacao);
@@ -90,16 +129,36 @@ const Analises = () => {
     setSelectedCotacao(null);
   };
 
-  const handleEnviarOrcamento = (e) => {
+  const handleEnviarOrcamento = async (e) => {
     e.preventDefault();
-    alert(`Orçamento para a cotação ${selectedCotacao.id} enviado com sucesso!`);
-    
-    // Atualiza o status da cotação na lista
-    setCotacoes(cotacoes.map(c => 
-      c.id === selectedCotacao.id ? { ...c, status: 'Concluída' } : c
-    ));
+    const form = e.target;
+    const valorOrcamento = form.elements.valorOrcamento.value;
+    const detalhesOrcamento = form.elements.detalhesOrcamento.value;
 
-    handleClosePopup();
+    if (!selectedCotacao) return;
+
+    const { clienteId, cotacaoIndex } = selectedCotacao;
+    const updatedStatus = 'Concluída';
+
+    try {
+      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${clienteId}/cotacoes/${cotacaoIndex}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: updatedStatus,
+          valor: valorOrcamento,
+          respostaOrcamento: detalhesOrcamento
+        })
+      });
+
+      setCotacoes(cotacoes.map(c => 
+        c.id === selectedCotacao.id ? { ...c, status: updatedStatus, valor: valorOrcamento } : c
+      ));
+
+      handleClosePopup();
+    } catch (error) {
+      console.error("Erro ao enviar orçamento:", error);
+    }
   };
 
   return (
@@ -107,13 +166,13 @@ const Analises = () => {
       <div className="dashboard-charts">
         <div className="chart-container">
           <h3>Funil de Cotações</h3>
-          <div className="chart-wrapper">
+          <div className="chart-wrapper" style={{ minHeight: '300px' }}>
             <Bar data={funilData} options={{ responsive: true, maintainAspectRatio: false }} />
           </div>
         </div>
         <div className="chart-container">
           <h3>Cotações por Produto</h3>
-          <div className="chart-wrapper">
+          <div className="chart-wrapper" style={{ minHeight: '300px' }}>
             <Pie data={produtoData} options={{ responsive: true, maintainAspectRatio: false }} />
           </div>
         </div>
@@ -160,12 +219,9 @@ const Analises = () => {
 
             <div className="detalhes-especificos">
               <h4>Detalhes da Solicitação</h4>
-              <ul>
-                {Object.entries(selectedCotacao.detalhes).map(([key, value]) => (
-                  <li key={key}><strong>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> {value}</li>
-                ))}
-              </ul>
-              {selectedCotacao.mensagem && <p><strong>Mensagem:</strong> <em>"{selectedCotacao.mensagem}"</em></p>}
+              <p><strong>Descrição:</strong> {selectedCotacao.descricao}</p>
+              {selectedCotacao.valor && <p><strong>Valor Inicial Sugerido:</strong> {selectedCotacao.valor}</p>}
+              {selectedCotacao.mensagem && <p><strong>Mensagem do Cliente:</strong> <em>"{selectedCotacao.mensagem}"</em></p>}
             </div>
 
             <form className="orcamento-form" onSubmit={handleEnviarOrcamento}>

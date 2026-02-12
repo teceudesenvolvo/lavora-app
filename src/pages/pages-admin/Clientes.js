@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { FaEdit, FaFileAlt, FaFileContract, FaFileInvoiceDollar, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck } from 'react-icons/fa';
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
@@ -16,6 +16,7 @@ const Clientes = () => {
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
+  const [newCotacao, setNewCotacao] = useState({ descricao: '', valor: '', status: 'Em Análise' });
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -169,6 +170,187 @@ const Clientes = () => {
       } catch (error) {
         console.error("Erro ao converter arquivo:", error);
       }
+    }
+  };
+
+  const handleFileUpload = async (e, category) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const base64 = await convertToBase64(file);
+      const newDoc = {
+        nome: file.name,
+        arquivo: base64,
+        data: new Date().toLocaleDateString('pt-BR')
+      };
+
+      let currentList = selectedClient[category] || [];
+      if (!Array.isArray(currentList)) {
+          currentList = Object.values(currentList);
+      }
+      
+      const newList = [...currentList, newDoc];
+
+      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/${category}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newList)
+      });
+
+      const updatedClient = { ...selectedClient, [category]: newList };
+      setSelectedClient(updatedClient);
+      setClientes(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
+      
+      alert('Arquivo enviado com sucesso!');
+      e.target.value = null; 
+    } catch (error) {
+      console.error("Erro ao enviar arquivo:", error);
+      alert("Erro ao enviar arquivo.");
+    }
+  };
+
+  const handleFileDelete = async (index, category) => {
+    if (!window.confirm('Tem certeza que deseja excluir este arquivo?')) return;
+
+    let currentList = selectedClient[category] || [];
+    if (!Array.isArray(currentList)) {
+        currentList = Object.values(currentList);
+    }
+
+    const newList = currentList.filter((_, i) => i !== index);
+
+    try {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/${category}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newList)
+        });
+
+        const updatedClient = { ...selectedClient, [category]: newList };
+        setSelectedClient(updatedClient);
+        setClientes(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
+        
+        alert('Arquivo excluído com sucesso!');
+    } catch (error) {
+        console.error("Erro ao excluir arquivo:", error);
+        alert("Erro ao excluir arquivo.");
+    }
+  };
+
+  const handleAddCotacao = async () => {
+    if (!newCotacao.descricao) return;
+
+    const newCot = {
+        ...newCotacao,
+        data: new Date().toLocaleDateString('pt-BR')
+    };
+
+    let currentList = selectedClient.cotacoes || [];
+    if (!Array.isArray(currentList)) {
+        currentList = Object.values(currentList);
+    }
+
+    const newList = [...currentList, newCot];
+
+    try {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/cotacoes.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newList)
+        });
+
+        const updatedClient = { ...selectedClient, cotacoes: newList };
+        setSelectedClient(updatedClient);
+        setClientes(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
+        setNewCotacao({ descricao: '', valor: '', status: 'Em Análise' });
+        alert('Cotação adicionada!');
+    } catch (error) {
+        console.error("Erro ao adicionar cotação:", error);
+        alert("Erro ao adicionar cotação.");
+    }
+  };
+
+  const handleApproveCotacao = async (index) => {
+    if (!window.confirm('Deseja aprovar esta cotação e adicionar o valor à mensalidade?')) return;
+
+    let currentList = selectedClient.cotacoes || [];
+    if (!Array.isArray(currentList)) {
+        currentList = Object.values(currentList);
+    }
+
+    const cotacao = currentList[index];
+    
+    if (cotacao.status === 'Aprovada' || cotacao.status === 'Concluída') {
+        alert('Esta cotação já foi aprovada.');
+        return;
+    }
+
+    const valorCotacao = parseFloat(removeCurrencyMask(String(cotacao.valor || '0')));
+    const valorMensalidadeAtual = parseFloat(removeCurrencyMask(String(selectedClient.mensalidade || '0')));
+    
+    if (isNaN(valorCotacao)) {
+        alert('Valor da cotação inválido.');
+        return;
+    }
+
+    const novaMensalidade = valorMensalidadeAtual + valorCotacao;
+    const novaMensalidadeStr = novaMensalidade.toFixed(2);
+
+    const updatedCotacoes = [...currentList];
+    updatedCotacoes[index] = { ...cotacao, status: 'Aprovada' };
+
+    try {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                cotacoes: updatedCotacoes,
+                MENSALIDADE: novaMensalidadeStr
+            })
+        });
+
+        const updatedClient = { 
+            ...selectedClient, 
+            cotacoes: updatedCotacoes,
+            mensalidade: novaMensalidadeStr
+        };
+        
+        setSelectedClient(updatedClient);
+        setClientes(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
+        
+        alert(`Cotação aprovada! Mensalidade atualizada para R$ ${novaMensalidadeStr.replace('.', ',')}`);
+    } catch (error) {
+        console.error("Erro ao aprovar cotação:", error);
+        alert("Erro ao aprovar cotação.");
+    }
+  };
+
+  const handleDeleteCotacao = async (index) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta cotação?')) return;
+
+    let currentList = selectedClient.cotacoes || [];
+    if (!Array.isArray(currentList)) {
+        currentList = Object.values(currentList);
+    }
+
+    const newList = currentList.filter((_, i) => i !== index);
+
+    try {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/cotacoes.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newList)
+        });
+
+        const updatedClient = { ...selectedClient, cotacoes: newList };
+        setSelectedClient(updatedClient);
+        setClientes(prev => prev.map(c => c.id === selectedClient.id ? updatedClient : c));
+        
+        alert('Cotação excluída!');
+    } catch (error) {
+        console.error("Erro ao excluir cotação:", error);
+        alert("Erro ao excluir cotação.");
     }
   };
 
@@ -329,13 +511,119 @@ const Clientes = () => {
           </form>
         );
       case 'documentos':
-        return <p>Visualização de documentos do cliente {selectedClient.nome}.</p>;
+        return (
+            <div className="form-grid">
+                <div className="form-group">
+                    <label>Adicionar Documento</label>
+                    <input type="file" onChange={(e) => handleFileUpload(e, 'documentos')} />
+                </div>
+                {selectedClient.documentos && (
+                    <ul style={{ marginTop: '10px', listStyle: 'none', padding: 0 }}>
+                        {(Array.isArray(selectedClient.documentos) ? selectedClient.documentos : Object.values(selectedClient.documentos)).map((doc, idx) => (
+                            <li key={idx} style={{ padding: '10px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <FaFileAlt style={{ color: '#666' }} />
+                                <a href={doc.arquivo} download={doc.nome} style={{ textDecoration: 'none', color: '#007bff', flex: 1 }}>
+                                    {doc.nome}
+                                </a>
+                                <small style={{ color: '#999' }}>{doc.data}</small>
+                                <button onClick={() => handleFileDelete(idx, 'documentos')} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}>
+                                    <FaTrash />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        );
       case 'contratos':
-        return <p>Visualização de contratos do cliente {selectedClient.nome}.</p>;
-      case 'faturas':
-        return <p>Visualização de faturas do cliente {selectedClient.nome}.</p>;
+        return (
+            <div className="form-grid">
+                <div className="form-group">
+                    <label>Adicionar Contrato</label>
+                    <input type="file" onChange={(e) => handleFileUpload(e, 'contratos')} />
+                </div>
+                {selectedClient.contratos && (
+                    <ul style={{ marginTop: '10px', listStyle: 'none', padding: 0 }}>
+                        {(Array.isArray(selectedClient.contratos) ? selectedClient.contratos : Object.values(selectedClient.contratos)).map((doc, idx) => (
+                            <li key={idx} style={{ padding: '10px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <FaFileContract style={{ color: '#666' }} />
+                                <a href={doc.arquivo} download={doc.nome} style={{ textDecoration: 'none', color: '#007bff', flex: 1 }}>
+                                    {doc.nome}
+                                </a>
+                                <small style={{ color: '#999' }}>{doc.data}</small>
+                                <button onClick={() => handleFileDelete(idx, 'contratos')} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}>
+                                    <FaTrash />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        );
       case 'cotacoes':
-        return <p>Visualização de cotações do cliente {selectedClient.nome}.</p>;
+        return (
+            <div className="form-grid">
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>Nova Cotação</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                        <div style={{ flex: 2 }}>
+                            <input 
+                                placeholder="Descrição (ex: Seguro Auto)" 
+                                value={newCotacao.descricao} 
+                                onChange={(e) => setNewCotacao({...newCotacao, descricao: e.target.value})}
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <input 
+                                placeholder="Valor (R$)" 
+                                value={newCotacao.valor} 
+                                onChange={(e) => setNewCotacao({...newCotacao, valor: maskCurrency(e.target.value)})}
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <select 
+                                value={newCotacao.status} 
+                                onChange={(e) => setNewCotacao({...newCotacao, status: e.target.value})}
+                                style={{ width: '100%' }}
+                            >
+                                <option value="Em Análise">Em Análise</option>
+                                <option value="Concluída">Concluída</option>
+                                <option value="Rejeitada">Rejeitada</option>
+                            </select>
+                        </div>
+                        <button type="button" onClick={handleAddCotacao} className="btn btn-primary" style={{ height: '42px' }}><FaPlus /></button>
+                    </div>
+                </div>
+                
+                <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                    <table className="historico-tabela">
+                        <thead><tr><th>Descrição</th><th>Valor</th><th>Status</th><th>Data</th><th>Ação</th></tr></thead>
+                        <tbody>
+                            {(Array.isArray(selectedClient.cotacoes) ? selectedClient.cotacoes : Object.values(selectedClient.cotacoes || {})).map((cot, idx) => (
+                                <tr key={idx}>
+                                    <td>{cot.descricao}</td>
+                                    <td>{cot.valor}</td>
+                                    <td>{cot.status}</td>
+                                    <td>{cot.data}</td>
+                                    <td>
+                                        {cot.status !== 'Aprovada' && cot.status !== 'Concluída' && (
+                                            <button onClick={() => handleApproveCotacao(idx)} title="Aprovar e Adicionar à Mensalidade" style={{ background: 'none', border: 'none', color: 'green', cursor: 'pointer', marginRight: '10px' }}>
+                                                <FaCheck />
+                                            </button>
+                                        )}
+                                        <button onClick={() => handleDeleteCotacao(idx)} style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer' }}>
+                                            <FaTrash />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
       default:
         return null;
     }
@@ -462,7 +750,6 @@ const Clientes = () => {
               <button onClick={() => setActiveTab('dados')} className={activeTab === 'dados' ? 'active' : ''}><FaEdit /> Dados Pessoais</button>
               <button onClick={() => setActiveTab('documentos')} className={activeTab === 'documentos' ? 'active' : ''}><FaFileAlt /> Documentação</button>
               <button onClick={() => setActiveTab('contratos')} className={activeTab === 'contratos' ? 'active' : ''}><FaFileContract /> Contratos</button>
-              <button onClick={() => setActiveTab('faturas')} className={activeTab === 'faturas' ? 'active' : ''}><FaFileInvoiceDollar /> Faturas</button>
               <button onClick={() => setActiveTab('cotacoes')} className={activeTab === 'cotacoes' ? 'active' : ''}><FaQuoteRight /> Cotações</button>
             </nav>
 
