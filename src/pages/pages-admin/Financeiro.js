@@ -360,8 +360,8 @@ const Financeiro = () => {
                 // Regras de split configuradas
                 // ATENÇÃO: Substitua os IDs (re_...) pelos IDs reais dos seus recebedores na Pagar.me
                 split_rules: [
-                    { recipient_id: "re_recebedor_principal", percentage: 93, liable: true, charge_processing_fee: true },
-                    { recipient_id: "re_vendedor_parceiro", percentage: 7, liable: false, charge_processing_fee: false }
+                    { recipient_id: "re_cmm1zy49o2zhm0l9t0ispccsx", percentage: 96.2, liable: true, charge_processing_fee: true },
+                    { recipient_id: "re_cmm204du72zq50l9t9owfdeni", percentage: 3.8, liable: false, charge_processing_fee: false }
                 ]
             })
         });
