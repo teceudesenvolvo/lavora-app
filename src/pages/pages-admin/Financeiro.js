@@ -341,16 +341,17 @@ const Financeiro = () => {
   const CLOUD_FUNCTIONS_BASE = 'https://us-central1-lavoro-servicos-c10fd.cloudfunctions.net';
 
   // Criação de cobrança PIX com split via Backend (Firebase Functions)
-  const createPagarmePixSplit = async (charge) => {
-    console.log('Solicitando criação de PIX ao backend:', charge);
+  const createPagarmeOrder = async (charge, method = 'pix') => {
+    console.log(`Solicitando criação de ${method.toUpperCase()} ao backend:`, charge);
     
     try {
-        const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/createPagarmePixSplit`, {
+        const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/createPagarmeSplitOrder`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 amount: Math.round(charge.valor * 100), // Valor em centavos
                 description: charge.descricao,
+                payment_method: method,
                 customer: {
                     name: charge.descricao.split(' - ')[0],
                     phone: charge.telefone ? String(charge.telefone).replace(/\D/g, '') : '5511999999999',
@@ -368,19 +369,24 @@ const Financeiro = () => {
 
         if (!response.ok) throw new Error(`Erro no backend: ${response.statusText}`);
 
-        const data = await response.json();
-        return {
-            pixCopyPaste: data.pix_qr_code || data.pixCopyPaste, 
-            transactionId: data.id
-        };
+        const data = await response.json(); 
+        return data;
     } catch (error) {
         console.error("Erro ao chamar função backend (PIX):", error);
         // Fallback Mock para não quebrar a UI se o backend não existir
-        const mockPixCode = `00020126580014br.gov.bcb.pix0136${(Math.random() + 1).toString(36).substring(2)}520400005303986540${charge.valor.toFixed(2).replace('.', '')}5802BR5913LavoroServicos6009SAO PAULO62070503***6304${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
-        return {
-            pixCopyPaste: mockPixCode,
-            transactionId: `mock_${new Date().getTime()}` 
-        };
+        if (method === 'pix') {
+            const mockPixCode = `00020126580014br.gov.bcb.pix0136${(Math.random() + 1).toString(36).substring(2)}520400005303986540${charge.valor.toFixed(2).replace('.', '')}5802BR5913LavoroServicos6009SAO PAULO62070503***6304${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
+            return {
+                pixCopyPaste: mockPixCode,
+                transactionId: `mock_${new Date().getTime()}` 
+            };
+        } else {
+            return {
+                boletoLine: `34191.79001 01043.510047 91020.150008 5 898700000${Math.round(charge.valor * 100)}`,
+                boletoUrl: "https://exemplo.com/boleto.pdf",
+                transactionId: `mock_${new Date().getTime()}`
+            };
+        }
     };
   };
 
@@ -395,7 +401,7 @@ const Financeiro = () => {
       if (!mockPhoneNumber) mockPhoneNumber = '5511999999999';
       
       try {
-          const pagarmeResponse = await createPagarmePixSplit(trx);
+          const pagarmeResponse = await createPagarmeOrder(trx, 'pix');
           
           const message = `Olá! Segue o código PIX para pagamento da seu plano "${trx.descricao}" no valor de ${trx.valorFormatado}:\n\n${pagarmeResponse.pixCopyPaste}\n\nBasta copiar o código e colar na área "PIX Copia e Cola" do seu aplicativo de banco.`;
           
@@ -426,17 +432,15 @@ const Financeiro = () => {
       if (!mockPhoneNumber) mockPhoneNumber = '5511999999999';
       
       try {
-          // Simulação de geração de boleto
-          const mockBoletoCode = `34191.79001 01043.510047 91020.150008 5 898700000${Math.round(trx.valor * 100)}`;
-          const mockBoletoUrl = "https://exemplo.com/boleto.pdf";
+          const pagarmeResponse = await createPagarmeOrder(trx, 'boleto');
           
-          const message = `Olá! Segue o boleto para pagamento da sua cobrança "${trx.descricao}" no valor de ${trx.valorFormatado}:\n\nLinha Digitável: ${mockBoletoCode}\nLink PDF: ${mockBoletoUrl}`;
+          const message = `Olá! Segue o boleto para pagamento da sua cobrança "${trx.descricao}" no valor de ${trx.valorFormatado}:\n\nLinha Digitável: ${pagarmeResponse.boletoLine}\nLink PDF: ${pagarmeResponse.boletoUrl}`;
           
           const whatsAppUrl = `https://wa.me/${mockPhoneNumber}?text=${encodeURIComponent(message)}`;
 
           setPixModalData({ 
               isOpen: true, 
-              code: mockBoletoCode, 
+              code: pagarmeResponse.boletoLine, 
               whatsAppUrl: whatsAppUrl, 
               clientName: trx.descricao.split(' - ')[0],
               phone: mockPhoneNumber,

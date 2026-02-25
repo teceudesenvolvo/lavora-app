@@ -9,7 +9,7 @@ admin.initializeApp();
 // Em produção, use: firebase functions:config:set pagarme.key="sk_..." whatsapp.token="EAAG..."
 // Para teste local, você pode substituir as strings abaixo.
 // IMPORTANTE: Substitua pelos seus tokens reais obtidos em https://developers.facebook.com/apps/
-const PAGARME_API_KEY = process.env.PAGARME_KEY || "ak_test_ZA6Wq8Llk1XVYesbBHmV2PMyGrxpae";
+const PAGARME_API_KEY = process.env.PAGARME_KEY || "sk_b411329ad76d4efe9c918d0dacf5342e";
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || "EAAG..."; // Cole seu Token Permanente ou Temporário aqui
 const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || "1234567890"; // Cole o ID do número de telefone aqui
 
@@ -17,14 +17,15 @@ const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || "1234567890"; // Cole
  * Cria uma cobrança PIX com Split na Pagar.me (API v5)
  * Documentação: https://docs.pagar.me/reference/criar-pedido
  */
-exports.createPagarmePixSplit = functions.https.onRequest((req, res) => {
+exports.createPagarmeSplitOrder = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
       if (req.method !== "POST") {
         return res.status(405).send("Método não permitido");
       }
 
-      const { amount, description, customer, split_rules } = req.body;
+      const { amount, description, customer, split_rules, payment_method } = req.body;
+      const method = payment_method || 'pix';
 
       // Formata as regras de split para o padrão Pagar.me V5
       const formattedSplit = split_rules ? split_rules.map(rule => ({
@@ -37,6 +38,21 @@ exports.createPagarmePixSplit = functions.https.onRequest((req, res) => {
           charge_remainder_fee: rule.liable // Geralmente quem é liable absorve a diferença de arredondamento
         }
       })) : [];
+
+      const paymentData = {
+        payment_method: method,
+        split: formattedSplit
+      };
+
+      if (method === 'pix') {
+        paymentData.pix = { expires_in: 86400 }; // 24h
+      } else if (method === 'boleto') {
+        paymentData.boleto = {
+            instructions: "Pagar até o vencimento",
+            due_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Vencimento em 3 dias
+            document_number: "123"
+        };
+      }
 
       // Monta o objeto do pedido conforme a API v5 da Pagar.me
       const orderData = {
@@ -62,14 +78,7 @@ exports.createPagarmePixSplit = functions.https.onRequest((req, res) => {
           }
         ],
         payments: [
-          {
-            payment_method: "pix",
-            pix: {
-              expires_in: 3600 // Expira em 1 hora
-            },
-            // Regras de Split formatadas
-            split: formattedSplit 
-          }
+          paymentData
         ]
       };
 
@@ -85,12 +94,20 @@ exports.createPagarmePixSplit = functions.https.onRequest((req, res) => {
       const charge = response.data.charges[0];
       const pixTransaction = charge.last_transaction;
 
-      res.status(200).json({
+      const result = {
         id: response.data.id,
-        pixCopyPaste: pixTransaction.qr_code,
-        pixQrCodeUrl: pixTransaction.qr_code_url,
         status: charge.status
-      });
+      };
+
+      if (method === 'pix') {
+        result.pixCopyPaste = pixTransaction.qr_code;
+        result.pixQrCodeUrl = pixTransaction.qr_code_url;
+      } else if (method === 'boleto') {
+        result.boletoLine = pixTransaction.line;
+        result.boletoUrl = pixTransaction.pdf || pixTransaction.url;
+      }
+
+      res.status(200).json(result);
 
     } catch (error) {
       console.error("Erro Pagar.me:", error.response?.data || error.message);
