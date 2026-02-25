@@ -30,7 +30,7 @@ exports.createPagarmeSplitOrder = functions.https.onRequest((req, res) => {
       // Formata as regras de split para o padrão Pagar.me V5
       const formattedSplit = split_rules ? split_rules.map(rule => ({
         recipient_id: rule.recipient_id,
-        amount: rule.percentage, // Na V5, se type=percentage, amount é a porcentagem (ex: 80)
+        amount: Math.round(rule.percentage * 100), // Na V5, se type=percentage, amount é a porcentagem x 100 (ex: 96.2% = 9620)
         type: "percentage",
         options: {
           charge_processing_fee: rule.charge_processing_fee,
@@ -63,15 +63,15 @@ exports.createPagarmeSplitOrder = functions.https.onRequest((req, res) => {
           document: customer.document ? customer.document.replace(/\D/g, '') : "00000000000",
           phones: {
             mobile_phone: {
-              country_code: "55",
+              country_code: "55", // Mantém o código do país fixo
               area_code: customer.phone.substring(2, 4), // Ex: 11
               number: customer.phone.substring(4)        // Ex: 999999999
             }
           }
         },
         items: [
-          {
-            amount: amount, // Valor em centavos
+         {
+            amount: amount,
             description: description,
             quantity: 1,
             code: "REF-123"
@@ -110,10 +110,12 @@ exports.createPagarmeSplitOrder = functions.https.onRequest((req, res) => {
       res.status(200).json(result);
 
     } catch (error) {
-      console.error("Erro Pagar.me:", error.response?.data || error.message);
+     const errorData = error.response ? error.response.data : error.message;
+      console.error("Erro Pagar.me:", errorData);
       res.status(500).json({ 
         error: "Erro ao processar pagamento", 
-        details: error.response?.data || error.message 
+        details: errorData,
+        raw: error
       });
     }
   });
@@ -142,6 +144,7 @@ exports.checkPagarmeOrderStatus = functions.https.onRequest((req, res) => {
     }
   });
 });
+
 
 /**
  * Envia mensagem via WhatsApp Business API (Meta)

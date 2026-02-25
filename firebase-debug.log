@@ -1,0 +1,40 @@
+[debug] [2026-02-25T16:27:16.417Z] ----------------------------------------------------------------------
+[debug] [2026-02-25T16:27:16.421Z] Command:       /Users/leonardoribeiro/.nvm/versions/node/v22.21.1/bin/node /Users/leonardoribeiro/.nvm/versions/node/v22.21.1/bin/firebase deploy --only functions
+[debug] [2026-02-25T16:27:16.421Z] CLI Version:   15.6.0
+[debug] [2026-02-25T16:27:16.421Z] Platform:      darwin
+[debug] [2026-02-25T16:27:16.421Z] Node Version:  v22.21.1
+[debug] [2026-02-25T16:27:16.422Z] Time:          Wed Feb 25 2026 13:27:16 GMT-0300 (Brasilia Standard Time)
+[debug] [2026-02-25T16:27:16.422Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-25T16:27:17.284Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-25T16:27:17.284Z] > authorizing via signed-in user (blutecnologiasbr@gmail.com)
+[debug] [2026-02-25T16:27:17.285Z] [iam] checking project lavoro-servicos-c10fd for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-02-25T16:27:17.285Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:17.285Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:17.285Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions [none]
+[debug] [2026-02-25T16:27:17.285Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions  x-goog-user-project=lavoro-servicos-c10fd
+[debug] [2026-02-25T16:27:17.285Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-02-25T16:27:21.428Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions 200
+[debug] [2026-02-25T16:27:21.428Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-02-25T16:27:21.429Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:21.429Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:21.429Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-02-25T16:27:21.429Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-02-25T16:27:22.401Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2026-02-25T16:27:22.402Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/lavoro-servicos-c10fd/serviceAccounts/lavoro-servicos-c10fd@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'lavoro-servicos-c10fd'...
+[info] 
+[info] i  deploying functions 
+[debug] [2026-02-25T16:27:22.406Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:22.406Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:22.406Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd [none]
+[debug] [2026-02-25T16:27:22.656Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd 200
+[debug] [2026-02-25T16:27:22.656Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/lavoro-servicos-c10fd {"projectNumber":"11458991995","projectId":"lavoro-servicos-c10fd","lifecycleState":"ACTIVE","name":"lavoro-servicos","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2026-02-11T01:54:50.560240Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2026-02-25T16:27:22.662Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:22.662Z] Checked if tokens are valid: true, expires at: 1772039826000
+[debug] [2026-02-25T16:27:22.662Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/lavoro-servicos-c10fd/adminSdkConfig [none]
