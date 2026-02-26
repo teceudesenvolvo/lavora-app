@@ -433,20 +433,7 @@ const Financeiro = () => {
 
     } catch (error) {
         console.error("Erro ao chamar função backend (PIX):", error);
-        // Fallback Mock para não quebrar a UI se o backend não existir
-        if (method === 'pix') {
-            const mockPixCode = `00020126580014br.gov.bcb.pix0136${(Math.random() + 1).toString(36).substring(2)}520400005303986540${charge.valor.toFixed(2).replace('.', '')}5802BR5913LavoroServicos6009SAO PAULO62070503***6304${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
-            return {
-                pixCopyPaste: mockPixCode,
-                transactionId: `mock_${new Date().getTime()}` 
-            };
-        } else {
-            return {
-                boletoLine: `34191.79001 01043.510047 91020.150008 5 898700000${Math.round(charge.valor * 100)}`,
-                boletoUrl: "https://exemplo.com/boleto.pdf",
-                transactionId: `mock_${new Date().getTime()}`
-            };
-        }
+        throw error;
     };
   };
 

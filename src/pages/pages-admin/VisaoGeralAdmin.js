@@ -7,7 +7,7 @@ import {
   LineElement,
   BarElement,
   Title,
-  Tooltip,
+  Tooltip, 
   Legend,
   ArcElement,
 } from 'chart.js';
@@ -106,9 +106,6 @@ const VisaoGeralAdmin = () => {
     Object.values(clientes).forEach(cliente => {
         if (!cliente) return;
         
-        // Filtra apenas os clientes criados pelo usuário logado
-        if (cliente.createdId !== user.uid) return;
-
         totalClientes++;
 
         // Novos Clientes (ADESÃO)
