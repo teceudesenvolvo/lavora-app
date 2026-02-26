@@ -382,3 +382,55 @@ exports.sendWhatsAppMessage = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+/**
+ * Envia e-mails de cobrança em massa para todos os clientes ativos
+ */
+exports.sendBulkBillingEmails = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      // Busca todos os clientes
+      const snapshot = await admin.database().ref('clientes').once('value');
+      const clientes = snapshot.val();
+
+      if (!clientes) {
+        return res.status(200).json({ message: "Nenhum cliente encontrado." });
+      }
+
+      const emailPromises = [];
+      let count = 0;
+
+      Object.values(clientes).forEach(cliente => {
+        // Verifica se tem email e se está ativo
+        if (cliente.EMAIL && cliente.STATUS === 'Ativo') {
+           const mailOptions = {
+            from: '"Lavoro Financeiro" <blutecnologiasbr@gmail.com>',
+            to: cliente.EMAIL,
+            subject: 'Aviso de Cobrança - Lavoro',
+            html: `
+              <div style="font-family: Arial, sans-serif; color: #333;">
+                <h3>Prezado(a) ${cliente.USUARIO || 'Cliente'},</h3>
+                <p>Esperamos que este e-mail o encontre bem.</p>
+                <p>Gostaríamos de lembrar sobre a disponibilidade da sua fatura mensal. Por favor, verifique seu painel do cliente para visualizar os detalhes ou realizar o pagamento.</p>
+                <p>Caso já tenha efetuado o pagamento, por favor, desconsidere este aviso.</p>
+                <br>
+                <p>Estamos à disposição para quaisquer dúvidas.</p>
+                <p>Atenciosamente,<br><strong>Departamento Financeiro - Grupo Lavoro</strong></p>
+              </div>
+            `
+          };
+          emailPromises.push(transporter.sendMail(mailOptions));
+          count++;
+        }
+      });
+
+      await Promise.all(emailPromises);
+
+      res.status(200).json({ message: `E-mails de cobrança enviados para ${count} clientes ativos.` });
+
+    } catch (error) {
+      console.error("Erro ao enviar e-mails em massa:", error);
+      res.status(500).json({ error: "Erro ao processar envio em massa." });
+    }
+  });
+});

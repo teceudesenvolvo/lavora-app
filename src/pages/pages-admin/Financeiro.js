@@ -745,6 +745,29 @@ const Financeiro = () => {
     }
   };
 
+  const handleSendBulkEmails = async () => {
+    if (!window.confirm("ATENÇÃO: Deseja enviar um e-mail de cobrança formal para TODOS os clientes ativos?")) return;
+    
+    setIsSyncing(true);
+    try {
+        const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/sendBulkBillingEmails`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            alert(data.message);
+        } else {
+            alert(`Erro: ${data.error || 'Falha desconhecida'}`);
+        }
+    } catch (error) {
+        console.error("Erro ao enviar e-mails:", error);
+        alert("Erro de conexão ao enviar e-mails.");
+    } finally {
+        setIsSyncing(false);
+    }
+  };
+
   const handleNotify = async (trx) => {
     let phone = trx.telefone ? String(trx.telefone).replace(/\D/g, '') : '';
     
@@ -931,6 +954,9 @@ const Financeiro = () => {
               <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={() => setModalOpen(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <FaPlus /> Nova Cobrança
+                  </button>
+                  <button onClick={handleSendBulkEmails} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing}>
+                      <FaEnvelope /> Enviar Cobrança Geral
                   </button>
                   <button onClick={syncPayments} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing}>
                       <FaSync className={isSyncing ? "icon-spin" : ""} /> {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
