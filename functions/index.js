@@ -384,6 +384,74 @@ exports.sendWhatsAppMessage = functions.https.onRequest((req, res) => {
 });
 
 /**
+ * Helper para criar pedido na Pagar.me (Interno)
+ */
+async function createPagarmeOrderInternal(customer, amount, method, description) {
+  // Regras de Split (Mesmas do Frontend)
+  const split_rules = [
+    { recipient_id: "re_cmm1zy49o2zhm0l9t0ispccsx", percentage: 96.2, liable: true, charge_processing_fee: false },
+    { recipient_id: "re_cmm204du72zq50l9t9owfdeni", percentage: 3.8, liable: false, charge_processing_fee: true }
+  ];
+
+  // Cálculo do Split (Centavos)
+  let formattedSplit = [];
+  const totalAmount = parseInt(amount);
+  let currentSum = 0;
+
+  formattedSplit = split_rules.map(rule => {
+    const ruleAmount = Math.floor(totalAmount * (rule.percentage / 100));
+    currentSum += ruleAmount;
+    return {
+      recipient_id: rule.recipient_id,
+      amount: ruleAmount,
+      type: "flat",
+      options: {
+        charge_processing_fee: rule.charge_processing_fee,
+        liable: rule.liable,
+        charge_remainder_fee: rule.liable
+      }
+    };
+  });
+
+  const remainder = totalAmount - currentSum;
+  if (remainder > 0) {
+    const liableIndex = formattedSplit.findIndex(r => r.options.liable);
+    if (liableIndex >= 0) formattedSplit[liableIndex].amount += remainder;
+    else formattedSplit[0].amount += remainder;
+  }
+
+  const paymentData = {
+    payment_method: method,
+    split: formattedSplit
+  };
+
+  if (method === 'pix') {
+    paymentData.pix = { expires_in: 259200 }; // 3 dias
+  } else if (method === 'boleto') {
+    paymentData.boleto = {
+        instructions: "Pagar até o vencimento",
+        due_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        document_number: "123"
+    };
+  }
+
+  const orderData = {
+    customer: customer,
+    items: [{ amount: totalAmount, description: description, quantity: 1, code: "REF-BULK" }],
+    payments: [paymentData]
+  };
+
+  const response = await axios.post("https://api.pagar.me/core/v5/orders", orderData, {
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Basic " + Buffer.from(PAGARME_API_KEY + ":").toString("base64")
+    }
+  });
+
+  return response.data;
+}
+
+/**
  * Envia e-mails de cobrança em massa para todos os clientes ativos
  */
 exports.sendBulkBillingEmails = functions.https.onRequest((req, res) => {
@@ -400,33 +468,111 @@ exports.sendBulkBillingEmails = functions.https.onRequest((req, res) => {
       const emailPromises = [];
       let count = 0;
 
+      // Configuração de data para verificação de pagamento
+      const dateOptions = { timeZone: 'America/Sao_Paulo' };
+      const today = new Date();
+      const currentMonthName = today.toLocaleString('pt-BR', { ...dateOptions, month: 'long' });
+      const currentYear = today.getFullYear();
+      
+      const normalizeStr = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+      const targetMonth = normalizeStr(currentMonthName);
+
       Object.values(clientes).forEach(cliente => {
         // Verifica se tem email e se está ativo
         if (cliente.EMAIL && cliente.STATUS === 'Ativo') {
-           const mailOptions = {
-            from: '"Lavoro Financeiro" <blutecnologiasbr@gmail.com>',
-            to: cliente.EMAIL,
-            subject: 'Aviso de Cobrança - Lavoro',
-            html: `
-              <div style="font-family: Arial, sans-serif; color: #333;">
-                <h3>Prezado(a) ${cliente.USUARIO || 'Cliente'},</h3>
-                <p>Esperamos que este e-mail o encontre bem.</p>
-                <p>Gostaríamos de lembrar sobre a disponibilidade da sua fatura mensal. Por favor, verifique seu painel do cliente para visualizar os detalhes ou realizar o pagamento.</p>
-                <p>Caso já tenha efetuado o pagamento, por favor, desconsidere este aviso.</p>
-                <br>
-                <p>Estamos à disposição para quaisquer dúvidas.</p>
-                <p>Atenciosamente,<br><strong>Departamento Financeiro - Grupo Lavoro</strong></p>
-              </div>
-            `
-          };
-          emailPromises.push(transporter.sendMail(mailOptions));
-          count++;
+           
+           // Verifica se já pagou neste mês
+           let alreadyPaid = false;
+           if (cliente.dataPagamento) {
+             const history = Array.isArray(cliente.dataPagamento) ? cliente.dataPagamento : Object.values(cliente.dataPagamento);
+             alreadyPaid = history.some(entry => {
+                if (typeof entry !== 'string') return false;
+                const normalizedEntry = normalizeStr(entry);
+                // Verifica se começa com o mês atual E contém o ano atual (para evitar falsos positivos de anos anteriores)
+                return normalizedEntry.startsWith(targetMonth) && entry.includes(String(currentYear));
+             });
+           }
+
+           // Se NÃO pagou, envia o e-mail
+           if (!alreadyPaid) {
+             // Prepara dados para geração de cobrança
+             const rawPhone = String(cliente.TELEFONE || '').replace(/\D/g, '');
+             let areaCode = '11';
+             let number = '999999999';
+             if (rawPhone.startsWith('55') && rawPhone.length >= 12) {
+                areaCode = rawPhone.substring(2, 4);
+                number = rawPhone.substring(4);
+             } else if (rawPhone.length >= 10) {
+                areaCode = rawPhone.substring(0, 2);
+                number = rawPhone.substring(2);
+             }
+
+             const customerData = {
+                name: cliente.USUARIO || "Cliente Lavoro",
+                email: cliente.EMAIL,
+                type: "individual",
+                document: String(cliente.CPF || '00000000000').replace(/\D/g, ''),
+                phones: { mobile_phone: { country_code: "55", area_code: areaCode, number: number } }
+             };
+
+             // Valor em centavos
+             const valorString = String(cliente.MENSALIDADE || '0').replace('R$', '').trim().replace('.', '').replace(',', '.');
+             const amount = Math.round(parseFloat(valorString) * 100);
+             const description = `Mensalidade ${currentMonthName}/${currentYear}`;
+
+             // Gera Boleto e PIX
+             // Nota: Isso gera 2 pedidos separados na Pagar.me para o mesmo mês.
+             const promise = (async () => {
+                try {
+                    const boletoOrder = await createPagarmeOrderInternal(customerData, amount, 'boleto', description);
+                    const pixOrder = await createPagarmeOrderInternal(customerData, amount, 'pix', description);
+
+                    const boletoUrl = boletoOrder.charges[0].last_transaction.pdf || boletoOrder.charges[0].last_transaction.url;
+                    const pixCode = pixOrder.charges[0].last_transaction.qr_code;
+
+                    const mailOptions = {
+                        from: '"Lavoro Financeiro" <blutecnologiasbr@gmail.com>',
+                        to: cliente.EMAIL,
+                        subject: `Fatura Lavoro - ${currentMonthName}/${currentYear}`,
+                        html: `
+                          <div style="font-family: Arial, sans-serif; color: #333;">
+                            <h3>Prezado(a) ${cliente.USUARIO || 'Cliente'},</h3>
+                            <p>Segue abaixo os dados para pagamento da sua mensalidade referente a <strong>${currentMonthName}</strong>.</p>
+                            
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                <p><strong>Opção 1: PIX Copia e Cola</strong></p>
+                                <p style="word-break: break-all; font-family: monospace; background: #fff; padding: 10px; border: 1px solid #ddd;">${pixCode}</p>
+                                <p><small>Copie o código acima e cole no seu aplicativo bancário.</small></p>
+                            </div>
+
+                            <p><strong>Opção 2: Boleto Bancário</strong></p>
+                            <p>O boleto para pagamento encontra-se em anexo neste e-mail.</p>
+
+                            <br>
+                            <p>Caso já tenha efetuado o pagamento, por favor, desconsidere este aviso.</p>
+                            <p>Atenciosamente,<br><strong>Departamento Financeiro - Grupo Lavoro</strong></p>
+                          </div>
+                        `,
+                        attachments: [
+                            { filename: `Fatura_Lavoro_${currentMonthName}.pdf`, path: boletoUrl }
+                        ]
+                    };
+                    await transporter.sendMail(mailOptions);
+                    return true;
+                } catch (err) {
+                    console.error(`Erro ao processar cliente ${cliente.USUARIO}:`, err.message);
+                    return false;
+                }
+             })();
+             emailPromises.push(promise);
+             count++;
+           }
         }
       });
 
       await Promise.all(emailPromises);
 
-      res.status(200).json({ message: `E-mails de cobrança enviados para ${count} clientes ativos.` });
+      res.status(200).json({ message: `E-mails de cobrança enviados para ${count} clientes pendentes.` });
 
     } catch (error) {
       console.error("Erro ao enviar e-mails em massa:", error);
