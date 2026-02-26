@@ -393,8 +393,8 @@ const Financeiro = () => {
                     type: charge.origem // 'assinatura' ou 'avulsa'
                 },
                 split_rules: [
-                    { recipient_id: "re_cmm1zy49o2zhm0l9t0ispccsx", percentage: 96.2, liable: true, charge_processing_fee: true },
-                    { recipient_id: "re_cmm204du72zq50l9t9owfdeni", percentage: 3.8, liable: false, charge_processing_fee: false }
+                    { recipient_id: "re_cmm1zy49o2zhm0l9t0ispccsx", percentage: 96.2, liable: true, charge_processing_fee: false },
+                    { recipient_id: "re_cmm204du72zq50l9t9owfdeni", percentage: 3.8, liable: false, charge_processing_fee: true }
                 ]
             })
         });
