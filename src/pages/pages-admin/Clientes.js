@@ -13,7 +13,7 @@ const Clientes = () => {
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: '', valor: '', vendedor: '', status: 'Ativo' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', vendedor: '', status: 'Ativo', observacao: '' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
@@ -66,7 +66,8 @@ const Clientes = () => {
               documentos: item.documentos || [],
               contratos: item.contratos || [],
               faturas: item.faturas || [],
-              cotacoes: item.cotacoes || []
+              cotacoes: item.cotacoes || [],
+              observacao: item.OBSERVACAO || ''
             };
           }).filter(item => item !== null);
           setClientes(loadedClientes);
@@ -398,7 +399,7 @@ const Clientes = () => {
 
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: '', valor: '', vendedor: '', status: 'Ativo' });
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', vendedor: '', status: 'Ativo', observacao: '' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -433,6 +434,7 @@ const Clientes = () => {
       MENSALIDADE: removeCurrencyMask(newClientData.valor),
       VENDEDOR: newClientData.vendedor,
       STATUS: newClientData.status,
+      OBSERVACAO: newClientData.observacao,
       'ADESÃO': new Date().toLocaleDateString('pt-BR'),
       itensPlano: planItems.map(item => ({ ...item, valor: removeCurrencyMask(item.valor) })),
       documentos: newClientDocs
@@ -481,7 +483,9 @@ const Clientes = () => {
       MENSALIDADE: removeCurrencyMask(formData.get('mensalidade')),
       VENCIMENTO: formData.get('vencimento'),
       EMAIL: formData.get('email'),
-      STATUS: formData.get('status')
+      STATUS: formData.get('status'),
+      CONTRATO: formData.get('contratoTipo'),
+      OBSERVACAO: formData.get('observacao')
     };
 
     try {
@@ -502,7 +506,9 @@ const Clientes = () => {
           mensalidade: updatedData.MENSALIDADE,
           vencimento: updatedData.VENCIMENTO,
           email: updatedData.EMAIL,
-          status: updatedData.STATUS
+          status: updatedData.STATUS,
+          contratoTipo: updatedData.CONTRATO,
+          observacao: updatedData.OBSERVACAO
         } : c));
         alert('Cliente atualizado com sucesso!');
         handleCloseModal();
@@ -528,6 +534,12 @@ const Clientes = () => {
             <div className="form-group"><label>Plano</label><input type="text" name="plano" defaultValue={selectedClient.plano} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" defaultValue={selectedClient.mensalidade} onChange={(e) => e.target.value = maskCurrency(e.target.value)} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Adesão</label><input type="text" name="vencimento" defaultValue={selectedClient.vencimento} onChange={(e) => e.target.value = maskDate(e.target.value)} maxLength="10" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Tipo</label>
+              <select name="contratoTipo" defaultValue={selectedClient.contratoTipo} style={{ width: '100%' }}>
+                <option value="Titular">Titular</option>
+                <option value="Dependente">Dependente</option>
+              </select>
+            </div>
             <div className="form-group"><label>Status</label>
               <select name="status" defaultValue={selectedClient.status} style={{ width: '100%' }}>
                 <option value="Ativo">Ativo</option>
@@ -536,6 +548,10 @@ const Clientes = () => {
                 <option value="Cotação">Cotação</option>
                 <option value="Pendente">Pendente</option>
               </select>
+            </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Observação</label>
+              <textarea name="observacao" defaultValue={selectedClient.observacao} style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
             </div>
             <div className="popup-actions" style={{ gridColumn: '1 / -1', justifyContent: 'flex-start', paddingTop: '10px' }}>
               <button type="submit" className="btn btn-primary">Salvar Alterações</button>
@@ -671,7 +687,12 @@ const Clientes = () => {
             <div className="form-group"><label>Data de Nascimento</label><input name="dataNascimento" value={newClientData.dataNascimento} onChange={(e) => { e.target.value = maskDate(e.target.value); handleNewClientChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Telefone</label><input name="telefone" value={newClientData.telefone} onChange={(e) => { e.target.value = maskPhone(e.target.value); handleNewClientChange(e); }} maxLength="15" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Email</label><input name="email" value={newClientData.email} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Titular?</label><input name="tipo" value={newClientData.tipo} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Tipo</label>
+              <select name="tipo" value={newClientData.tipo} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                <option value="Titular">Titular</option>
+                <option value="Dependente">Dependente</option>
+              </select>
+            </div>
             <div className="form-group"><label>Vendedor</label><input name="vendedor" value={newClientData.vendedor} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Classificação</label>
               <select name="status" value={newClientData.status} onChange={handleNewClientChange} style={{ width: '100%' }}>
@@ -680,6 +701,10 @@ const Clientes = () => {
                 <option value="Contato">Contato</option>
                 <option value="Cotação">Cotação</option>
               </select>
+            </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Observação</label>
+              <textarea name="observacao" value={newClientData.observacao} onChange={handleNewClientChange} style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
             </div>
           </div>
         );

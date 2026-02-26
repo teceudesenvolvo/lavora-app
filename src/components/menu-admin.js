@@ -10,6 +10,7 @@ import {
   FaCog,
   FaSignOutAlt,
   FaWallet,
+  FaUserShield,
 } from 'react-icons/fa';
 
 const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar }) => {
@@ -36,6 +37,7 @@ const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar }) => {
             <li><NavLink to="/dashboard-admin/analises" onClick={toggleSidebar}><FaChartLine /> Análises</NavLink></li>
             {/* <li><NavLink to="/dashboard-admin/relatorios" onClick={toggleSidebar}><FaFileAlt /> Relatórios</NavLink></li> */}
             <li><NavLink to="/dashboard-admin/clientes" onClick={toggleSidebar}><FaUsers /> Clientes</NavLink></li>
+            <li><NavLink to="/dashboard-admin/equipe" onClick={toggleSidebar}><FaUserShield /> Equipe</NavLink></li>
             <li><NavLink to="/dashboard-admin/financeiro" onClick={toggleSidebar}><FaWallet /> Financeiro</NavLink></li>
             <li><NavLink to="/dashboard-admin/configuracoes" onClick={toggleSidebar}><FaCog /> Configurações</NavLink></li>
           </ul>

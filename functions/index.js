@@ -2,6 +2,17 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const cors = require("cors")({ origin: true });
+const nodemailer = require("nodemailer");
+
+// Configuração do Transporter de E-mail (Exemplo com Gmail)
+// IMPORTANTE: Para Gmail, use uma "Senha de App" gerada em sua conta Google.
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "blutecnologiasbr@gmail.com", // SUBSTITUA PELO SEU E-MAIL
+    pass: "tbqx ljgd lhot vjek"     // SUBSTITUA PELA SENHA DE APP
+  }
+});
 
 admin.initializeApp();
 
@@ -232,6 +243,75 @@ exports.pagarmeWebhook = functions.https.onRequest((req, res) => {
     } catch (error) {
       console.error("Erro no Webhook:", error);
       res.status(500).send("Erro interno");
+    }
+  });
+});
+
+/**
+ * Convida um novo usuário: Cria no Auth e gera link de definição de senha
+ */
+exports.inviteUser = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { email, nome, cargo } = req.body;
+      
+      // Verifica se usuário já existe
+      try {
+          await admin.auth().getUserByEmail(email);
+          return res.status(400).json({ error: "Usuário já existe com este e-mail." });
+      } catch (e) {
+          if (e.code !== 'auth/user-not-found') throw e;
+      }
+
+      // Cria usuário no Auth
+      const userRecord = await admin.auth().createUser({
+        email,
+        displayName: nome,
+        emailVerified: true
+      });
+
+      // Gera link de redefinição de senha (funciona como convite para definir senha)
+      const link = await admin.auth().generatePasswordResetLink(email);
+
+      // Envia o e-mail real
+      const mailOptions = {
+        from: '"Lavoro Admin" <seu-email@gmail.com>',
+        to: email,
+        subject: 'Convite para acessar o Sistema Lavoro',
+        html: `
+          <h3>Olá, ${nome}!</h3>
+          <p>Você foi convidado para fazer parte da equipe Lavoro como <strong>${cargo}</strong>.</p>
+          <p>Para definir sua senha e acessar o sistema, clique no link abaixo:</p>
+          <a href="${link}">Definir Senha de Acesso</a>
+          <p><small>Se o botão não funcionar, copie e cole: ${link}</small></p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      res.status(200).json({ message: "Usuário criado e convite gerado", uid: userRecord.uid });
+
+    } catch (error) {
+      console.error("Erro ao convidar usuário:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+});
+
+/**
+ * Exclui um usuário do Firebase Auth
+ */
+exports.deleteUser = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { uid } = req.body;
+      if (!uid) return res.status(400).json({ error: "UID is required" });
+
+      await admin.auth().deleteUser(uid);
+      res.status(200).json({ message: "Usuário excluído do Auth com sucesso" });
+    } catch (error) {
+      console.error("Erro ao excluir usuário Auth:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 });
