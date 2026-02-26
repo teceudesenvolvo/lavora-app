@@ -580,3 +580,57 @@ exports.sendBulkBillingEmails = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+/**
+ * Envia e-mail de cobrança individual (PIX + Boleto)
+ */
+exports.sendBillingEmail = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { customer, amount, description } = req.body;
+
+      // Gera Boleto
+      const boletoOrder = await createPagarmeOrderInternal(customer, amount, 'boleto', description);
+      const boletoUrl = boletoOrder.charges[0].last_transaction.pdf || boletoOrder.charges[0].last_transaction.url;
+
+      // Gera PIX
+      const pixOrder = await createPagarmeOrderInternal(customer, amount, 'pix', description);
+      const pixCode = pixOrder.charges[0].last_transaction.qr_code;
+
+      const mailOptions = {
+        from: '"Lavoro Financeiro" <blutecnologiasbr@gmail.com>',
+        to: customer.email,
+        subject: `Fatura Lavoro - ${description}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; color: #333;">
+            <h3>Prezado(a) ${customer.name},</h3>
+            <p>Segue abaixo os dados para pagamento: <strong>${description}</strong>.</p>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p><strong>Opção 1: PIX Copia e Cola</strong></p>
+                <p style="word-break: break-all; font-family: monospace; background: #fff; padding: 10px; border: 1px solid #ddd;">${pixCode}</p>
+                <p><small>Copie o código acima e cole no seu aplicativo bancário.</small></p>
+            </div>
+
+            <p><strong>Opção 2: Boleto Bancário</strong></p>
+            <p>O boleto para pagamento encontra-se em anexo neste e-mail.</p>
+
+            <br>
+            <p>Caso já tenha efetuado o pagamento, por favor, desconsidere este aviso.</p>
+            <p>Atenciosamente,<br><strong>Departamento Financeiro - Grupo Lavoro</strong></p>
+          </div>
+        `,
+        attachments: [
+            { filename: `Fatura_Lavoro.pdf`, path: boletoUrl }
+        ]
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({ message: "E-mail enviado com sucesso!" });
+
+    } catch (error) {
+      console.error("Erro ao enviar e-mail individual:", error);
+      res.status(500).json({ error: "Erro ao enviar e-mail.", details: error.message });
+    }
+  });
+});

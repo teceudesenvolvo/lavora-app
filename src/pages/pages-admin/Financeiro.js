@@ -784,15 +784,61 @@ const Financeiro = () => {
     window.open(whatsAppUrl, '_blank');
   };
 
-  const handleSendEmail = (trx) => {
+  const handleSendEmail = async (trx) => {
     if (!trx.email) {
+        alert("Cliente sem e-mail cadastrado.");
         return;
     }
-    const vencimento = trx.dataObj ? trx.dataObj.toLocaleDateString('pt-BR') : trx.data;
-    const subject = `Lembrete de Pagamento: ${trx.descricao}`;
-    const body = `Olá! \n\nLembrete de pagamento para: ${trx.descricao}.\nValor: ${trx.valorFormatado}.\nVencimento: ${vencimento}.\n\nAtenciosamente,\nEquipe Lavoro`;
     
-    window.open(`mailto:${trx.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    if (!window.confirm(`Deseja gerar PIX/Boleto e enviar por e-mail para ${trx.email}?`)) return;
+
+    // Prepara dados para o backend
+    const amount = Math.round(trx.valor * 100);
+    const description = trx.descricao; // Para assinaturas é o nome, para avulsas é "Desc - Nome"
+    
+    let phone = trx.telefone ? String(trx.telefone).replace(/\D/g, '') : '';
+    let areaCode = '11';
+    let number = '999999999';
+    if (phone.startsWith('55') && phone.length >= 12) {
+        areaCode = phone.substring(2, 4);
+        number = phone.substring(4);
+    } else if (phone.length >= 10) {
+        areaCode = phone.substring(0, 2);
+        number = phone.substring(2);
+    }
+
+    // Tenta extrair o nome correto dependendo da origem
+    let customerName = trx.descricao;
+    if (trx.origem === 'avulsa' && trx.descricao.includes(' - ')) {
+        customerName = trx.descricao.split(' - ')[1];
+    }
+
+    const customer = {
+        name: customerName,
+        email: trx.email,
+        document: trx.cpf ? String(trx.cpf).replace(/\D/g, '') : '00000000000',
+        phones: { mobile_phone: { country_code: "55", area_code: areaCode, number: number } },
+        type: "individual"
+    };
+
+    try {
+        alert("Gerando cobrança e enviando e-mail... Por favor, aguarde.");
+        const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/sendBillingEmail`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customer, amount, description })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            alert("E-mail enviado com sucesso!");
+        } else {
+            alert(`Erro: ${data.error || 'Falha ao enviar'}`);
+        }
+    } catch (error) {
+        console.error("Erro ao enviar e-mail:", error);
+        alert("Erro de conexão ao enviar e-mail.");
+    }
   };
 
   const pagamentosDoMesGrafico = useMemo(() => {
@@ -1029,19 +1075,21 @@ const Financeiro = () => {
                     <td>
                       <div style={{ display: 'flex', gap: '10px' }}>
                           {trx.status !== 'Pago' && (
-                              <button onClick={() => handleMarkAsPaid(trx)} title="Baixar (Marcar como Pago)" style={{ background: 'none', border: 'none', color: '#28a745', cursor: 'pointer', fontSize: '1.1rem' }}>
-                                  <FaCheck />
-                              </button>
+                              <>
+                                <button onClick={() => handleMarkAsPaid(trx)} title="Baixar (Marcar como Pago)" style={{ background: 'none', border: 'none', color: '#28a745', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                    <FaCheck />
+                                </button>
+                                <button onClick={() => handleNotify(trx)} title="Enviar Lembrete WhatsApp" style={{ background: 'none', border: 'none', color: '#ffc107', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                    <FaBell />
+                                </button>
+                                <button onClick={() => handleSendEmail(trx)} title="Enviar Fatura por E-mail" style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                    <FaEnvelope />
+                                </button>
+                                <button onClick={() => setPaymentSelectionModal({ isOpen: true, trx: trx })} title="Gerar Cobrança (PIX/Boleto)" style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                    <FaWhatsapp />
+                                </button>
+                              </>
                           )}
-                          <button onClick={() => handleNotify(trx)} title="Enviar Lembrete" style={{ background: 'none', border: 'none', color: '#ffc107', cursor: 'pointer', fontSize: '1.1rem' }}>
-                              <FaBell />
-                          </button>
-                          <button onClick={() => handleSendEmail(trx)} title="Enviar por E-mail" style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '1.1rem' }}>
-                              <FaEnvelope />
-                          </button>
-                          <button onClick={() => setPaymentSelectionModal({ isOpen: true, trx: trx })} title="Gerar Cobrança (PIX/Boleto)" style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', fontSize: '1.1rem' }}>
-                              <FaWhatsapp />
-                          </button>
                           {trx.origem === 'assinatura' && (
                               <button onClick={() => handleEditPaymentClick(trx)} title="Editar Pagamentos" style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '1.1rem' }}>
                                   <FaEdit />
