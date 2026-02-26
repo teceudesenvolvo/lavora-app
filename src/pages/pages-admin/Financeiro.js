@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter } from 'react-icons/fa';
+import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,12 +38,12 @@ const Financeiro = () => {
 
   // Estados para Nova Cobrança
   const [isModalOpen, setModalOpen] = useState(false);
-  const [newCharge, setNewCharge] = useState({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente' });
+  const [newCharge, setNewCharge] = useState({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente', cpf: '', email: '' });
   // Estado para o Modal PIX
-  const [pixModalData, setPixModalData] = useState({ isOpen: false, code: '', whatsAppUrl: '', clientName: '', phone: '', message: '', type: 'pix' });
+  const [pixModalData, setPixModalData] = useState({ isOpen: false, code: '', whatsAppUrl: '', clientName: '', phone: '', message: '', type: 'pix', boletoUrl: '' });
 
   // Estado para Modal de Confirmação de Pagamento
-  const [confirmPaymentModal, setConfirmPaymentModal] = useState({ isOpen: false, trx: null, isPaidOnline: false });
+  const [confirmPaymentModal, setConfirmPaymentModal] = useState({ isOpen: false, trx: null, isPaidOnline: false, detectedMethod: null });
 
   // Estado para Modal de Seleção de Pagamento
   const [paymentSelectionModal, setPaymentSelectionModal] = useState({ isOpen: false, trx: null });
@@ -57,6 +57,7 @@ const Financeiro = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filterTipo, setFilterTipo] = useState('');
   const [filterVencimento, setFilterVencimento] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const maskCurrency = (value) => {
     const v = value.replace(/\D/g, "");
@@ -70,6 +71,15 @@ const Financeiro = () => {
     const v = value.replace(/\D/g, "");
     if (!v) return "";
     return (Number(v) / 100).toFixed(2);
+  };
+
+  const maskCPF = (value) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
   };
 
   const maskDate = (value) => {
@@ -149,7 +159,13 @@ const Financeiro = () => {
             // Verifica pagamento no histórico (array dataPagamento)
             const dataPagamentoArr = item.dataPagamento ? (Array.isArray(item.dataPagamento) ? item.dataPagamento : Object.values(item.dataPagamento)) : [];
             const monthName = vencimentoDate.toLocaleString('pt-BR', { month: 'long' });
-            const paidEntry = dataPagamentoArr.find(entry => typeof entry === 'string' && entry.toLowerCase().startsWith(monthName.toLowerCase()));
+            
+            // Normalização para evitar erros com acentos (ex: "março" vs "marco")
+            const normalizeStr = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+            const paidEntry = dataPagamentoArr.find(entry => 
+                typeof entry === 'string' && 
+                normalizeStr(entry).startsWith(normalizeStr(monthName))
+            );
 
             let status = 'Pendente';
             let dataPagamentoDisplay = '-';
@@ -253,7 +269,7 @@ const Financeiro = () => {
             return {
               id: key,
               descricao: `${item.descricao} - ${item.cliente}`,
-              cpf: '',
+              cpf: item.cpf || '',
               valor: valor,
               valorFormatado: `R$ ${valor.toFixed(2).replace('.', ',')}`,
               tipo: 'Cobrança Avulsa',
@@ -344,22 +360,38 @@ const Financeiro = () => {
   const createPagarmeOrder = async (charge, method = 'pix') => {
     console.log(`Solicitando criação de ${method.toUpperCase()} ao backend:`, charge);
     
+    // 1. Extrai o nome do cliente e a descrição da cobrança de forma consistente
+    const nameParts = charge.descricao.split(' - ');
+    const customerName = nameParts.length > 1 ? nameParts[nameParts.length - 1].trim() : charge.descricao.trim();
+    const itemDescription = charge.origem === 'assinatura' 
+        ? `Mensalidade plano ${charge.tipo || ''} - ${customerName}`
+        : nameParts[0].trim();
+
+    // 2. Formata o telefone para o padrão E.164 com código de país
+    let phoneNumber = charge.telefone ? String(charge.telefone).replace(/\D/g, '') : '';
+    if (phoneNumber && !phoneNumber.startsWith('55') && (phoneNumber.length === 10 || phoneNumber.length === 11)) {
+        phoneNumber = '55' + phoneNumber;
+    }
+    if (!phoneNumber) phoneNumber = '5511999999999'; // Fallback
+    
     try {
         const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/createPagarmeSplitOrder`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 amount: Math.round(charge.valor * 100), // Valor em centavos
-                description: charge.descricao,
+                description: itemDescription,
                 payment_method: method,
                 customer: {
-                    name: charge.descricao.split(' - ')[0],
-                    phone: charge.telefone ? String(charge.telefone).replace(/\D/g, '') : '5511999999999',
-                    document: charge.cpf || '',
+                    name: customerName,
+                    phone: phoneNumber,
+                    document: String(charge.cpf || '').replace(/\D/g, ''),
                     email: charge.email || ''
                 },
-                // Regras de split configuradas
-                // ATENÇÃO: Substitua os IDs (re_...) pelos IDs reais dos seus recebedores na Pagar.me
+                metadata: {
+                    firebaseId: charge.id,
+                    type: charge.origem // 'assinatura' ou 'avulsa'
+                },
                 split_rules: [
                     { recipient_id: "re_cmm1zy49o2zhm0l9t0ispccsx", percentage: 96.2, liable: true, charge_processing_fee: true },
                     { recipient_id: "re_cmm204du72zq50l9t9owfdeni", percentage: 3.8, liable: false, charge_processing_fee: false }
@@ -367,10 +399,14 @@ const Financeiro = () => {
             })
         });
 
-        if (!response.ok) throw new Error(`Erro no backend: ${response.statusText}`);
-
-        const data = await response.json(); 
+        const data = await response.json();
+        if (!response.ok) {
+            console.error("Erro retornado pelo backend:", data);
+            alert(`Erro ao gerar cobrança: ${data.error || response.statusText}`);
+            throw new Error(data.error || `Erro no backend: ${response.statusText}`);
+        }
         return data;
+
     } catch (error) {
         console.error("Erro ao chamar função backend (PIX):", error);
         // Fallback Mock para não quebrar a UI se o backend não existir
@@ -403,6 +439,14 @@ const Financeiro = () => {
       try {
           const pagarmeResponse = await createPagarmeOrder(trx, 'pix');
           
+          // Salva o ID da transação no Firebase para conciliação futura
+          const path = trx.origem === 'assinatura' ? `clientes/${trx.id}` : `cobrancas/${trx.id}`;
+          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/${path}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ transactionId: pagarmeResponse.id })
+          });
+          
           const message = `Olá! Segue o código PIX para pagamento da seu plano "${trx.descricao}" no valor de ${trx.valorFormatado}:\n\n${pagarmeResponse.pixCopyPaste}\n\nBasta copiar o código e colar na área "PIX Copia e Cola" do seu aplicativo de banco.`;
           
           const whatsAppUrl = `https://wa.me/${mockPhoneNumber}?text=${encodeURIComponent(message)}`;
@@ -433,6 +477,14 @@ const Financeiro = () => {
       
       try {
           const pagarmeResponse = await createPagarmeOrder(trx, 'boleto');
+
+          // Salva o ID da transação no Firebase para conciliação futura
+          const path = trx.origem === 'assinatura' ? `clientes/${trx.id}` : `cobrancas/${trx.id}`;
+          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/${path}.json`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ transactionId: pagarmeResponse.id })
+          });
           
           const message = `Olá! Segue o boleto para pagamento da sua cobrança "${trx.descricao}" no valor de ${trx.valorFormatado}:\n\nLinha Digitável: ${pagarmeResponse.boletoLine}\nLink PDF: ${pagarmeResponse.boletoUrl}`;
           
@@ -441,12 +493,14 @@ const Financeiro = () => {
           setPixModalData({ 
               isOpen: true, 
               code: pagarmeResponse.boletoLine, 
+              boletoUrl: pagarmeResponse.boletoUrl,
               whatsAppUrl: whatsAppUrl, 
               clientName: trx.descricao.split(' - ')[0],
               phone: mockPhoneNumber,
               message: message,
               type: 'boleto'
           });
+
       } catch (error) {
           console.error("Erro ao gerar Boleto:", error);
       }
@@ -456,7 +510,9 @@ const Financeiro = () => {
     e.preventDefault();
     const payload = {
       ...newCharge,
-      valor: removeCurrencyMask(newCharge.valor)
+      valor: removeCurrencyMask(newCharge.valor),
+      cpf: String(newCharge.cpf).replace(/\D/g, ''),
+      dataCriacao: new Date().toISOString()
     };
 
     try {
@@ -466,7 +522,7 @@ const Financeiro = () => {
         body: JSON.stringify(payload)
       });
       setModalOpen(false);
-      setNewCharge({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente' });
+      setNewCharge({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente', cpf: '', email: '' });
       window.location.reload(); // Recarrega para atualizar a lista (simplificação)
     } catch (error) {
       console.error("Erro ao salvar cobrança", error);
@@ -532,6 +588,7 @@ const Financeiro = () => {
 
   const handleMarkAsPaid = async (trx) => {
     let isPaidOnline = false;
+    let detectedMethod = null;
 
     // 1. Verifica na API da Pagar.me se houver ID de transação
     if (trx.transactionId) {
@@ -544,13 +601,14 @@ const Financeiro = () => {
         const data = await response.json();
         if (data.status === 'paid') {
           isPaidOnline = true;
+          detectedMethod = data.payment_method;
         }
       } catch (error) {
         console.error("Erro ao verificar Pagar.me", error);
       }
     }
 
-    setConfirmPaymentModal({ isOpen: true, trx, isPaidOnline });
+    setConfirmPaymentModal({ isOpen: true, trx, isPaidOnline, detectedMethod });
   };
 
   const confirmPayment = async (method) => {
@@ -606,9 +664,75 @@ const Financeiro = () => {
     } catch (error) {
         console.error("Erro ao atualizar status", error);
     }
-    setConfirmPaymentModal({ isOpen: false, trx: null, isPaidOnline: false });
+    setConfirmPaymentModal({ isOpen: false, trx: null, isPaidOnline: false, detectedMethod: null });
   };
 
+  const syncPayments = async () => {
+    const pendingTrx = transacoes.filter(t => t.status !== 'Pago' && t.transactionId);
+    if (pendingTrx.length === 0) {
+        alert("Nenhuma transação pendente com ID de pagamento para sincronizar.");
+        return;
+    }
+
+    setIsSyncing(true);
+    let updatedCount = 0;
+
+    for (const trx of pendingTrx) {
+        try {
+            const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/checkPagarmeOrderStatus`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: trx.transactionId })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'paid') {
+                const dataPagamento = new Date().toLocaleDateString('pt-BR');
+                const method = data.payment_method === 'pix' ? 'Pix' : (data.payment_method === 'boleto' ? 'Boleto' : 'Cartão');
+
+                // Atualiza Firebase
+                if (trx.origem === 'assinatura') {
+                    const monthName = trx.dataObj.toLocaleString('pt-BR', { month: 'long' });
+                    const paymentEntry = `${monthName}: ${dataPagamento} - ${method}`;
+                    
+                    const clientRes = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json`);
+                    const clientData = await clientRes.json();
+                    let currentHistory = clientData.dataPagamento || [];
+                    if (!Array.isArray(currentHistory)) {
+                        currentHistory = typeof currentHistory === 'object' ? Object.values(currentHistory) : [];
+                    }
+                    // Evita duplicidade
+                    if (!currentHistory.some(h => h.includes(monthName) && h.includes(dataPagamento))) {
+                         const newHistory = [...currentHistory, paymentEntry];
+                         await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ dataPagamento: newHistory })
+                         });
+                         updatedCount++;
+                    }
+                } else {
+                    await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'Pago', dataPagamento, formaPagamento: method })
+                    });
+                    updatedCount++;
+                }
+            }
+        } catch (error) {
+            console.error(`Erro ao sincronizar trx ${trx.id}:`, error);
+        }
+    }
+    
+    setIsSyncing(false);
+    if (updatedCount > 0) {
+        alert(`${updatedCount} pagamentos foram identificados e atualizados! A página será recarregada.`);
+        window.location.reload();
+    } else {
+        alert("Sincronização concluída. Nenhum novo pagamento identificado.");
+    }
+  };
 
   const handleNotify = async (trx) => {
     let phone = trx.telefone ? String(trx.telefone).replace(/\D/g, '') : '';
@@ -779,6 +903,9 @@ const Financeiro = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 className="faturas-section-title" style={{ marginBottom: 0 }}>Cobranças e Faturas</h3>
             <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={syncPayments} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing}>
+                    <FaSync className={isSyncing ? "icon-spin" : ""} /> {isSyncing ? 'Sincronizando...' : 'Sincronizar Pagamentos'}
+                </button>
                 <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <FaFilter /> {showFilters ? 'Ocultar Filtros' : 'Filtrar'}
                 </button>
@@ -885,8 +1012,10 @@ const Financeiro = () => {
             </div>
             <form onSubmit={handleSaveCharge} className="form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
                 <div className="form-group"><label>Cliente</label><input required value={newCharge.cliente} onChange={(e) => setNewCharge({...newCharge, cliente: e.target.value})} placeholder="Nome do Cliente" /></div>
+                <div className="form-group"><label>CPF do Cliente</label><input required value={newCharge.cpf} onChange={(e) => setNewCharge({...newCharge, cpf: maskCPF(e.target.value)})} placeholder="000.000.000-00" /></div>
+                <div className="form-group"><label>Email do Cliente (Opcional)</label><input type="email" value={newCharge.email} onChange={(e) => setNewCharge({...newCharge, email: e.target.value})} placeholder="email@exemplo.com" /></div>
                 <div className="form-group"><label>Descrição</label><input required value={newCharge.descricao} onChange={(e) => setNewCharge({...newCharge, descricao: e.target.value})} placeholder="Ex: Taxa de Adesão" /></div>
-                <div className="form-group"><label>Valor</label><input required value={newCharge.valor} onChange={(e) => setNewCharge({...newCharge, valor: maskCurrency(e.target.value)})} placeholder="R$ 0,00" /></div>
+                <div className="form-group"><label>Valor</label><input required value={newCharge.valor} onChange={(e) => setNewCharge({...newCharge, valor: maskCurrency(e.target.value)})} placeholder="R$ 0,00" /></div>                
                 <div className="form-group"><label>Vencimento</label><input required type="date" value={newCharge.vencimento} onChange={(e) => setNewCharge({...newCharge, vencimento: e.target.value})} /></div>
                 
                 <div className="popup-actions" style={{ marginTop: '20px', justifyContent: 'flex-end' }}>
@@ -921,8 +1050,11 @@ const Financeiro = () => {
                         className="btn btn-secondary"
                         onClick={() => { navigator.clipboard.writeText(pixModalData.code); }}
                     >
-                        Copiar Código
+                        Copiar {pixModalData.type === 'pix' ? 'Código' : 'Linha Digitável'}
                     </button>
+                    {pixModalData.type === 'boleto' && pixModalData.boletoUrl && (
+                        <a href={pixModalData.boletoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">Ver Boleto (PDF)</a>
+                    )}
                     <a href={pixModalData.whatsAppUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <FaWhatsapp /> Enviar no WhatsApp
                     </a>
@@ -959,17 +1091,30 @@ const Financeiro = () => {
 
       {confirmPaymentModal.isOpen && (
         <div className="popup-overlay">
-          <div className="popup-content cliente-modal" style={{ maxWidth: '400px', textAlign: 'center' }}>
-            <button onClick={() => setConfirmPaymentModal({ isOpen: false, trx: null })} className="popup-close">&times;</button>
+          <div className="popup-content cliente-modal" style={{ maxWidth: '450px', textAlign: 'center' }}>
+            <button onClick={() => setConfirmPaymentModal({ isOpen: false, trx: null, isPaidOnline: false, detectedMethod: null })} className="popup-close">&times;</button>
             <div className="cliente-modal-header" style={{ justifyContent: 'center' }}>
               <h3>Confirmar Pagamento</h3>
             </div>
             <div style={{ marginTop: '20px' }}>
                 <p><strong>{confirmPaymentModal.trx?.descricao}</strong></p>
                 <p>Valor: {confirmPaymentModal.trx?.valorFormatado}</p>
-                {confirmPaymentModal.isPaidOnline && <p style={{color: 'green'}}>Pagamento identificado na Pagar.me!</p>}
                 
-                <p style={{ marginTop: '15px', marginBottom: '10px' }}>Selecione o método de pagamento:</p>
+                {confirmPaymentModal.isPaidOnline && (
+                    <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '15px', borderRadius: '8px', marginBottom: '20px', marginTop: '10px' }}>
+                        <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1.1rem' }}>Pagamento identificado na Pagar.me!</p>
+                        <p style={{ margin: '5px 0 10px 0', fontSize: '0.9rem' }}>Método detectado: <strong>{confirmPaymentModal.detectedMethod === 'pix' ? 'PIX' : (confirmPaymentModal.detectedMethod === 'boleto' ? 'Boleto' : 'Cartão')}</strong></p>
+                        <button 
+                            onClick={() => confirmPayment(confirmPaymentModal.detectedMethod === 'pix' ? 'Pix Copia e Cola' : (confirmPaymentModal.detectedMethod === 'boleto' ? 'Boleto' : 'Cartão'))}
+                            className="btn btn-primary"
+                            style={{ width: '100%', backgroundColor: '#28a745', border: 'none', fontWeight: 'bold' }}
+                        >
+                            <FaCheckCircle style={{ marginRight: '5px' }} /> Confirmar Automaticamente
+                        </button>
+                    </div>
+                )}
+                
+                <p style={{ marginTop: '15px', marginBottom: '10px' }}>{confirmPaymentModal.isPaidOnline ? 'Ou selecione manualmente:' : 'Selecione o método de pagamento:'}</p>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <button onClick={() => confirmPayment('Pix Copia e Cola')} className="btn btn-primary" style={{ justifyContent: 'center' }}>

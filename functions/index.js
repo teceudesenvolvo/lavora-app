@@ -24,20 +24,48 @@ exports.createPagarmeSplitOrder = functions.https.onRequest((req, res) => {
         return res.status(405).send("Método não permitido");
       }
 
-      const { amount, description, customer, split_rules, payment_method } = req.body;
+      const { amount, description, customer, split_rules, payment_method, metadata } = req.body;
       const method = payment_method || 'pix';
 
+      // Validação do CPF/CNPJ do cliente, obrigatório para split
+      const customerDoc = customer.document ? String(customer.document).replace(/\D/g, '') : '';
+      if (!customerDoc || (customerDoc.length !== 11 && customerDoc.length !== 14)) {
+        return res.status(400).json({ error: "Documento (CPF/CNPJ) do cliente é inválido ou não foi fornecido e é obrigatório para gerar cobranças." });
+      }
+
       // Formata as regras de split para o padrão Pagar.me V5
-      const formattedSplit = split_rules ? split_rules.map(rule => ({
-        recipient_id: rule.recipient_id,
-        amount: Math.round(rule.percentage * 100), // Na V5, se type=percentage, amount é a porcentagem x 100 (ex: 96.2% = 9620)
-        type: "percentage",
-        options: {
-          charge_processing_fee: rule.charge_processing_fee,
-          liable: rule.liable,
-          charge_remainder_fee: rule.liable // Geralmente quem é liable absorve a diferença de arredondamento
+      // Alterado para 'flat' (centavos) para evitar erros de soma de porcentagem (ex: 96.2 + 3.8 = 100)
+      let formattedSplit = [];
+      if (split_rules && split_rules.length > 0) {
+        const totalAmount = parseInt(amount);
+        let currentSum = 0;
+
+        formattedSplit = split_rules.map(rule => {
+          const ruleAmount = Math.floor(totalAmount * (rule.percentage / 100));
+          currentSum += ruleAmount;
+          return {
+            recipient_id: rule.recipient_id,
+            amount: ruleAmount,
+            type: "flat",
+            options: {
+              charge_processing_fee: rule.charge_processing_fee,
+              liable: rule.liable,
+              charge_remainder_fee: rule.liable
+            }
+          };
+        });
+
+        // Ajuste de centavos (remainder) para garantir que a soma bata com o total
+        const remainder = totalAmount - currentSum;
+        if (remainder > 0) {
+          const liableIndex = formattedSplit.findIndex(r => r.options.liable);
+          if (liableIndex >= 0) {
+            formattedSplit[liableIndex].amount += remainder;
+          } else {
+            formattedSplit[0].amount += remainder;
+          }
         }
-      })) : [];
+      }
 
       const paymentData = {
         payment_method: method,
@@ -54,21 +82,37 @@ exports.createPagarmeSplitOrder = functions.https.onRequest((req, res) => {
         };
       }
 
+      // Análise robusta do telefone para evitar erros na API da Pagar.me
+      const rawPhone = String(customer.phone || '').replace(/\D/g, '');
+      let areaCode = '11';
+      let number = '999999999'; // Fallback
+
+      if (rawPhone.startsWith('55') && rawPhone.length >= 12) {
+        // Formato com código de país: 5511999999999
+        areaCode = rawPhone.substring(2, 4);
+        number = rawPhone.substring(4);
+      } else if (rawPhone.length >= 10) {
+        // Formato sem código de país: 11999999999 ou 1188888888
+        areaCode = rawPhone.substring(0, 2);
+        number = rawPhone.substring(2);
+      }
+
       // Monta o objeto do pedido conforme a API v5 da Pagar.me
       const orderData = {
         customer: {
           name: customer.name,
           email: customer.email || "cliente@lavoro.com.br",
           type: "individual",
-          document: customer.document ? customer.document.replace(/\D/g, '') : "00000000000",
+          document: customerDoc,
           phones: {
             mobile_phone: {
-              country_code: "55", // Mantém o código do país fixo
-              area_code: customer.phone.substring(2, 4), // Ex: 11
-              number: customer.phone.substring(4)        // Ex: 999999999
+              country_code: "55",
+              area_code: areaCode,
+              number: number
             }
           }
         },
+        metadata: metadata || {},
         items: [
          {
             amount: amount,
@@ -122,6 +166,77 @@ exports.createPagarmeSplitOrder = functions.https.onRequest((req, res) => {
 });
 
 /**
+ * Webhook para receber notificações da Pagar.me e atualizar o Firebase
+ */
+exports.pagarmeWebhook = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { type, data } = req.body;
+      console.log("Webhook received:", type, data?.id);
+
+      // Verifica se é um evento de pedido pago
+      if (type === 'order.paid') {
+        const { metadata, status, charges } = data;
+        
+        // Se o status for pago e tivermos os metadados do nosso sistema
+        if (status === 'paid' && metadata && metadata.firebaseId && metadata.type) {
+           const db = admin.database();
+           
+           // Configura fuso horário para Brasil (evita datas erradas por UTC)
+           const dateOptions = { timeZone: 'America/Sao_Paulo' };
+           const paymentDate = new Date().toLocaleDateString('pt-BR', dateOptions);
+           
+           const paymentMethod = charges && charges[0] ? charges[0].payment_method : 'API';
+           const methodLabel = paymentMethod === 'pix' ? 'Pix' : (paymentMethod === 'boleto' ? 'Boleto' : 'Cartão');
+
+           if (metadata.type === 'assinatura') {
+             // Lógica para Assinatura: Adiciona ao histórico de pagamentos
+             const ref = db.ref(`clientes/${metadata.firebaseId}`);
+             const snapshot = await ref.once('value');
+             const clientData = snapshot.val();
+             
+             if (clientData) {
+               let currentHistory = clientData.dataPagamento || [];
+               if (!Array.isArray(currentHistory)) {
+                 currentHistory = typeof currentHistory === 'object' ? Object.values(currentHistory) : [];
+               }
+               
+               // Usa o mês atual como referência
+               const monthName = new Date().toLocaleString('pt-BR', { ...dateOptions, month: 'long' });
+               const paymentEntry = `${monthName}: ${paymentDate} - ${methodLabel}`;
+               
+               // Evita duplicidade simples verificando se já existe entrada com mesmo mês e data
+               const alreadyPaid = currentHistory.some(h => h.includes(monthName) && h.includes(paymentDate));
+               
+               if (!alreadyPaid) {
+                 currentHistory.push(paymentEntry);
+                 await ref.update({ dataPagamento: currentHistory });
+                 console.log(`Cliente ${metadata.firebaseId} atualizado via webhook.`);
+               }
+             }
+
+           } else if (metadata.type === 'avulsa') {
+             // Lógica para Cobrança Avulsa: Atualiza status
+             const ref = db.ref(`cobrancas/${metadata.firebaseId}`);
+             await ref.update({
+               status: 'Pago',
+               dataPagamento: paymentDate,
+               formaPagamento: methodLabel
+             });
+             console.log(`Cobrança ${metadata.firebaseId} atualizada via webhook.`);
+           }
+        }
+      }
+      
+      res.status(200).send("OK");
+    } catch (error) {
+      console.error("Erro no Webhook:", error);
+      res.status(500).send("Erro interno");
+    }
+  });
+});
+
+/**
  * Verifica status de um pedido na Pagar.me (API v5)
  */
 exports.checkPagarmeOrderStatus = functions.https.onRequest((req, res) => {
@@ -137,7 +252,14 @@ exports.checkPagarmeOrderStatus = functions.https.onRequest((req, res) => {
         }
       });
 
-      res.status(200).json({ status: response.data.status });
+      const charges = response.data.charges || [];
+      const lastCharge = charges.length > 0 ? charges[charges.length - 1] : null;
+      const payment_method = lastCharge ? lastCharge.payment_method : 'API';
+
+      res.status(200).json({ 
+        status: response.data.status,
+        payment_method: payment_method
+      });
     } catch (error) {
       console.error("Erro Pagar.me Check:", error.response?.data || error.message);
       res.status(500).json({ error: "Erro ao verificar status", details: error.response?.data });
