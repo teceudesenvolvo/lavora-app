@@ -457,6 +457,10 @@ async function createPagarmeOrderInternal(customer, amount, method, description)
 exports.sendBulkBillingEmails = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
+      if (req.method !== "POST") {
+        return res.status(405).send("Método não permitido");
+      }
+
       // Busca todos os clientes
       const snapshot = await admin.database().ref('clientes').once('value');
       const clientes = snapshot.val();
@@ -587,6 +591,10 @@ exports.sendBulkBillingEmails = functions.https.onRequest((req, res) => {
 exports.sendBillingEmail = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
+      if (req.method !== "POST") {
+        return res.status(405).send("Método não permitido");
+      }
+
       const { customer, amount, description } = req.body;
 
       // Gera Boleto

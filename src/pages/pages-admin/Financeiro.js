@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync, FaChartPie } from 'react-icons/fa';
+import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync, FaChartPie, FaSpinner } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -62,6 +62,7 @@ const Financeiro = () => {
   const [filterTipo, setFilterTipo] = useState('');
   const [filterVencimento, setFilterVencimento] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSendingEmails, setIsSendingEmails] = useState(false);
 
   const maskCurrency = (value) => {
     const v = value.replace(/\D/g, "");
@@ -94,8 +95,7 @@ const Financeiro = () => {
       .replace(/(\d{4})\d+?$/, '$1');
   };
 
-  useEffect(() => {
-    const fetchTransacoes = async () => {
+  const fetchTransacoes = async () => {
       try {
         // Busca Clientes (Assinaturas) e Cobranças Avulsas em paralelo
         const [resClientes, resCobrancas] = await Promise.all([
@@ -119,6 +119,8 @@ const Financeiro = () => {
       }
     };
 
+
+  useEffect(() => {
     fetchTransacoes();
   }, []);
 
@@ -534,7 +536,8 @@ const Financeiro = () => {
       });
       setModalOpen(false);
       setNewCharge({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente', cpf: '', email: '' });
-      window.location.reload(); // Recarrega para atualizar a lista (simplificação)
+      await fetchTransacoes();
+      alert('Cobrança avulsa criada com sucesso!');
     } catch (error) {
       console.error("Erro ao salvar cobrança", error);
     }
@@ -575,7 +578,8 @@ const Financeiro = () => {
       });
       setEditPaymentModalOpen(false);
       setEditingTransaction(null);
-      window.location.reload(); // Recarrega para atualizar a lista
+      await fetchTransacoes();
+      alert('Alterações salvas com sucesso!');
     } catch (error) {
       console.error("Erro ao salvar histórico de pagamento:", error);
     }
@@ -738,8 +742,8 @@ const Financeiro = () => {
     
     setIsSyncing(false);
     if (updatedCount > 0) {
-        alert(`${updatedCount} pagamentos foram identificados e atualizados! A página será recarregada.`);
-        window.location.reload();
+        alert(`${updatedCount} pagamentos foram identificados e atualizados!`);
+        await fetchTransacoes();
     } else {
         alert("Sincronização concluída. Nenhum novo pagamento identificado.");
     }
@@ -748,7 +752,7 @@ const Financeiro = () => {
   const handleSendBulkEmails = async () => {
     if (!window.confirm("ATENÇÃO: Deseja enviar um e-mail de cobrança formal para TODOS os clientes ativos?")) return;
     
-    setIsSyncing(true);
+    setIsSendingEmails(true);
     try {
         const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/sendBulkBillingEmails`, {
             method: 'POST',
@@ -764,7 +768,7 @@ const Financeiro = () => {
         console.error("Erro ao enviar e-mails:", error);
         alert("Erro de conexão ao enviar e-mails.");
     } finally {
-        setIsSyncing(false);
+        setIsSendingEmails(false);
     }
   };
 
@@ -1001,8 +1005,9 @@ const Financeiro = () => {
                   <button onClick={() => setModalOpen(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <FaPlus /> Nova Cobrança
                   </button>
-                  <button onClick={handleSendBulkEmails} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing}>
-                      <FaEnvelope /> Enviar Cobrança Geral
+                  <button onClick={handleSendBulkEmails} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing || isSendingEmails}>
+                      {isSendingEmails ? <FaSpinner className="icon-spin" /> : <FaEnvelope />}
+                      {isSendingEmails ? 'Enviando...' : 'Enviar Cobrança Geral'}
                   </button>
                   <button onClick={syncPayments} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing}>
                       <FaSync className={isSyncing ? "icon-spin" : ""} /> {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
