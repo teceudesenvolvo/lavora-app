@@ -1,11 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck } from 'react-icons/fa';
+import { auth } from '../../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
   const [filtroNome, setFiltroNome] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
+  const [vendedores, setVendedores] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [activeTab, setActiveTab] = useState('dados');
   const [listTab, setListTab] = useState('ativos');
@@ -20,8 +23,20 @@ const Clientes = () => {
   const [newCotacao, setNewCotacao] = useState({ descricao: '', valor: '', status: 'Em Análise' });
 
   useEffect(() => {
-    const fetchClientes = async () => {
+    const fetchClientes = async (user) => {
       try {
+        // Busca o cargo do usuário para aplicar filtro
+        let userRole = 'Vendedor';
+        try {
+            const roleResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+            const roleData = await roleResponse.json();
+            if (roleData && roleData.cargo) {
+                userRole = roleData.cargo;
+            }
+        } catch (error) {
+            console.error("Erro ao buscar cargo do usuário:", error);
+        }
+
         const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json');
         
         if (!response.ok) {
@@ -36,6 +51,9 @@ const Clientes = () => {
           const loadedClientes = Object.keys(clientesData).map(key => {
             const item = clientesData[key];
             if (!item) return null;
+
+            // Filtra apenas os clientes criados pelo usuário logado, exceto se for Admin ou Financeiro
+            if (userRole !== 'Admin' && userRole !== 'Financeiro' && item.createdId !== user.uid) return null;
 
             // Função auxiliar para formatar datas
             const normalizeDate = (dateStr) => {
@@ -61,6 +79,7 @@ const Clientes = () => {
               vencimento: normalizeDate(item.VENCIMENTO),
               dataCadastro: normalizeDate(item['ADESÃO']),
               contratoTipo: item.CONTRATO,
+              vendedor: item.VENDEDOR || '',
               status: item.STATUS || 'Ativo', // Valor padrão
               email: item.EMAIL || '', // Valor padrão
               documentos: item.documentos || [],
@@ -77,7 +96,26 @@ const Clientes = () => {
       }
     };
 
-    fetchClientes();
+    const fetchVendedores = async () => {
+      try {
+        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json');
+        const data = await response.json();
+        if (data) {
+          const lista = Object.values(data).filter(u => u.cargo === 'Vendedor');
+          setVendedores(lista);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar vendedores:", error);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchClientes(user);
+        fetchVendedores();
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const clientesFiltrados = useMemo(() => {
@@ -436,6 +474,7 @@ const Clientes = () => {
       STATUS: newClientData.status,
       OBSERVACAO: newClientData.observacao,
       'ADESÃO': new Date().toLocaleDateString('pt-BR'),
+      createdId: auth.currentUser ? auth.currentUser.uid : null,
       itensPlano: planItems.map(item => ({ ...item, valor: removeCurrencyMask(item.valor) })),
       documentos: newClientDocs
     };
@@ -485,6 +524,7 @@ const Clientes = () => {
       EMAIL: formData.get('email'),
       STATUS: formData.get('status'),
       CONTRATO: formData.get('contratoTipo'),
+      VENDEDOR: formData.get('vendedor'),
       OBSERVACAO: formData.get('observacao')
     };
 
@@ -508,6 +548,7 @@ const Clientes = () => {
           email: updatedData.EMAIL,
           status: updatedData.STATUS,
           contratoTipo: updatedData.CONTRATO,
+          vendedor: updatedData.VENDEDOR,
           observacao: updatedData.OBSERVACAO
         } : c));
         alert('Cliente atualizado com sucesso!');
@@ -538,6 +579,14 @@ const Clientes = () => {
               <select name="contratoTipo" defaultValue={selectedClient.contratoTipo} style={{ width: '100%' }}>
                 <option value="Titular">Titular</option>
                 <option value="Dependente">Dependente</option>
+              </select>
+            </div>
+            <div className="form-group"><label>Vendedor</label>
+              <select name="vendedor" defaultValue={selectedClient.vendedor} style={{ width: '100%' }}>
+                <option value="">Selecione...</option>
+                {vendedores.map((v, i) => (
+                  <option key={i} value={v.nome}>{v.nome}</option>
+                ))}
               </select>
             </div>
             <div className="form-group"><label>Status</label>
@@ -693,7 +742,14 @@ const Clientes = () => {
                 <option value="Dependente">Dependente</option>
               </select>
             </div>
-            <div className="form-group"><label>Vendedor</label><input name="vendedor" value={newClientData.vendedor} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Vendedor</label>
+              <select name="vendedor" value={newClientData.vendedor} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                <option value="">Selecione...</option>
+                {vendedores.map((v, i) => (
+                  <option key={i} value={v.nome}>{v.nome}</option>
+                ))}
+              </select>
+            </div>
             <div className="form-group"><label>Classificação</label>
               <select name="status" value={newClientData.status} onChange={handleNewClientChange} style={{ width: '100%' }}>
                 <option value="Ativo">Ativo</option>

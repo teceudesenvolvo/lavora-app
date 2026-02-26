@@ -11,9 +11,10 @@ import {
   FaSignOutAlt,
   FaWallet,
   FaUserShield,
+  FaUser,
 } from 'react-icons/fa';
 
-const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar }) => {
+const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar, userRole }) => {
   const navigate = useNavigate();
 
   const handleLogout = async (e) => {
@@ -33,13 +34,23 @@ const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar }) => {
         </div>
         <nav className="sidebar-nav">
           <ul>
-            <li><NavLink to="/dashboard-admin" end onClick={toggleSidebar}><FaChartPie /> Visão Geral</NavLink></li>
-            <li><NavLink to="/dashboard-admin/analises" onClick={toggleSidebar}><FaChartLine /> Análises</NavLink></li>
-            {/* <li><NavLink to="/dashboard-admin/relatorios" onClick={toggleSidebar}><FaFileAlt /> Relatórios</NavLink></li> */}
+            {userRole !== 'Vendedor' && userRole !== 'Financeiro' && (
+              <li><NavLink to="/dashboard-admin" end onClick={toggleSidebar}><FaChartPie /> Visão Geral</NavLink></li>
+            )}
+            {userRole !== 'Financeiro' && (
+              <li><NavLink to="/dashboard-admin/analises" onClick={toggleSidebar}><FaChartLine /> Análises</NavLink></li>
+            )}
             <li><NavLink to="/dashboard-admin/clientes" onClick={toggleSidebar}><FaUsers /> Clientes</NavLink></li>
-            <li><NavLink to="/dashboard-admin/equipe" onClick={toggleSidebar}><FaUserShield /> Equipe</NavLink></li>
-            <li><NavLink to="/dashboard-admin/financeiro" onClick={toggleSidebar}><FaWallet /> Financeiro</NavLink></li>
-            <li><NavLink to="/dashboard-admin/configuracoes" onClick={toggleSidebar}><FaCog /> Configurações</NavLink></li>
+            {userRole !== 'Vendedor' && userRole !== 'Financeiro' && (
+              <li><NavLink to="/dashboard-admin/equipe" onClick={toggleSidebar}><FaUserShield /> Equipe</NavLink></li>
+            )}
+            {userRole !== 'Vendedor' && (
+              <li><NavLink to="/dashboard-admin/financeiro" onClick={toggleSidebar}><FaWallet /> Financeiro</NavLink></li>
+            )}
+            {userRole !== 'Vendedor' && userRole !== 'Financeiro' && (
+              <li><NavLink to="/dashboard-admin/configuracoes" onClick={toggleSidebar}><FaCog /> Configurações</NavLink></li>
+            )}
+            <li><NavLink to="/dashboard-admin/perfil" onClick={toggleSidebar}><FaUser /> Perfil</NavLink></li>
           </ul>
         </nav>
         <div className="sidebar-footer">

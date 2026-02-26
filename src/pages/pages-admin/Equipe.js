@@ -161,7 +161,7 @@ const Equipe = () => {
                 <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
-                            {user.nome.charAt(0).toUpperCase()}
+                            {(user.nome || '?').charAt(0).toUpperCase()}
                         </div>
                         {user.nome}
                     </div>
@@ -232,6 +232,7 @@ const Equipe = () => {
                       <option value="Admin">Admin</option>
                       <option value="Vendedor">Vendedor</option>
                       <option value="Suporte">Suporte</option>
+                      <option value="Financeiro">Financeiro</option>
                     </select>
                   </div>
 

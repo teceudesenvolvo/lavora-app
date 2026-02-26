@@ -10,6 +10,8 @@ import { // ... (imports existentes)
   ArcElement,
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
+import { auth } from '../../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 ChartJS.register(
   CategoryScale,
@@ -56,13 +58,43 @@ const Analises = () => {
     }],
   });
 
+  const [clientStatusData, setClientStatusData] = useState({
+    labels: [],
+    datasets: [{
+      label: 'Meus Clientes por Status',
+      data: [],
+      backgroundColor: [
+        'rgba(40, 167, 69, 0.7)',   // Ativo (Verde)
+        'rgba(220, 53, 69, 0.7)',   // Inativo (Vermelho)
+        'rgba(255, 193, 7, 0.7)',   // Contato (Amarelo)
+        'rgba(23, 162, 184, 0.7)',  // Cotação (Azul Claro)
+        'rgba(108, 117, 125, 0.7)', // Pendente (Cinza)
+      ],
+      borderWidth: 1,
+    }],
+  });
+
   const [cotacoes, setCotacoes] = useState([]);
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [selectedCotacao, setSelectedCotacao] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (user) => {
+      if (!user) return;
+
       try {
+        // Busca o cargo do usuário para aplicar filtro
+        let userRole = 'Vendedor';
+        try {
+            const roleResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+            const roleData = await roleResponse.json();
+            if (roleData && roleData.cargo) {
+                userRole = roleData.cargo;
+            }
+        } catch (error) {
+            console.error("Erro ao buscar cargo do usuário:", error);
+        }
+
         const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json');
         const data = await response.json();
         
@@ -71,9 +103,22 @@ const Analises = () => {
           const allCotacoes = [];
           const funilCounts = { 'Enviada': 0, 'Em Análise': 0, 'Concluída': 0, 'Rejeitada': 0 };
           const produtoCounts = {};
+          const clientStatusCounts = { 'Ativo': 0, 'Inativo': 0, 'Contato': 0, 'Cotação': 0, 'Pendente': 0 };
 
           Object.keys(clientesData).forEach(clientId => {
             const cliente = clientesData[clientId];
+            
+            // Filtra apenas os clientes criados pelo usuário logado, exceto se for Admin
+            if (userRole !== 'Admin' && cliente.createdId !== user.uid) return;
+
+            // Contagem de Status dos Clientes
+            if (clientStatusCounts[cliente.status] !== undefined) {
+                clientStatusCounts[cliente.status]++;
+            } else if (cliente.status) {
+                // Caso haja algum status não mapeado
+                clientStatusCounts[cliente.status] = (clientStatusCounts[cliente.status] || 0) + 1;
+            }
+
             if (cliente && cliente.cotacoes) {
               const clientCotacoes = Array.isArray(cliente.cotacoes) ? cliente.cotacoes : Object.values(cliente.cotacoes);
               
@@ -110,13 +155,24 @@ const Analises = () => {
             labels: Object.keys(produtoCounts),
             datasets: [{ ...prev.datasets[0], data: Object.values(produtoCounts) }],
           }));
+
+          setClientStatusData(prev => ({
+            ...prev,
+            labels: Object.keys(clientStatusCounts),
+            datasets: [{ ...prev.datasets[0], data: Object.values(clientStatusCounts) }],
+          }));
         }
       } catch (error) {
         console.error("Erro ao buscar dados de cotações:", error);
       }
     };
 
-    fetchData();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            fetchData(user);
+        }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleAnalisarClick = (cotacao) => {
@@ -164,6 +220,12 @@ const Analises = () => {
   return (
     <div className="analises-container">
       <div className="dashboard-charts">
+        <div className="chart-container">
+          <h3>Status dos Meus Clientes</h3>
+          <div className="chart-wrapper" style={{ minHeight: '300px' }}>
+            <Bar data={clientStatusData} options={{ responsive: true, maintainAspectRatio: false }} />
+          </div>
+        </div>
         <div className="chart-container">
           <h3>Funil de Cotações</h3>
           <div className="chart-wrapper" style={{ minHeight: '300px' }}>

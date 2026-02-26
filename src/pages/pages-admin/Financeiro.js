@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync } from 'react-icons/fa';
+import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync, FaChartPie } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,6 +10,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { auth } from '../../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 ChartJS.register(
   CategoryScale,
@@ -26,6 +28,7 @@ const Financeiro = () => {
   const [rawData, setRawData] = useState({ clientes: {}, cobrancas: {} });
   const [transacoes, setTransacoes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [mainTab, setMainTab] = useState('dashboard'); // 'dashboard' ou 'cobrancas'
   const [filterTab, setFilterTab] = useState('todos');
   const [metrics, setMetrics] = useState({
     custoTotal: 5000, // Custo total fixo como exemplo
@@ -35,6 +38,7 @@ const Financeiro = () => {
     pagosVal: 0,
     pagosCount: 0
   });
+  const [userRole, setUserRole] = useState(null);
 
   // Estados para Nova Cobrança
   const [isModalOpen, setModalOpen] = useState(false);
@@ -116,6 +120,26 @@ const Financeiro = () => {
     };
 
     fetchTransacoes();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+          const data = await response.json();
+          if (data && data.cargo) {
+            setUserRole(data.cargo);
+            if (data.cargo === 'Financeiro') {
+              setMainTab('cobrancas');
+            }
+          }
+        } catch (error) {
+          console.error("Erro ao buscar cargo:", error);
+        }
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -873,134 +897,152 @@ const Financeiro = () => {
         </div>
       </div>
 
-      <div className="dashboard-widgets">
-        <div className="widget">
-          <h3>Receita Prevista</h3>
-          <p className="widget-value" style={{ color: '#28a745' }}>R$ {metrics.receitaMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          <span className="widget-trend"><FaWallet /> Previsão Mensal</span>
-        </div>
-        <div className="widget">
-          <h3>Clientes em Atraso</h3>
-          <p className="widget-value" style={{ color: '#dc3545' }}>{metrics.atrasoCount}</p>
-          <span className="widget-trend" style={{ color: '#dc3545' }}><FaArrowDown /> R$ {metrics.atrasoVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-        </div>
-        <div className="widget">
-          <h3>Clientes Pagos</h3>
-          <p className="widget-value" style={{ color: '#1e90ff' }}>{metrics.pagosCount}</p>
-          <span className="widget-trend widget-trend-lucro lucro-widget"><FaCheckCircle /> R$ {metrics.pagosVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-        </div>
-      </div>
-      
-
-      <div className="faturas-section" style={{ marginTop: '30px' }}>
-          <h3 className="faturas-section-title">Evolução de Pagamentos no Mês</h3>
-          <div className="chart-wrapper" style={{ height: '300px', width: '100%' }}>
-            <Bar data={pagamentosDoMesGrafico} options={optionsGrafico} />
-          </div>
-      </div>
-
-      <div className="faturas-section" style={{ marginTop: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 className="faturas-section-title" style={{ marginBottom: 0 }}>Cobranças e Faturas</h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={syncPayments} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing}>
-                    <FaSync className={isSyncing ? "icon-spin" : ""} /> {isSyncing ? 'Sincronizando...' : 'Sincronizar Pagamentos'}
-                </button>
-                <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <FaFilter /> {showFilters ? 'Ocultar Filtros' : 'Filtrar'}
-                </button>
-               
-            </div>
-        </div>
-        
-        {showFilters && (
-        <div className="tabs-container" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button className={`btn-tab ${filterTab === 'todos' ? 'active' : ''}`} onClick={() => setFilterTab('todos')}><FaList /> Todos</button>
-          <button className={`btn-tab ${filterTab === 'atraso' ? 'active' : ''}`} onClick={() => setFilterTab('atraso')}><FaExclamationCircle /> Em Atraso</button>
-          <button className={`btn-tab ${filterTab === 'pagos' ? 'active' : ''}`} onClick={() => setFilterTab('pagos')}><FaCheckCircle /> Pagos</button>
-          <button className={`btn-tab ${filterTab === 'a_vencer' ? 'active' : ''}`} onClick={() => setFilterTab('a_vencer')}><FaClock /> A Vencer</button>
-          
-          <select 
-            className="filtro-input"
-            style={{ padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd' }}
-            value={filterTipo}
-            onChange={(e) => setFilterTipo(e.target.value)}
-          >
-            <option value="">Todos os Tipos</option>
-            {[...new Set(transacoes.map(t => t.tipo).filter(Boolean))].map(tipo => (
-                <option key={tipo} value={tipo}>{tipo}</option>
-            ))}
-          </select>
-
-          <input 
-            type="date" 
-            className="filtro-input"
-            style={{ padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd' }}
-            value={filterVencimento}
-            onChange={(e) => setFilterVencimento(e.target.value)}
-          />
-
-          <input 
-            type="text" 
-            placeholder="Buscar por nome ou CPF..." 
-            className="filtro-input"
-            style={{ marginLeft: 'auto', padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd', minWidth: '250px' }}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <div className="tabs-container" style={{ marginBottom: '20px', display: 'flex', gap: '10px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+        {userRole !== 'Financeiro' && (
+          <button className={`btn-tab ${mainTab === 'dashboard' ? 'active' : ''}`} onClick={() => setMainTab('dashboard')}>
+            <FaChartPie style={{ marginRight: '5px' }} /> Painel Dashboard
+          </button>
         )}
-
-        <div className="table-container">
-          <table className="historico-tabela">
-            <thead>
-              <tr>
-                <th>Descrição</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Pagamento</th><th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transacoesFiltradas.map((trx) => (
-                <tr key={trx.id}>
-                  <td>{trx.descricao}</td>
-                  <td>
-                    <span style={{ color: trx.tipo === 'TITULAR' ? '#28a745' : '#282aa7ff', fontWeight: 'bold', textTransform: 'capitalize' }}>
-                      {trx.tipo}
-                    </span>
-                  </td>
-                  <td>{trx.data}</td>
-                  <td>{trx.valorFormatado}</td>
-                  <td>
-                    {trx.dataPagamento}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        {trx.status !== 'Pago' && (
-                            <button onClick={() => handleMarkAsPaid(trx)} title="Baixar (Marcar como Pago)" style={{ background: 'none', border: 'none', color: '#28a745', cursor: 'pointer', fontSize: '1.1rem' }}>
-                                <FaCheck />
-                            </button>
-                        )}
-                        <button onClick={() => handleNotify(trx)} title="Enviar Lembrete" style={{ background: 'none', border: 'none', color: '#ffc107', cursor: 'pointer', fontSize: '1.1rem' }}>
-                            <FaBell />
-                        </button>
-                        <button onClick={() => handleSendEmail(trx)} title="Enviar por E-mail" style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '1.1rem' }}>
-                            <FaEnvelope />
-                        </button>
-                        <button onClick={() => setPaymentSelectionModal({ isOpen: true, trx: trx })} title="Gerar Cobrança (PIX/Boleto)" style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', fontSize: '1.1rem' }}>
-                            <FaWhatsapp />
-                        </button>
-                        {trx.origem === 'assinatura' && (
-                            <button onClick={() => handleEditPaymentClick(trx)} title="Editar Pagamentos" style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '1.1rem' }}>
-                                <FaEdit />
-                            </button>
-                        )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <button className={`btn-tab ${mainTab === 'cobrancas' ? 'active' : ''}`} onClick={() => setMainTab('cobrancas')}>
+          <FaFileInvoiceDollar style={{ marginRight: '5px' }} /> Cobranças e Faturas
+        </button>
       </div>
+
+      {mainTab === 'dashboard' && userRole !== 'Financeiro' && (
+        <>
+          <div className="dashboard-widgets">
+            <div className="widget">
+              <h3>Receita Prevista</h3>
+              <p className="widget-value" style={{ color: '#28a745' }}>R$ {metrics.receitaMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              <span className="widget-trend"><FaWallet /> Previsão Mensal</span>
+            </div>
+            <div className="widget">
+              <h3>Clientes em Atraso</h3>
+              <p className="widget-value" style={{ color: '#dc3545' }}>{metrics.atrasoCount}</p>
+              <span className="widget-trend" style={{ color: '#dc3545' }}><FaArrowDown /> R$ {metrics.atrasoVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="widget">
+              <h3>Clientes Pagos</h3>
+              <p className="widget-value" style={{ color: '#1e90ff' }}>{metrics.pagosCount}</p>
+              <span className="widget-trend widget-trend-lucro lucro-widget"><FaCheckCircle /> R$ {metrics.pagosVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          
+          <div className="faturas-section" style={{ marginTop: '30px' }}>
+              <h3 className="faturas-section-title">Evolução de Pagamentos no Mês</h3>
+              <div className="chart-wrapper" style={{ height: '300px', width: '100%' }}>
+                <Bar data={pagamentosDoMesGrafico} options={optionsGrafico} />
+              </div>
+          </div>
+        </>
+      )}
+
+      {mainTab === 'cobrancas' && (
+        <div className="faturas-section" style={{ marginTop: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 className="faturas-section-title" style={{ marginBottom: 0 }}>Cobranças e Faturas</h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => setModalOpen(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <FaPlus /> Nova Cobrança
+                  </button>
+                  <button onClick={syncPayments} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing}>
+                      <FaSync className={isSyncing ? "icon-spin" : ""} /> {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+                  </button>
+                  <button onClick={() => setShowFilters(!showFilters)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <FaFilter /> {showFilters ? 'Ocultar Filtros' : 'Filtrar'}
+                  </button>
+              </div>
+          </div>
+          
+          {showFilters && (
+          <div className="tabs-container" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className={`btn-tab ${filterTab === 'todos' ? 'active' : ''}`} onClick={() => setFilterTab('todos')}><FaList /> Todos</button>
+            <button className={`btn-tab ${filterTab === 'atraso' ? 'active' : ''}`} onClick={() => setFilterTab('atraso')}><FaExclamationCircle /> Em Atraso</button>
+            <button className={`btn-tab ${filterTab === 'pagos' ? 'active' : ''}`} onClick={() => setFilterTab('pagos')}><FaCheckCircle /> Pagos</button>
+            <button className={`btn-tab ${filterTab === 'a_vencer' ? 'active' : ''}`} onClick={() => setFilterTab('a_vencer')}><FaClock /> A Vencer</button>
+            
+            <select 
+              className="filtro-input"
+              style={{ padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd' }}
+              value={filterTipo}
+              onChange={(e) => setFilterTipo(e.target.value)}
+            >
+              <option value="">Todos os Tipos</option>
+              {[...new Set(transacoes.map(t => t.tipo).filter(Boolean))].map(tipo => (
+                  <option key={tipo} value={tipo}>{tipo}</option>
+              ))}
+            </select>
+
+            <input 
+              type="date" 
+              className="filtro-input"
+              style={{ padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd' }}
+              value={filterVencimento}
+              onChange={(e) => setFilterVencimento(e.target.value)}
+            />
+
+            <input 
+              type="text" 
+              placeholder="Buscar por nome ou CPF..." 
+              className="filtro-input"
+              style={{ marginLeft: 'auto', padding: '8px 12px', borderRadius: '5px', border: '1px solid #ddd', minWidth: '250px' }}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          )}
+
+          <div className="table-container">
+            <table className="historico-tabela">
+              <thead>
+                <tr>
+                  <th>Descrição</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Pagamento</th><th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transacoesFiltradas.map((trx) => (
+                  <tr key={trx.id}>
+                    <td>{trx.descricao}</td>
+                    <td>
+                      <span style={{ color: trx.tipo === 'TITULAR' ? '#28a745' : '#282aa7ff', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                        {trx.tipo}
+                      </span>
+                    </td>
+                    <td>{trx.data}</td>
+                    <td>{trx.valorFormatado}</td>
+                    <td>
+                      {trx.dataPagamento}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                          {trx.status !== 'Pago' && (
+                              <button onClick={() => handleMarkAsPaid(trx)} title="Baixar (Marcar como Pago)" style={{ background: 'none', border: 'none', color: '#28a745', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                  <FaCheck />
+                              </button>
+                          )}
+                          <button onClick={() => handleNotify(trx)} title="Enviar Lembrete" style={{ background: 'none', border: 'none', color: '#ffc107', cursor: 'pointer', fontSize: '1.1rem' }}>
+                              <FaBell />
+                          </button>
+                          <button onClick={() => handleSendEmail(trx)} title="Enviar por E-mail" style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '1.1rem' }}>
+                              <FaEnvelope />
+                          </button>
+                          <button onClick={() => setPaymentSelectionModal({ isOpen: true, trx: trx })} title="Gerar Cobrança (PIX/Boleto)" style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', fontSize: '1.1rem' }}>
+                              <FaWhatsapp />
+                          </button>
+                          {trx.origem === 'assinatura' && (
+                              <button onClick={() => handleEditPaymentClick(trx)} title="Editar Pagamentos" style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '1.1rem' }}>
+                                  <FaEdit />
+                              </button>
+                          )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="popup-overlay">

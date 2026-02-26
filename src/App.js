@@ -28,6 +28,7 @@ import ClientesAdmin from './pages/pages-admin/Clientes';
 import ConfiguracoesAdmin from './pages/pages-admin/Configuracoes';
 import Financeiro  from './pages/pages-admin/Financeiro';
 import Equipe from './pages/pages-admin/Equipe';
+import Perfil from './pages/pages-admin/Perfil';
 
 import './App.css'; // Importa o CSS global
   
@@ -51,6 +52,7 @@ function App() {
           <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
           <Route path="financeiro" element={<Financeiro />} />
           <Route path="equipe" element={<Equipe />} />
+          <Route path="perfil" element={<Perfil />} />
         </Route>
         <Route path="/dashboard" element={<ClientDashboard />}>
           <Route index element={<VisaoGeralCliente />} />

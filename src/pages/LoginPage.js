@@ -16,8 +16,11 @@ const LoginPage = () => {
       const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
       const user = userCredential.user;
 
-      // Verifica se é o admin (aceitando .com ou .com.br para garantir)
-      if (user.email === 'admin@lavoroservicos.com' || user.email === 'admin@lavoroservicos.com.br') {
+      // Verifica se o usuário está na coleção 'equipe' para redirecionar ao painel admin
+      const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+      const equipeData = await response.json();
+
+      if (equipeData && equipeData.cargo) {
         navigate('/dashboard-admin');
       } else {
         navigate('/dashboard');

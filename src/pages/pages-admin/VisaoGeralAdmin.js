@@ -12,6 +12,8 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
+import { auth } from '../../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 ChartJS.register(
   CategoryScale,
@@ -54,7 +56,7 @@ const VisaoGeralAdmin = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (user) => {
       try {
         const [resClientes, resCobrancas] = await Promise.all([
           fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json'),
@@ -67,7 +69,7 @@ const VisaoGeralAdmin = () => {
         const clientes = dataClientes?.Clientes || dataClientes || {};
         const cobrancas = dataCobrancas || {};
 
-        processData(clientes, cobrancas);
+        processData(clientes, cobrancas, user);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
       } finally {
@@ -75,10 +77,15 @@ const VisaoGeralAdmin = () => {
       }
     };
 
-    fetchData();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchData(user);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const processData = (clientes, cobrancas) => {
+  const processData = (clientes, cobrancas, user) => {
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
@@ -98,6 +105,10 @@ const VisaoGeralAdmin = () => {
     // Processar Clientes
     Object.values(clientes).forEach(cliente => {
         if (!cliente) return;
+        
+        // Filtra apenas os clientes criados pelo usuário logado
+        if (cliente.createdId !== user.uid) return;
+
         totalClientes++;
 
         // Novos Clientes (ADESÃO)
