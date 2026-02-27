@@ -4,6 +4,7 @@ const axios = require("axios");
 const cors = require("cors")({ origin: true });
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const { simpleParser } = require("mailparser");
 
 // Configuração do Transporter de E-mail (Exemplo com Gmail)
 // IMPORTANTE: Para Gmail, use uma "Senha de App" gerada em sua conta Google.
@@ -659,9 +660,10 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
           }
       }
 
-      // se ainda não temos corpo, tentar obter através da API Resend usando message_id/email_id
-      if ((!html && !text) && (dataSrc.message_id || dataSrc.email_id)) {
-          const id = dataSrc.message_id || dataSrc.email_id;
+      // se ainda não temos corpo, tentar obter através da API Resend usando email_id (UUID)
+      if ((!html && !text) && (dataSrc.email_id || dataSrc.message_id)) {
+          // Prioriza email_id (UUID) pois message_id (SMTP ID <...>) causa erro 422 na API
+          const id = dataSrc.email_id || dataSrc.message_id;
           try {
               const apiResp = await axios.get(`https://api.resend.com/emails/${id}`, {
                   headers: {
