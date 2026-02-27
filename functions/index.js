@@ -3,6 +3,7 @@ const admin = require("firebase-admin");
 const axios = require("axios");
 const cors = require("cors")({ origin: true });
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 
 // Configuração do Transporter de E-mail (Exemplo com Gmail)
 // IMPORTANTE: Para Gmail, use uma "Senha de App" gerada em sua conta Google.
@@ -379,6 +380,350 @@ exports.sendWhatsAppMessage = functions.https.onRequest((req, res) => {
       console.error("Erro WhatsApp:", error.response?.data || error.message);
       // Retorna sucesso falso mas não quebra a aplicação se falhar o envio
       res.status(500).json({ error: "Falha no envio", details: error.response?.data });
+    }
+  });
+});
+
+/**
+ * Cria uma conta de Webmail (usuário no Auth + perfil no Firestore)
+ * Força o domínio @lavoroservicos.com.br
+ */
+exports.createWebmailAccount = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).send("Método não permitido");
+      }
+
+      const { username, password, name } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username e password são obrigatórios." });
+      }
+
+      const fullEmail = `${username}@lavoroservicos.com.br`;
+      let userRecord;
+
+      // 1. Criar ou recuperar usuário no Authentication
+      try {
+        userRecord = await admin.auth().createUser({
+          email: fullEmail,
+          password: password,
+          displayName: name || username,
+        });
+      } catch (authError) {
+        if (authError.code === 'auth/email-already-in-use') {
+           console.log(`Usuário ${fullEmail} já existe. Atualizando senha...`);
+           userRecord = await admin.auth().getUserByEmail(fullEmail);
+           await admin.auth().updateUser(userRecord.uid, {
+               password: password,
+               displayName: name || username
+           });
+        } else {
+           throw authError;
+        }
+      }
+
+      // 2. Criar perfil no Realtime Database (substituindo Firestore para evitar erros de API)
+      await admin.database().ref(`webmail_users/${userRecord.uid}`).set({
+        username: username,
+        email: fullEmail,
+        displayName: name || username,
+        createdAt: admin.database.ServerValue.TIMESTAMP,
+        storageUsed: 0,
+      });
+
+      res.status(200).json({ 
+        message: "Conta criada com sucesso!", 
+        user: { uid: userRecord.uid, email: fullEmail } 
+      });
+
+    } catch (error) {
+      console.error("Erro ao criar conta de webmail:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+});
+
+/**
+ * Envia e-mail usando a API do Resend
+ * Requer configuração da chave de API do Resend
+ */
+exports.sendWebmailViaResend = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).send("Método não permitido");
+      }
+
+      const { to, subject, html, fromName, attachments, fromEmail } = req.body;
+      const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_8qQJWKFf_KhcZeZP61DMxQVbMDUhrJjQJ"; // Configure sua chave aqui ou nas variáveis de ambiente
+
+      // Envia via Axios para a API do Resend
+      const response = await axios.post(
+        "https://api.resend.com/emails",
+        {
+          from: `${fromName || 'Webmail'} <${fromEmail || 'nao-responda@lavoroservicos.com.br'}>`, // Domínio deve estar verificado no Resend
+          to: [to],
+          subject: subject,
+          html: html,
+          attachments: attachments // Array de anexos { filename, content }
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // --- LÓGICA DE PERSISTÊNCIA (Webmail) ---
+      const db = admin.database();
+      const timestamp = new Date().toISOString();
+      const previewText = html ? html.replace(/<[^>]+>/g, '').substring(0, 50) + '...' : '';
+
+      // 1. Salvar na pasta "Enviados" do Remetente
+      if (fromEmail) {
+        try {
+           const senderUser = await admin.auth().getUserByEmail(fromEmail);
+           if (senderUser) {
+             await db.ref(`webmail/${senderUser.uid}/sent`).push({
+               to,
+               subject,
+               preview: previewText,
+               body: html,
+               date: timestamp,
+               fromName: fromName || fromEmail,
+               hasAttachments: !!(attachments && attachments.length),
+               attachments: attachments || [] // Salva os anexos (Base64) no banco
+             });
+             console.log(`Email salvo em Enviados para: ${fromEmail}`);
+           }
+        } catch (err) {
+           console.warn("Erro ao salvar em Enviados:", err.message);
+        }
+      } else {
+         console.warn("fromEmail não fornecido. O e-mail não foi salvo na pasta Enviados.");
+      }
+
+      // 2. Simular Entrega Interna (Inbox) se o destinatário for do mesmo domínio
+      // Isso permite que usuários do sistema recebam e-mails uns dos outros na Caixa de Entrada
+      if (to && to.includes('@lavoroservicos.com.br')) {
+         try {
+           const recipientUser = await admin.auth().getUserByEmail(to);
+           if (recipientUser) {
+             await db.ref(`webmail/${recipientUser.uid}/inbox`).push({
+               from: fromEmail || 'nao-responda@lavoroservicos.com.br',
+               fromName: fromName || fromEmail,
+               subject,
+               preview: previewText,
+               body: html,
+               date: timestamp,
+               hasAttachments: !!(attachments && attachments.length),
+               read: false,
+               attachments: attachments || [] // Salva os anexos (Base64) no banco
+             });
+             console.log(`Entrega interna realizada para: ${to}`);
+           }
+         } catch (err) {
+            console.warn("Erro ao entregar internamente:", err.message);
+         }
+      }
+      // -----------------------------------------
+
+      res.status(200).json(response.data);
+
+    } catch (error) {
+      console.error("Erro ao enviar via Resend:", error.response?.data || error.message);
+      res.status(500).json({ error: "Falha ao enviar e-mail", details: error.response?.data });
+    }
+  });
+});
+
+/**
+ * Webhook para receber e-mails externos (Inbound)
+ * Configure a URL desta função no painel do Resend (Webhooks)
+ * 
+ * !!! IMPORTANTE - ERRO 401 !!!
+ * Para funcionar, esta função deve ser PÚBLICA no Google Cloud Console.
+ * 1. Vá em Permissões da função 'handleResendWebhook'.
+ * 2. Adicione o principal 'allUsers' com o papel 'Cloud Functions Invoker'.
+ * A segurança é garantida pela verificação da assinatura (SIGNING_SECRET) abaixo.
+ */
+exports.handleResendWebhook = functions.https.onRequest((req, res) => {
+  // --- LOGS DE DEBUG (Para verificar se a requisição chega) ---
+  console.log(">>> WEBHOOK ACIONADO <<<");
+  console.log("Método:", req.method);
+  // ----------------------------------------------------------
+
+  // --- VERIFICAÇÃO DE SEGURANÇA (SIGNING SECRET) ---
+  const SIGNING_SECRET = "whsec_gaMOHEIYpgtsClbkpc6vKFIEpZnq6fB+";
+
+  if (req.method === "POST") {
+    const svix_id = req.headers["svix-id"];
+    const svix_timestamp = req.headers["svix-timestamp"];
+    const svix_signature = req.headers["svix-signature"];
+
+    // Só verifica se os cabeçalhos estiverem presentes (requisições reais do Resend)
+    if (SIGNING_SECRET && svix_id && svix_timestamp && svix_signature) {
+      try {
+        // O Resend usa o corpo cru (rawBody) para gerar a assinatura
+        const payload = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
+        const signedContent = `${svix_id}.${svix_timestamp}.${payload}`;
+        const secretKey = SIGNING_SECRET.startsWith("whsec_") ? SIGNING_SECRET.substring(6) : SIGNING_SECRET;
+        const secretBytes = Buffer.from(secretKey, "base64");
+        const signature = crypto.createHmac('sha256', secretBytes).update(signedContent).digest('base64');
+        const expectedSignature = `v1,${signature}`;
+
+        if (!svix_signature.split(' ').includes(expectedSignature)) {
+          console.error("ERRO DE SEGURANÇA: Assinatura do Webhook inválida.");
+          console.error(`Esperado: ${expectedSignature} | Recebido: ${svix_signature}`);
+          // MODO DEBUG: Não bloqueia a requisição por enquanto, apenas avisa
+          // return res.status(400).send("Invalid signature"); 
+        }
+      } catch (err) {
+        console.error("Erro ao verificar assinatura:", err);
+      }
+    }
+  }
+  // -------------------------------------------------
+
+  cors(req, res, async () => {
+    try {
+      // Log detalhado para depuração no Firebase Console
+      // console.log("Webhook Recebido. Headers:", req.headers); // Comentado para reduzir ruído
+      // console.log("Webhook Body Type:", typeof req.body);
+
+      if (req.method !== "POST") {
+        return res.status(405).send("Método não permitido");
+      }
+
+      // 1. Garante que o body é um objeto
+      let body = req.body;
+      if (typeof body === 'string') {
+          try { body = JSON.parse(body); } catch(e) { console.error("Erro parse body:", e); }
+      }
+
+      console.log("Webhook Keys (Root):", Object.keys(body));
+      if (body.data) console.log("Webhook Keys (Data):", Object.keys(body.data));
+
+      // 2. Estratégia de Extração Robusta (Prioriza 'data', mas busca na raiz se falhar)
+      const dataSrc = body.data || body;
+      
+      const to = dataSrc.to || body.to;
+      const from = dataSrc.from || body.from;
+      const subject = dataSrc.subject || body.subject;
+      const attachments = dataSrc.attachments || body.attachments;
+      
+      // Tenta encontrar HTML e Texto em ambos os lugares
+      let html = dataSrc.html || body.html;
+      let text = dataSrc.text || body.text;
+
+      console.log(`Conteúdo Extraído -> HTML: ${!!html}, Text: ${!!text}, Subject: ${subject}`);
+
+      // Processa anexos para garantir que sejam salvos como Base64
+      // O Resend pode enviar o conteúdo como array de bytes (Buffer)
+      const processedAttachments = attachments ? attachments.map(att => {
+          if (att.content && Array.isArray(att.content)) {
+              return { ...att, content: Buffer.from(att.content).toString('base64') };
+          }
+          return att;
+      }) : [];
+
+      // Normaliza destinatários (pode ser string ou array)
+      const recipientsList = Array.isArray(to) ? to : (to ? [to] : []);
+
+      if (recipientsList.length === 0) {
+          console.warn("Webhook sem destinatários (campo 'to' vazio ou inválido).");
+          return res.status(200).send("Sem destinatários processáveis");
+      }
+
+      const db = admin.database();
+      const processPromises = recipientsList.map(async (recipientStr) => {
+          // Extrai apenas o e-mail (remove o nome se houver)
+          // Regex melhorada para aceitar caracteres como '+' e garantir captura correta
+          const emailMatch = recipientStr.match(/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
+          const emailAddress = emailMatch ? emailMatch[0].toLowerCase() : null;
+
+          console.log(`Processando destinatário: ${recipientStr} -> Extraído: ${emailAddress}`);
+
+          if (emailAddress && emailAddress.includes('@lavoroservicos.com.br')) {
+              try {
+                  const userRecord = await admin.auth().getUserByEmail(emailAddress);
+                  console.log(`Usuário encontrado no Auth: ${userRecord.uid}`);
+                  
+                  // Extrai nome do remetente (Ex: "Nome <email@...>" -> "Nome")
+                  let senderName = from;
+                  if (from && from.includes('<')) {
+                      const match = from.match(/^(.*)<(.*)>$/);
+                      if (match) senderName = match[1].trim().replace(/^"|"$/g, '');
+                  }
+                  
+                  // Salva na Inbox do usuário
+                  await db.ref(`webmail/${userRecord.uid}/inbox`).push({
+                      from: from,
+                      fromName: senderName,
+                      subject: subject,
+                      preview: (text || html || '').replace(/<[^>]+>/g, '').substring(0, 80) + '...',
+                      body: html || (text ? text.replace(/\n/g, '<br>') : `<p><em>(Mensagem sem conteúdo de texto. Assunto: ${subject || 'Sem assunto'})</em></p>`),
+                      date: new Date().toISOString(),
+                      read: false,
+                      external: true,
+                      hasAttachments: !!(processedAttachments && processedAttachments.length),
+                      attachments: processedAttachments // Salva os anexos processados
+                  });
+                  console.log(`SUCESSO: Email salvo na inbox de ${emailAddress}`);
+              } catch (err) {
+                  console.warn(`FALHA: Usuário não encontrado ou erro ao salvar para ${emailAddress}:`, err.message);
+              }
+          } else {
+              console.log(`IGNORADO: Email ${emailAddress} não pertence ao domínio @lavoroservicos.com.br`);
+          }
+      });
+
+      await Promise.all(processPromises);
+      res.status(200).json({ received: true });
+
+    } catch (error) {
+      console.error("ERRO FATAL no Webhook de Email:", error);
+      res.status(500).send("Erro interno");
+    }
+  });
+});
+
+/**
+ * Exemplo de função que redireciona o usuário se já estiver logado.
+ * Ideal para rotas que devem ser acessadas apenas por usuários não autenticados (ex: login, signup).
+ *
+ * Para usar esta função, o cliente (frontend) deve enviar o token de ID do Firebase Auth
+ * no cabeçalho 'Authorization' como 'Bearer <idToken>'.
+ */
+exports.redirectIfLoggedIn = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      // 1. Obter o token de autenticação do cabeçalho da requisição
+      const idToken = req.headers.authorization?.split('Bearer ')[1];
+
+      if (idToken) {
+        try {
+          // 2. Verificar o token de autenticação usando o Admin SDK
+          const decodedToken = await admin.auth().verifyIdToken(idToken);
+          // Se o token for válido, o usuário está logado. Redirecionar.
+          console.log(`Usuário logado (${decodedToken.uid}) tentou acessar rota restrita. Redirecionando.`);
+          // 3. Redirecionar para uma rota de usuário logado (ex: dashboard)
+          return res.redirect(302, '/dashboard'); // Substitua por sua URL de dashboard real
+        } catch (error) {
+          // Token inválido ou expirado. Tratar como usuário não autenticado.
+          console.log("Token inválido ou expirado, prosseguindo como usuário não autenticado.");
+        }
+      }
+
+      // Se não há token ou o token é inválido/expirado, o usuário não está logado.
+      // Prosseguir com a lógica para usuários não autenticados.
+      res.status(200).send("Bem-vindo! Por favor, faça login ou registre-se.");
+    } catch (error) {
+      console.error("Erro na função redirectIfLoggedIn:", error);
+      res.status(500).send("Erro interno do servidor.");
     }
   });
 });

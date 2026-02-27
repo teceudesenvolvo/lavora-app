@@ -29,6 +29,7 @@ import ConfiguracoesAdmin from './pages/pages-admin/Configuracoes';
 import Financeiro  from './pages/pages-admin/Financeiro';
 import Equipe from './pages/pages-admin/Equipe';
 import Perfil from './pages/pages-admin/Perfil';
+import Email from './pages/pages-admin/Email';
 
 import './App.css'; // Importa o CSS global
   
@@ -53,6 +54,7 @@ function App() {
           <Route path="financeiro" element={<Financeiro />} />
           <Route path="equipe" element={<Equipe />} />
           <Route path="perfil" element={<Perfil />} />
+          <Route path="email" element={<Email />} />
         </Route>
         <Route path="/dashboard" element={<ClientDashboard />}>
           <Route index element={<VisaoGeralCliente />} />

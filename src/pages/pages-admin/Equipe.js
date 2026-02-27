@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEnvelope, FaIdBadge } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEnvelope, FaIdBadge, FaUser, FaKey } from 'react-icons/fa';
 
 const Equipe = () => {
   const [equipe, setEquipe] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null); // Se null, é modo criação
-  const [formData, setFormData] = useState({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo' });
+  const [formData, setFormData] = useState({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo', username: '', password: '' });
 
   // URL do Firebase para a equipe
   const FIREBASE_URL = 'https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json';
@@ -41,11 +41,13 @@ const Equipe = () => {
         nome: user.nome, 
         email: user.email, 
         cargo: user.cargo, 
-        status: user.status
+        status: user.status,
+        username: '',
+        password: ''
       });
     } else {
       setCurrentUser(null);
-      setFormData({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo' });
+      setFormData({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo', username: '', password: '' });
     }
     setModalOpen(true);
   };
@@ -81,27 +83,34 @@ const Equipe = () => {
         alert('Usuário atualizado com sucesso!');
       } else {
         // Criação
-        // 1. Chama a Cloud Function para criar no Auth e enviar convite
-        const inviteResponse = await fetch(`${CLOUD_FUNCTIONS_BASE}/inviteUser`, {
+        // 1. Chama a Cloud Function para criar conta de webmail e usuário Auth
+        const createResponse = await fetch(`${CLOUD_FUNCTIONS_BASE}/createWebmailAccount`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email, nome: formData.nome, cargo: formData.cargo })
+            body: JSON.stringify({ 
+                username: formData.username, 
+                password: formData.password, 
+                name: formData.nome 
+            })
         });
 
-        const inviteData = await inviteResponse.json();
+        const createData = await createResponse.json();
 
-        if (!inviteResponse.ok) {
-            throw new Error(inviteData.error || "Erro ao enviar convite.");
+        if (!createResponse.ok) {
+            throw new Error(createData.error || "Erro ao criar conta.");
         }
 
         // 2. Salva no Realtime Database usando o UID do Auth como chave
-        // Isso permite que a gente consiga excluir o usuário do Auth depois usando o ID
-        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${inviteData.uid}.json`, {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${createData.user.uid}.json`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+              nome: formData.nome,
+              email: createData.user.email,
+              cargo: formData.cargo,
+              status: formData.status
+          })
         });
-        alert('Usuário convidado com sucesso! Um e-mail foi enviado para definição de senha.');
       }
       fetchEquipe();
       handleCloseModal();
@@ -220,10 +229,26 @@ const Equipe = () => {
                 <input required name="nome" value={formData.nome} onChange={handleChange} placeholder="Ex: João Silva" />
               </div>
               
-              <div className="form-group">
-                <label><FaEnvelope style={{ marginRight: '5px' }} /> E-mail</label>
-                <input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="email@lavoro.com" />
-              </div>
+              {currentUser ? (
+                  <div className="form-group">
+                    <label><FaEnvelope style={{ marginRight: '5px' }} /> E-mail</label>
+                    <input required type="email" name="email" value={formData.email} onChange={handleChange} disabled style={{ backgroundColor: '#f0f0f0', cursor: 'not-allowed' }} />
+                  </div>
+              ) : (
+                  <>
+                    <div className="form-group">
+                        <label><FaUser style={{ marginRight: '5px' }} /> Usuário de E-mail</label>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <input required name="username" value={formData.username} onChange={handleChange} placeholder="usuario" style={{ flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0 }} />
+                            <span style={{ padding: '10px', background: '#eee', border: '1px solid #ccc', borderLeft: 'none', borderTopRightRadius: '4px', borderBottomRightRadius: '4px', color: '#555', fontSize: '0.9rem' }}>@lavoroservicos.com.br</span>
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label><FaKey style={{ marginRight: '5px' }} /> Senha</label>
+                        <input required type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Senha de acesso" />
+                    </div>
+                  </>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                   <div className="form-group">
@@ -247,7 +272,7 @@ const Equipe = () => {
 
               <div className="popup-actions" style={{ marginTop: '20px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={handleCloseModal} className="btn btn-secondary">Cancelar</button>
-                <button type="submit" className="btn btn-primary">{currentUser ? 'Salvar Alterações' : 'Enviar Convite'}</button>
+                <button type="submit" className="btn btn-primary">{currentUser ? 'Salvar Alterações' : 'Criar Conta'}</button>
               </div>
             </form>
           </div>
