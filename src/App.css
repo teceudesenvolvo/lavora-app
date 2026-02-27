@@ -1274,10 +1274,19 @@ input {
     gap: 20px;
 }
 
+.form-actions{
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
 .form-group {
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
+    
 }
+
 
 .form-group label {
     margin-bottom: 8px;

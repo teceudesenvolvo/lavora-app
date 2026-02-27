@@ -10,6 +10,7 @@ const Email = () => {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
 
   const [emailData, setEmailData] = useState({
     to: '',
@@ -146,7 +147,7 @@ const Email = () => {
         alert('E-mail enviado com sucesso!');
         setEmailData({ to: '', subject: '', html: '', fromName: currentUser?.displayName || '', attachments: [] });
         if (editorRef.current) editorRef.current.innerHTML = '';
-        setActiveTab('sent');
+        setIsComposeOpen(false);
       } else {
         alert(`Erro ao enviar: ${data.error || 'Falha desconhecida'}`);
       }
@@ -197,95 +198,6 @@ const Email = () => {
   };
 
   const renderContent = () => {
-    if (activeTab === 'compose') {
-        return (
-          <form onSubmit={handleSend} className="settings-form">
-            <fieldset className="settings-fieldset">
-                <legend><FaEnvelope /> Nova Mensagem</legend>
-                
-                <div className="form-group">
-                    <label>De:</label>
-                    <input 
-                        name="fromName" 
-                        value={emailData.fromName} 
-                        onChange={handleChange} 
-                        disabled // Nome fixo do usuário logado, mas visível
-                        style={{ backgroundColor: '#f9f9f9' }}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label>Para:</label>
-                    <input 
-                        required 
-                        type="email" 
-                        name="to" 
-                        value={emailData.to} 
-                        onChange={handleChange} 
-                        placeholder="cliente@exemplo.com" 
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label>Assunto</label>
-                    <input 
-                        required 
-                        name="subject" 
-                        value={emailData.subject} 
-                        onChange={handleChange} 
-                        placeholder="Assunto da mensagem" 
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label>Mensagem</label>
-                    
-                    {/* Editor WYSIWYG Simples */}
-                    <div className="editor-container" style={{ border: '1px solid #ccc', borderRadius: '5px', overflow: 'hidden' }}>
-                        <div className="editor-toolbar" style={{ background: '#f0f0f0', padding: '8px', borderBottom: '1px solid #ccc', display: 'flex', gap: '5px' }}>
-                            <button type="button" onClick={() => execCmd('bold')} title="Negrito" style={{ fontWeight: 'bold' }}><FaBold /></button>
-                            <button type="button" onClick={() => execCmd('italic')} title="Itálico" style={{ fontStyle: 'italic' }}><FaItalic /></button>
-                            <button type="button" onClick={() => execCmd('insertUnorderedList')} title="Lista"><FaListUl /></button>
-                        </div>
-                        <div 
-                            className="editor-content"
-                            contentEditable
-                            ref={editorRef}
-                            onInput={handleEditorInput}
-                            style={{ minHeight: '200px', padding: '15px', outline: 'none' }}
-                        ></div>
-                    </div>
-                </div>
-
-                <div className="form-group">
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', width: 'fit-content', padding: '8px 15px', background: '#e9ecef', borderRadius: '5px' }}>
-                        <FaPaperclip /> Anexar Arquivos
-                        <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} />
-                    </label>
-                    
-                    {emailData.attachments.length > 0 && (
-                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '10px' }}>
-                            {emailData.attachments.map((att, index) => (
-                                <li key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', background: '#f8f9fa', padding: '5px 10px', borderRadius: '4px' }}>
-                                    <span style={{ fontSize: '0.9rem' }}>{att.filename}</span>
-                                    <button type="button" onClick={() => removeAttachment(index)} style={{ border: 'none', background: 'none', color: 'red', cursor: 'pointer' }}><FaTimes /></button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-            </fieldset>
-
-            <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveTab('inbox')}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" disabled={sending} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <FaPaperPlane /> {sending ? 'Enviando...' : 'Enviar E-mail'}
-                </button>
-            </div>
-          </form>
-        );
-    }
-
     // Visualização de Detalhes do Email
     if (selectedEmail) {
         return (
@@ -383,8 +295,8 @@ const Email = () => {
 
   return (
     <div className="profile-section">
-      <h2 className="faturas-section-title">Email Corporativo</h2>
-      <p className="cotacao-subtitle">Envie e-mails profissionais através do domínio @lavoroservicos.com.br</p>
+      <h2 className="faturas-section-title">Email Grupo Lavoro</h2>
+      <p className="cotacao-subtitle">Seja bem vindo ao gerenciador de emails</p>
 
       <div className="email-container" style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
         {/* Sidebar do Email */}
@@ -392,7 +304,7 @@ const Email = () => {
             <button 
                 className="btn btn-primary" 
                 style={{ width: '100%', marginBottom: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                onClick={() => setActiveTab('compose')}
+                onClick={() => setIsComposeOpen(true)}
             >
                 <FaPlus /> Nova Mensagem
             </button>
@@ -422,6 +334,107 @@ const Email = () => {
         </div>
       </div>
       
+      {isComposeOpen && (
+        <div className="gmail-compose-modal" style={{
+            position: 'fixed',
+            bottom: 0,
+            right: '50px',
+            width: '500px',
+            height: '600px',
+            maxHeight: '90vh',
+            background: '#fff',
+            boxShadow: '0 0 20px rgba(0,0,0,0.2)',
+            borderRadius: '10px 10px 0 0',
+            zIndex: 2000,
+            display: 'flex',
+            flexDirection: 'column',
+            border: '1px solid #e0e0e0'
+        }}>
+            <div className="compose-header" style={{
+                padding: '10px 15px',
+                background: '#333',
+                color: '#fff',
+                borderRadius: '8px 8px 0 0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'default'
+            }}>
+                <span style={{fontWeight: 'bold'}}>Nova Mensagem</span>
+                <button onClick={() => setIsComposeOpen(false)} style={{background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer'}}><FaTimes /></button>
+            </div>
+            <div className="compose-body" style={{ padding: '15px', overflowY: 'auto', flex: 1, background: '#fff' }}>
+                <form onSubmit={handleSend} className="settings-form" style={{ boxShadow: 'none', padding: 0 }}>
+                    <fieldset className="settings-fieldset" style={{ border: 'none', padding: 0, margin: 0 }}>
+                        <div className="form-group">
+                            <label>Para:</label>
+                            <input 
+                                required 
+                                type="email" 
+                                name="to" 
+                                value={emailData.to} 
+                                onChange={handleChange} 
+                                placeholder="cliente@exemplo.com" 
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Assunto</label>
+                            <input 
+                                required 
+                                name="subject" 
+                                value={emailData.subject} 
+                                onChange={handleChange} 
+                                placeholder="Assunto da mensagem" 
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <div className="editor-container" style={{ border: '1px solid #ccc', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div className="editor-toolbar" style={{ background: '#f0f0f0', padding: '8px', borderBottom: '1px solid #ccc', display: 'flex', gap: '5px' }}>
+                                    <button type="button" onClick={() => execCmd('bold')} title="Negrito" style={{ fontWeight: 'bold' }}><FaBold /></button>
+                                    <button type="button" onClick={() => execCmd('italic')} title="Itálico" style={{ fontStyle: 'italic' }}><FaItalic /></button>
+                                    <button type="button" onClick={() => execCmd('insertUnorderedList')} title="Lista"><FaListUl /></button>
+                                </div>
+                                <div 
+                                    className="editor-content"
+                                    contentEditable
+                                    ref={editorRef}
+                                    onInput={handleEditorInput}
+                                    style={{ minHeight: '200px', padding: '15px', outline: 'none' }}
+                                ></div>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', width: 'fit-content', padding: '8px 15px', background: '#e9ecef', borderRadius: '5px' }}>
+                                <FaPaperclip /> Anexar Arquivos
+                                <input type="file" multiple onChange={handleFileChange} style={{ display: 'none' }} />
+                            </label>
+                            {emailData.attachments.length > 0 && (
+                                <ul style={{ listStyle: 'none', padding: 0, marginTop: '10px' }}>
+                                    {emailData.attachments.map((att, index) => (
+                                        <li key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', background: '#f8f9fa', padding: '5px 10px', borderRadius: '4px' }}>
+                                            <span style={{ fontSize: '0.9rem' }}>{att.filename}</span>
+                                            <button type="button" onClick={() => removeAttachment(index)} style={{ border: 'none', background: 'none', color: 'red', cursor: 'pointer' }}><FaTimes /></button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </fieldset>
+
+                    <div className="form-actions" style={{ paddingBottom: 0, justifyContent: 'space-between' }}>
+                        <button type="button" className="btn btn-secondary" onClick={() => setIsComposeOpen(false)}>Cancelar</button>
+                        <button type="submit" className="btn btn-primary" disabled={sending} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <FaPaperPlane /> {sending ? 'Enviando...' : 'Enviar'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
       <style>{`
         .email-nav-item {
             display: flex;
@@ -540,6 +553,13 @@ const Email = () => {
         }
         .btn-danger:hover {
             background-color: #c82333;
+        }
+        .gmail-compose-modal {
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
     </div>

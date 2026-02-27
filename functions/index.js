@@ -491,7 +491,7 @@ exports.sendWebmailViaResend = functions.https.onRequest((req, res) => {
                to,
                subject,
                preview: previewText,
-               body: html,
+               body: html || `<p><i>(Email sem conteúdo visível)</i></p>`,
                date: timestamp,
                fromName: fromName || fromEmail,
                hasAttachments: !!(attachments && attachments.length),
@@ -517,7 +517,7 @@ exports.sendWebmailViaResend = functions.https.onRequest((req, res) => {
                fromName: fromName || fromEmail,
                subject,
                preview: previewText,
-               body: html,
+               body: html || `<p><i>(Email sem conteúdo visível)</i></p>`,
                date: timestamp,
                hasAttachments: !!(attachments && attachments.length),
                read: false,
@@ -554,6 +554,11 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
   // --- LOGS DE DEBUG (Para verificar se a requisição chega) ---
   console.log(">>> WEBHOOK ACIONADO <<<");
   console.log("Método:", req.method);
+  // registrar rawBody pois o conteúdo do email pode vir encapsulado aqui
+  if (req.rawBody) {
+      const rawStr = req.rawBody.toString();
+      console.log("rawBody (primeiros 2000 chars):", rawStr.substring(0, 2000));
+  }
   // ----------------------------------------------------------
 
   // --- VERIFICAÇÃO DE SEGURANÇA (SIGNING SECRET) ---
@@ -607,6 +612,12 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
       console.log("Webhook Keys (Root):", Object.keys(body));
       if (body.data) console.log("Webhook Keys (Data):", Object.keys(body.data));
 
+      // quando não houver html/texto, registrar payload completo
+      if (!body.data?.html && !body.data?.text) {
+          console.warn('PAYLOAD INBOUND SEM html/text no root.data, dump completo a seguir');
+          console.log(JSON.stringify(body, null, 2));
+      }
+
       // 2. Estratégia de Extração Robusta (Prioriza 'data', mas busca na raiz se falhar)
       const dataSrc = body.data || body;
       
@@ -616,8 +627,35 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
       const attachments = dataSrc.attachments || body.attachments;
       
       // Tenta encontrar HTML e Texto em ambos os lugares
-      let html = dataSrc.html || body.html;
-      let text = dataSrc.text || body.text;
+      let html = dataSrc.html || body.html || dataSrc.body_html || dataSrc['body-html'];
+      let text = dataSrc.text || body.text || dataSrc.body_text || dataSrc['body-text'] || dataSrc['plain-text'] || dataSrc['text/plain'];
+
+      // se não encontrou corpo nos lugares esperados, tentar formatos alternativos
+      if ((!html && !text) && (dataSrc.msg || dataSrc.message)) {
+          const nested = dataSrc.msg || dataSrc.message;
+          html = html || nested.html || nested.body_html || nested['body-html'];
+          text = text || nested.text || nested.body_text || nested['plain-text'] || nested['text/plain'];
+          console.log('Fallback: extraído de msg/message aninhado', { html: !!html, text: !!text });
+      }
+
+      // tentar decodificar raw base64 se houver (muitas vezes é o caso em inbound)
+      if ((!html && !text) && (dataSrc.raw || body.raw || dataSrc.data?.raw)) {
+          const rawBase64 = dataSrc.raw || body.raw || dataSrc.data.raw;
+          try {
+              const parsed = await simpleParser(Buffer.from(rawBase64, 'base64'));
+              html = html || parsed.html;
+              text = text || parsed.text;
+              console.log('Parsed raw MIME via mailparser', { hasHtml: !!parsed.html, hasText: !!parsed.text });
+          } catch (err) {
+              console.warn('Falha ao parsear raw MIME:', err.message);
+          }
+      }
+
+      // caso ainda continue sem corpo, registrar payload para depuração
+      if (!html && !text) {
+          console.warn('WEBHOOK RECEBIDO sem html/texto. Exibindo payload parcial para inspeção');
+          console.log('BODY (truncated):', JSON.stringify(body).substring(0,1000));
+      }
 
       console.log(`Conteúdo Extraído -> HTML: ${!!html}, Text: ${!!text}, Subject: ${subject}`);
 
