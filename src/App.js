@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
+import SolutionsPage from './pages/SolutionsPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import PrivacyPolicyOassessor from './pages/PrivacyPolicy-oassessor';
 import PageCsae from './pages/pageCSAE';
@@ -38,6 +41,9 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/solutions" element={<SolutionsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/politica-de-privacidade-cm-pacatuba" element={<PrivacyPolicy />} />
         <Route path="/politica-de-privacidade-oassessor" element={<PrivacyPolicyOassessor />} />
         <Route path="/pageCSAE" element={<PageCsae />} />

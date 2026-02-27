@@ -224,9 +224,7 @@ const Email = () => {
                             <span><strong>De:</strong> {selectedEmail.fromName || selectedEmail.from || 'Desconhecido'}</span>
                             <span>{new Date(selectedEmail.date).toLocaleString()}</span>
                         </div>
-                        <div style={{ color: '#666', fontSize: '0.9rem', marginTop: '5px' }}>
-                            <strong>Para:</strong> {selectedEmail.to}
-                        </div>
+                       
                     </div>
                     <button 
                         onClick={(e) => handleDeleteEmail(selectedEmail, e)} 
@@ -312,12 +310,11 @@ const Email = () => {
       <h2 className="faturas-section-title">Email Grupo Lavoro</h2>
       <p className="cotacao-subtitle">Seja bem vindo ao gerenciador de emails</p>
 
-      <div className="email-container" style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+      <div className="email-container">
         {/* Sidebar do Email */}
-        <div className="email-sidebar" style={{ width: '200px', flexShrink: 0 }}>
+        <div className="email-sidebar">
             <button 
-                className="btn btn-primary" 
-                style={{ width: '100%', marginBottom: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                className="btn btn-primary btn-compose" 
                 onClick={() => setIsComposeOpen(true)}
             >
                 <FaPlus /> Nova Mensagem
@@ -343,27 +340,13 @@ const Email = () => {
         </div>
 
         {/* Conteúdo Principal */}
-        <div className="email-content" style={{ flex: 1, background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+        <div className="email-content">
             {renderContent()}
         </div>
       </div>
       
       {isComposeOpen && (
-        <div className="gmail-compose-modal" style={{
-            position: 'fixed',
-            bottom: 0,
-            right: '50px',
-            width: '500px',
-            height: '600px',
-            maxHeight: '90vh',
-            background: '#fff',
-            boxShadow: '0 0 20px rgba(0,0,0,0.2)',
-            borderRadius: '10px 10px 0 0',
-            zIndex: 2000,
-            display: 'flex',
-            flexDirection: 'column',
-            border: '1px solid #e0e0e0'
-        }}>
+        <div className="gmail-compose-modal">
             <div className="compose-header" style={{
                 padding: '10px 15px',
                 background: '#333',
@@ -450,6 +433,35 @@ const Email = () => {
       )}
 
       <style>{`
+        .email-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .email-sidebar {
+            width: 200px;
+            flex-shrink: 0;
+        }
+        .email-content {
+            flex: 1;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            min-width: 0;
+        }
+        .btn-compose {
+            width: 100%;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .email-nav {
+            display: flex;
+            flex-direction: column;
+        }
         .email-nav-item {
             display: flex;
             align-items: center;
@@ -569,11 +581,56 @@ const Email = () => {
             background-color: #c82333;
         }
         .gmail-compose-modal {
+            position: fixed;
+            bottom: 0;
+            right: 50px;
+            width: 500px;
+            height: 600px;
+            max-height: 90vh;
+            background: #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            border-radius: 10px 10px 0 0;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
             animation: slideUp 0.3s ease-out;
         }
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .email-container {
+                flex-direction: column;
+            }
+            .email-sidebar {
+                width: 100%;
+            }
+            .email-nav {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 5px;
+                gap: 10px;
+            }
+            .email-nav-item {
+                width: auto;
+                white-space: nowrap;
+                margin-bottom: 0;
+                flex: 0 0 auto;
+            }
+            .gmail-compose-modal {
+                width: 100%;
+                right: 0;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+                z-index: 9999;
+            }
+            .email-content {
+                padding: 10px;
+            }
         }
       `}</style>
     </div>

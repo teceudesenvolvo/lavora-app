@@ -15,10 +15,9 @@ const Header = () => {
       <div className="header-container">
         <a href="/" className="logo-link"><img src={Logo} alt="Logo Grupo Lavoro" className="logo" /></a>
         <nav className={`nav ${navVisible ? 'nav--visible' : ''}`}>
-          <Link className="nav-link" to="/#solutions" onClick={toggleNav}>Soluções</Link>
-          <Link className="nav-link" to="/#about" onClick={toggleNav}>Sobre</Link>
-          <Link className="nav-link" to="/#testimonials" onClick={toggleNav}>Depoimentos</Link>
-          <Link className="nav-link" to="/#contact" onClick={toggleNav}>Contato</Link>
+          <Link className="nav-link" to="/solutions" onClick={toggleNav}>Soluções</Link>
+          <Link className="nav-link" to="/about" onClick={toggleNav}>Sobre</Link>
+          <Link className="nav-link" to="/contact" onClick={toggleNav}>Contato</Link>
           <Button primary href="/login">Entrar</Button>
         </nav>
         <button className="nav-toggle" aria-label="toggle navigation" onClick={toggleNav}>

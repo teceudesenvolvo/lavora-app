@@ -944,10 +944,10 @@ const Financeiro = () => {
     <div className="profile-section">
       <h2 className="faturas-section-title">Sistema de Cobranças</h2>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div className="financeiro-header">
         <p className="cotacao-subtitle" style={{ marginBottom: 0 }}>Gerencie faturas, recebimentos e inadimplência.</p>
         
-        <div className="month-selector" style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#fff', padding: '10px 20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+        <div className="month-selector">
             <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}><FaChevronLeft /></button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', fontSize: '1.1rem', color: '#333', minWidth: '180px', justifyContent: 'center' }}>
                 <FaCalendarAlt style={{ color: '#007bff' }} />
@@ -957,7 +957,7 @@ const Financeiro = () => {
         </div>
       </div>
 
-      <div className="tabs-container" style={{ marginBottom: '20px', display: 'flex', gap: '10px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+      <div className="tabs-container financeiro-tabs">
         {userRole !== 'Financeiro' && (
           <button className={`btn-tab ${mainTab === 'dashboard' ? 'active' : ''}`} onClick={() => setMainTab('dashboard')}>
             <FaChartPie style={{ marginRight: '5px' }} /> Painel Dashboard
@@ -999,9 +999,9 @@ const Financeiro = () => {
 
       {mainTab === 'cobrancas' && (
         <div className="faturas-section" style={{ marginTop: '30px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div className="financeiro-section-header">
               <h3 className="faturas-section-title" style={{ marginBottom: 0 }}>Cobranças e Faturas</h3>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="financeiro-actions">
                   <button onClick={() => setModalOpen(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <FaPlus /> Nova Cobrança
                   </button>
@@ -1249,7 +1249,7 @@ const Financeiro = () => {
               <h2>{editingTransaction.descricao}</h2>
             </div>
 
-            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+            <div className="form-grid edit-payment-grid">
                 <div className="form-group">
                     <label>Valor da Mensalidade</label>
                     <input 
