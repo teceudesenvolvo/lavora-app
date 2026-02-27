@@ -5,7 +5,7 @@ const Equipe = () => {
   const [equipe, setEquipe] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null); // Se null, é modo criação
-  const [formData, setFormData] = useState({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo', username: '', password: '' });
+  const [formData, setFormData] = useState({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo', username: '', password: '', recoveryEmail: '' });
 
   // URL do Firebase para a equipe
   const FIREBASE_URL = 'https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json';
@@ -43,11 +43,12 @@ const Equipe = () => {
         cargo: user.cargo, 
         status: user.status,
         username: '',
-        password: ''
+        password: '',
+        recoveryEmail: user.recoveryEmail || ''
       });
     } else {
       setCurrentUser(null);
-      setFormData({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo', username: '', password: '' });
+      setFormData({ nome: '', email: '', cargo: 'Vendedor', status: 'Ativo', username: '', password: '', recoveryEmail: '' });
     }
     setModalOpen(true);
   };
@@ -69,7 +70,8 @@ const Equipe = () => {
       nome: formData.nome,
       email: formData.email,
       cargo: formData.cargo,
-      status: formData.status
+      status: formData.status,
+      recoveryEmail: formData.recoveryEmail
     };
 
     try {
@@ -108,7 +110,8 @@ const Equipe = () => {
               nome: formData.nome,
               email: createData.user.email,
               cargo: formData.cargo,
-              status: formData.status
+              status: formData.status,
+              recoveryEmail: formData.recoveryEmail
           })
         });
       }
@@ -230,10 +233,16 @@ const Equipe = () => {
               </div>
               
               {currentUser ? (
+                  <>
                   <div className="form-group">
                     <label><FaEnvelope style={{ marginRight: '5px' }} /> E-mail</label>
                     <input required type="email" name="email" value={formData.email} onChange={handleChange} disabled style={{ backgroundColor: '#f0f0f0', cursor: 'not-allowed' }} />
                   </div>
+                  <div className="form-group">
+                    <label><FaEnvelope style={{ marginRight: '5px' }} /> E-mail de Recuperação</label>
+                    <input type="email" name="recoveryEmail" value={formData.recoveryEmail} onChange={handleChange} placeholder="email.pessoal@exemplo.com" />
+                  </div>
+                  </>
               ) : (
                   <>
                     <div className="form-group">
@@ -246,6 +255,10 @@ const Equipe = () => {
                     <div className="form-group">
                         <label><FaKey style={{ marginRight: '5px' }} /> Senha</label>
                         <input required type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Senha de acesso" />
+                    </div>
+                    <div className="form-group">
+                        <label><FaEnvelope style={{ marginRight: '5px' }} /> E-mail de Recuperação</label>
+                        <input type="email" name="recoveryEmail" value={formData.recoveryEmail} onChange={handleChange} placeholder="email.pessoal@exemplo.com" />
                     </div>
                   </>
               )}

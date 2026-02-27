@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaWhatsapp } from 'react-icons/fa';
+import { FaWhatsapp, FaHospital, FaAmbulance, FaTooth, FaHeartbeat } from 'react-icons/fa';
 import ImageHero from '../assets/images/hero.jpg'; // Imagem da Mulher em movimento
 import ImageSectionAbout from '../assets/images/visao2.jpg'; // Imagem do Homem se alongando
 import Button from './Button';
@@ -37,6 +37,65 @@ const Hero = () => (
     </div>
     <div className="hero-image-container">
         <img src={ImageHero} alt="Mulher em movimento" className="hero-image" />
+    </div>
+  </section>
+);
+
+// Nova Seção: Hapvida (Corretora Exclusiva)
+const HapvidaSection = () => (
+  <section className="hapvida-section" style={{ padding: '100px 20px', background: 'linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%)' }}>
+    <div className="content-wrapper hapvida-content-wrapper">
+      
+      
+
+      {/* Coluna de Cards e Botão (Esquerda no Desktop) */}
+      <div className="hapvida-cards-column">
+        <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '20px', 
+            marginBottom: '40px',
+            width: '100%'
+        }}>
+            {[
+                { title: 'Maior Rede Exclusiva', icon: <FaHospital /> },
+                { title: 'Urgência e Emergência 24h', icon: <FaAmbulance /> },
+                { title: 'Odontologia Completa', icon: <FaTooth /> },
+                { title: 'Programas de Prevenção', icon: <FaHeartbeat /> }
+            ].map((item, index) => (
+                <div key={index} className="hapvida-feature-card">
+                    <div style={{ fontSize: '2.5rem', marginBottom: '15px', color: '#e5731b' }}>{item.icon}</div>
+                    <h3 style={{ color: '#0054a6', fontSize: '1.1rem', fontWeight: 'bold' }}>{item.title}</h3>
+                </div>
+            ))}
+        </div>
+
+        <div className="hapvida-cta-container">
+            <Button primary href="#contact" className="hapvida-cta-button">
+                Solicitar Cotação Personalizada
+            </Button>
+        </div>
+      </div>
+      {/* Coluna de Texto (Direita no Desktop) */}
+      <div className="hapvida-text-column">
+        <div className="hapvida-logo-container">
+            <img 
+                src="https://www2.hapvida.com.br/o/hapvida-theme/images/logo.png" 
+                alt="Hapvida Logo" 
+                style={{ height: '80px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} 
+            />
+        </div>
+
+        <h2 className="section-title hapvida-title">
+            Excelência em Saúde e Odontologia
+        </h2>
+        
+        <p className="section-subtitle hapvida-subtitle">
+            Como corretora exclusiva <strong>Hapvida</strong>, o Grupo Lavoro conecta você à maior rede verticalizada de saúde do Brasil. 
+            Oferecemos soluções personalizadas com o melhor custo-benefício do mercado, garantindo tranquilidade e bem-estar para quem você ama.
+        </p>
+      </div>
+
     </div>
   </section>
 );
@@ -193,6 +252,7 @@ const Home = () => {
         <div className="lavoro-app-container">
             <Header />
             <Hero />
+            <HapvidaSection />
             <Solutions />
             <About />
             <Testimonials />

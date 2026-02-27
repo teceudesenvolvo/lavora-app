@@ -542,181 +542,41 @@ exports.sendWebmailViaResend = functions.https.onRequest((req, res) => {
 });
 
 /**
- * Webhook para receber e-mails externos (Inbound)
- * Configure a URL desta função no painel do Resend (Webhooks)
- * 
- * !!! IMPORTANTE - ERRO 401 !!!
- * Para funcionar, esta função deve ser PÚBLICA no Google Cloud Console.
- * 1. Vá em Permissões da função 'handleResendWebhook'.
- * 2. Adicione o principal 'allUsers' com o papel 'Cloud Functions Invoker'.
- * A segurança é garantida pela verificação da assinatura (SIGNING_SECRET) abaixo.
+ * Recebe e-mails processados pelo Cloudflare Worker (Inbound)
+ * Substitui o antigo webhook do Resend.
+ * Espera um JSON com { from, to, subject, html, text, attachments }
  */
-exports.handleResendWebhook = functions.https.onRequest((req, res) => {
-  // --- LOGS DE DEBUG (Para verificar se a requisição chega) ---
-  console.log(">>> WEBHOOK ACIONADO <<<");
-  console.log("Método:", req.method);
-  // registrar rawBody pois o conteúdo do email pode vir encapsulado aqui
-  if (req.rawBody) {
-      const rawStr = req.rawBody.toString();
-      console.log("rawBody (primeiros 2000 chars):", rawStr.substring(0, 2000));
-  }
-  // ----------------------------------------------------------
-
-  // --- VERIFICAÇÃO DE SEGURANÇA (SIGNING SECRET) ---
-  const SIGNING_SECRET = "whsec_gaMOHEIYpgtsClbkpc6vKFIEpZnq6fB+";
-
-  // chave para fazer chamadas de leitura ao Resend caso precisemos buscar corpo
-  // O webhook de inbound nem sempre inclui html/text, então buscamos
-  // via GET /emails/:id. A API exige uma key com permissão de leitura
-  // (não basta a key de envio, que costuma ser "send-only").
-  // Você pode cadastrar um segundo token no painel (`Read+Write` ou
-  // `Full Access`) e definir a variável RESEND_READ_KEY aqui.
-  const RESEND_API_KEY = process.env.RESEND_READ_KEY || process.env.RESEND_API_KEY || "re_8qQJWKFf_KhcZeZP61DMxQVbMDUhrJjQJ";
-
-  if (req.method === "POST") {
-    const svix_id = req.headers["svix-id"];
-    const svix_timestamp = req.headers["svix-timestamp"];
-    const svix_signature = req.headers["svix-signature"];
-
-    // Só verifica se os cabeçalhos estiverem presentes (requisições reais do Resend)
-    if (SIGNING_SECRET && svix_id && svix_timestamp && svix_signature) {
-      try {
-        // O Resend usa o corpo cru (rawBody) para gerar a assinatura
-        const payload = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
-        const signedContent = `${svix_id}.${svix_timestamp}.${payload}`;
-        const secretKey = SIGNING_SECRET.startsWith("whsec_") ? SIGNING_SECRET.substring(6) : SIGNING_SECRET;
-        const secretBytes = Buffer.from(secretKey, "base64");
-        const signature = crypto.createHmac('sha256', secretBytes).update(signedContent).digest('base64');
-        const expectedSignature = `v1,${signature}`;
-
-        if (!svix_signature.split(' ').includes(expectedSignature)) {
-          console.error("ERRO DE SEGURANÇA: Assinatura do Webhook inválida.");
-          console.error(`Esperado: ${expectedSignature} | Recebido: ${svix_signature}`);
-          // MODO DEBUG: Não bloqueia a requisição por enquanto, apenas avisa
-          // return res.status(400).send("Invalid signature"); 
-        }
-      } catch (err) {
-        console.error("Erro ao verificar assinatura:", err);
-      }
-    }
-  }
-  // -------------------------------------------------
-
+exports.handleInboundEmail = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
-      // Log detalhado para depuração no Firebase Console
-      // console.log("Webhook Recebido. Headers:", req.headers); // Comentado para reduzir ruído
-      // console.log("Webhook Body Type:", typeof req.body);
-
       if (req.method !== "POST") {
         return res.status(405).send("Método não permitido");
       }
 
-      // 1. Garante que o body é um objeto
-      let body = req.body;
-      if (typeof body === 'string') {
-          try { body = JSON.parse(body); } catch(e) { console.error("Erro parse body:", e); }
+      // --- VERIFICAÇÃO DE SEGURANÇA ---
+      // Defina a mesma chave no Cloudflare Worker (variável de ambiente AUTH_KEY)
+      const INBOUND_AUTH_KEY = process.env.INBOUND_AUTH_KEY || "sua-chave-secreta-aqui";
+      const receivedKey = req.headers['x-auth-key'];
+
+      if (receivedKey !== INBOUND_AUTH_KEY) {
+        console.warn("Tentativa de acesso não autorizado ao webhook de e-mail.");
+        return res.status(403).send("Acesso negado");
       }
 
-      console.log("Webhook Keys (Root):", Object.keys(body));
-      if (body.data) console.log("Webhook Keys (Data):", Object.keys(body.data));
-
-      // quando não houver html/texto, registrar payload completo
-      if (!body.data?.html && !body.data?.text) {
-          console.warn('PAYLOAD INBOUND SEM html/text no root.data, dump completo a seguir');
-          console.log(JSON.stringify(body, null, 2));
-      }
-
-      // 2. Estratégia de Extração Robusta (Prioriza 'data', mas busca na raiz se falhar)
-      const dataSrc = body.data || body;
-      
-      const to = dataSrc.to || body.to;
-      const from = dataSrc.from || body.from;
-      const subject = dataSrc.subject || body.subject;
-      const attachments = dataSrc.attachments || body.attachments;
-      
-      // Tenta encontrar HTML e Texto em ambos os lugares
-      let html = dataSrc.html || body.html || dataSrc.body_html || dataSrc['body-html'];
-      let text = dataSrc.text || body.text || dataSrc.body_text || dataSrc['body-text'] || dataSrc['plain-text'] || dataSrc['text/plain'];
-
-      // se não encontrou corpo nos lugares esperados, tentar formatos alternativos
-      if ((!html && !text) && (dataSrc.msg || dataSrc.message)) {
-          const nested = dataSrc.msg || dataSrc.message;
-          html = html || nested.html || nested.body_html || nested['body-html'];
-          text = text || nested.text || nested.body_text || nested['plain-text'] || nested['text/plain'];
-          console.log('Fallback: extraído de msg/message aninhado', { html: !!html, text: !!text });
-      }
-
-      // tentar decodificar raw base64 se houver (muitas vezes é o caso em inbound)
-      if ((!html && !text) && (dataSrc.raw || body.raw || dataSrc.data?.raw)) {
-          const rawBase64 = dataSrc.raw || body.raw || dataSrc.data.raw;
-          try {
-              const parsed = await simpleParser(Buffer.from(rawBase64, 'base64'));
-              html = html || parsed.html;
-              text = text || parsed.text;
-              console.log('Parsed raw MIME via mailparser', { hasHtml: !!parsed.html, hasText: !!parsed.text });
-          } catch (err) {
-              console.warn('Falha ao parsear raw MIME:', err.message);
-          }
-      }
-
-      // se ainda não temos corpo, tentar obter através da API Resend usando email_id (UUID)
-      if (!html && !text) {
-          // O Resend envia o email_id dentro de 'data'. Precisamos garantir que pegamos o UUID.
-          // O message_id (ex: <...>) NÃO funciona na API de GET /emails/:id, causa erro 422.
-          const emailId = dataSrc.email_id || (body.data && body.data.email_id);
-          
-          if (emailId && /^[0-9a-fA-F-]{36}$/.test(emailId)) {
-              console.log(`Tentando buscar conteúdo completo para email_id: ${emailId}`);
-              try {
-                  const apiResp = await axios.get(`https://api.resend.com/emails/${emailId}`, {
-                      headers: { Authorization: `Bearer ${RESEND_API_KEY}` }
-                  });
-                  const fetched = apiResp.data;
-                  html = html || fetched.html;
-                  text = text || fetched.text;
-                  console.log('Conteúdo recuperado via API Resend com sucesso.', { hasHtml: !!html, hasText: !!text });
-              } catch (err) {
-                  const info = err.response?.data || err.message;
-                  console.error('Erro ao buscar conteúdo via API Resend:', info);
-              }
-          } else {
-              console.log('email_id válido (UUID) não encontrado para busca na API.', { 
-                  email_id: dataSrc.email_id, 
-                  message_id: dataSrc.message_id 
-              });
-          }
-      }
-
-      // caso ainda continue sem corpo, registrar payload para depuração
-      if (!html && !text) {
-          console.warn('WEBHOOK RECEBIDO sem html/texto. Exibindo payload parcial para inspeção');
-          console.log('BODY (truncated):', JSON.stringify(body).substring(0,1000));
-      }
-
-      console.log(`Conteúdo Extraído -> HTML: ${!!html}, Text: ${!!text}, Subject: ${subject}`);
-
-      // Processa anexos para garantir que sejam salvos como Base64
-      // O Resend pode enviar o conteúdo como array de bytes (Buffer)
-      const processedAttachments = attachments ? attachments.map(att => {
-          if (att.content && Array.isArray(att.content)) {
-              return { ...att, content: Buffer.from(att.content).toString('base64') };
-          }
-          return att;
-      }) : [];
+      const { from, to, subject, html, text, attachments } = req.body;
+      console.log(`Inbound Email recebido de: ${from} | Assunto: ${subject}`);
 
       // Normaliza destinatários (pode ser string ou array)
       const recipientsList = Array.isArray(to) ? to : (to ? [to] : []);
 
       if (recipientsList.length === 0) {
-          console.warn("Webhook sem destinatários (campo 'to' vazio ou inválido).");
+          console.warn("E-mail sem destinatários (campo 'to' vazio ou inválido).");
           return res.status(200).send("Sem destinatários processáveis");
       }
 
       const db = admin.database();
       const processPromises = recipientsList.map(async (recipientStr) => {
           // Extrai apenas o e-mail (remove o nome se houver)
-          // Regex melhorada para aceitar caracteres como '+' e garantir captura correta
           const emailMatch = recipientStr.match(/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
           const emailAddress = emailMatch ? emailMatch[0].toLowerCase() : null;
 
@@ -739,13 +599,15 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
                       from: from,
                       fromName: senderName,
                       subject: subject,
-                      preview: (text || html || '').replace(/<[^>]+>/g, '').substring(0, 80) + '...',
+                      // Gera o preview a partir do HTML (se existir), senão do texto, para maior consistência.
+                      preview: ((html ? html.replace(/<[^>]+>/g, '') : text) || '').substring(0, 80) + '...',
+                      // Prioriza o corpo HTML. Se não houver, usa o texto (convertendo quebras de linha).
                       body: html || (text ? text.replace(/\n/g, '<br>') : `<p><em>(Mensagem sem conteúdo de texto. Assunto: ${subject || 'Sem assunto'})</em></p>`),
                       date: new Date().toISOString(),
                       read: false,
                       external: true,
-                      hasAttachments: !!(processedAttachments && processedAttachments.length),
-                      attachments: processedAttachments // Salva os anexos processados
+                      hasAttachments: !!(attachments && attachments.length),
+                      attachments: attachments || []
                   });
                   console.log(`SUCESSO: Email salvo na inbox de ${emailAddress}`);
               } catch (err) {
@@ -760,7 +622,7 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
       res.status(200).json({ received: true });
 
     } catch (error) {
-      console.error("ERRO FATAL no Webhook de Email:", error);
+      console.error("ERRO FATAL no Inbound Email:", error);
       res.status(500).send("Erro interno");
     }
   });
