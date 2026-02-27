@@ -42,10 +42,56 @@ const Hero = () => (
 );
 
 // Nova Seção: Hapvida (Corretora Exclusiva)
-const HapvidaSection = () => (
+const HapvidaSection = () => {
+  const [isQuoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [quoteFormData, setQuoteFormData] = useState({
+    nome: '',
+    telefone: '',
+    email: '',
+    dataNascimento: ''
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setQuoteFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleQuoteSubmit = async (e) => {
+    e.preventDefault();
+    
+    const payload = {
+        USUARIO: quoteFormData.nome,
+        TELEFONE: quoteFormData.telefone,
+        EMAIL: quoteFormData.email,
+        'DATA NASC': quoteFormData.dataNascimento ? quoteFormData.dataNascimento.split('-').reverse().join('/') : '',
+        STATUS: 'Cotação',
+        'ADESÃO': new Date().toLocaleDateString('pt-BR'),
+        origem: 'Site - Hapvida Section'
+    };
+
+    try {
+        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert('Solicitação enviada com sucesso! Entraremos em contato em breve.');
+            setQuoteModalOpen(false);
+            setQuoteFormData({ nome: '', telefone: '', email: '', dataNascimento: '' });
+        } else {
+            alert('Erro ao enviar solicitação. Tente novamente.');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao enviar solicitação.');
+    }
+  };
+
+  return (
   <section className="hapvida-section" style={{ padding: '100px 20px', background: 'linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%)' }}>
     <div className="content-wrapper hapvida-content-wrapper">
-      
       
 
       {/* Coluna de Cards e Botão (Esquerda no Desktop) */}
@@ -71,7 +117,7 @@ const HapvidaSection = () => (
         </div>
 
         <div className="hapvida-cta-container">
-            <Button primary href="#contact" className="hapvida-cta-button">
+            <Button primary onClick={() => setQuoteModalOpen(true)} className="hapvida-cta-button">
                 Solicitar Cotação Personalizada
             </Button>
         </div>
@@ -97,8 +143,156 @@ const HapvidaSection = () => (
       </div>
 
     </div>
+
+    {isQuoteModalOpen && (
+        <div className="popup-overlay" onClick={() => setQuoteModalOpen(false)}>
+            <div className="popup-content" onClick={e => e.stopPropagation()}>
+                <button className="popup-close" onClick={() => setQuoteModalOpen(false)}>&times;</button>
+                <h2 className="popup-title" style={{color: '#0054a6'}}>Cotação Hapvida</h2>
+                <p className="popup-description">Preencha seus dados para receber uma proposta exclusiva.</p>
+                
+                <form onSubmit={handleQuoteSubmit} className="contact-form" style={{marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                    <input 
+                        type="text" 
+                        name="nome" 
+                        placeholder="Nome Completo" 
+                        required 
+                        className="input-field" 
+                        value={quoteFormData.nome}
+                        onChange={handleInputChange}
+                    />
+                    <input 
+                        type="tel" 
+                        name="telefone" 
+                        placeholder="Telefone / WhatsApp" 
+                        required 
+                        className="input-field" 
+                        value={quoteFormData.telefone}
+                        onChange={handleInputChange}
+                    />
+                    <input 
+                        type="email" 
+                        name="email" 
+                        placeholder="E-mail" 
+                        required 
+                        className="input-field" 
+                        value={quoteFormData.email}
+                        onChange={handleInputChange}
+                    />
+                    <div style={{textAlign: 'left'}}>
+                        <label style={{fontSize: '0.9rem', color: '#666', marginLeft: '5px'}}>Data de Nascimento</label>
+                        <input 
+                            type="date" 
+                            name="dataNascimento" 
+                            required 
+                            className="input-field" 
+                            value={quoteFormData.dataNascimento}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                    <Button primary type="submit" className="submit-button" style={{width: '100%', marginTop: '10px'}}>
+                        Enviar Solicitação
+                    </Button>
+                </form>
+            </div>
+        </div>
+    )}
+
+    <style>{`
+        .hapvida-content-wrapper {
+            display: flex;
+            flex-direction: row-reverse;
+            align-items: center;
+            gap: 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .hapvida-text-column {
+            flex: 1;
+            text-align: right;
+        }
+        .hapvida-cards-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .hapvida-logo-container {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .hapvida-title {
+            color: #0054a6;
+            font-size: 2.8rem;
+            margin-bottom: 25px;
+            font-weight: 800;
+            text-align: right;
+        }
+        .hapvida-subtitle {
+            font-size: 1.25rem;
+            color: #4a5568;
+            line-height: 1.8;
+            text-align: right;
+            margin-left: auto;
+            margin-right: 0;
+            margin-bottom: 0;
+            max-width: 100%;
+        }
+        .hapvida-feature-card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,84,166,0.08);
+            transition: transform 0.3s ease;
+            cursor: default;
+            text-align: center;
+        }
+        .hapvida-feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .hapvida-cta-container {
+            text-align: left;
+        }
+        .hapvida-cta-button {
+            padding: 18px 45px !important;
+            font-size: 1.2rem !important;
+            border-radius: 50px !important;
+            box-shadow: 0 4px 15px rgba(0, 84, 166, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .hapvida-cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 84, 166, 0.4);
+        }
+
+        @media (max-width: 992px) {
+            .hapvida-content-wrapper {
+                flex-direction: column;
+                gap: 40px;
+            }
+            .hapvida-text-column {
+                text-align: center;
+            }
+            .hapvida-logo-container {
+                justify-content: center;
+            }
+            .hapvida-title {
+                text-align: center;
+                font-size: 2.2rem;
+            }
+            .hapvida-subtitle {
+                text-align: center;
+                margin: 0 auto;
+            }
+            .hapvida-cta-container {
+                text-align: center;
+            }
+        }
+    `}</style>
   </section>
 );
+};
 
 // Seção 2: Solutions
 const Solutions = () => {

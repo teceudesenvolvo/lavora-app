@@ -4,7 +4,7 @@ const axios = require("axios");
 const cors = require("cors")({ origin: true });
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-const { simpleParser } = require("mailparser");
+const PostalMime = require("postal-mime");
 
 // Configuração do Transporter de E-mail (Exemplo com Gmail)
 // IMPORTANTE: Para Gmail, use uma "Senha de App" gerada em sua conta Google.
@@ -555,7 +555,7 @@ exports.handleInboundEmail = functions.https.onRequest((req, res) => {
 
       // --- VERIFICAÇÃO DE SEGURANÇA ---
       // Defina a mesma chave no Cloudflare Worker (variável de ambiente AUTH_KEY)
-      const INBOUND_AUTH_KEY = process.env.INBOUND_AUTH_KEY || "sua-chave-secreta-aqui";
+      const INBOUND_AUTH_KEY = process.env.INBOUND_AUTH_KEY || "lavoro-secret-2026";
       const receivedKey = req.headers['x-auth-key'];
 
       if (receivedKey !== INBOUND_AUTH_KEY) {
@@ -563,7 +563,31 @@ exports.handleInboundEmail = functions.https.onRequest((req, res) => {
         return res.status(403).send("Acesso negado");
       }
 
-      const { from, to, subject, html, text, attachments } = req.body;
+      // Recebe o novo payload com o MIME bruto
+      const { from, to, subject, content } = req.body;
+      if (!content) {
+        return res.status(400).send("Payload inválido: campo 'content' (MIME) ausente.");
+      }
+
+      // Faz o parse do conteúdo MIME bruto
+      const parser = new PostalMime();
+      const parsedEmail = await parser.parse(content);
+
+      const html = parsedEmail.html;
+      const text = parsedEmail.text;
+
+      // Processa anexos para o formato Base64, que o frontend espera
+      const attachments = [];
+      if (parsedEmail.attachments && parsedEmail.attachments.length > 0) {
+        for (const att of parsedEmail.attachments) {
+          attachments.push({
+            filename: att.filename,
+            mimeType: att.mimeType,
+            content: att.content ? Buffer.from(att.content).toString('base64') : null
+          });
+        }
+      }
+
       console.log(`Inbound Email recebido de: ${from} | Assunto: ${subject}`);
 
       // Normaliza destinatários (pode ser string ou array)
