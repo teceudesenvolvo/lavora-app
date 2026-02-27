@@ -661,27 +661,30 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
       }
 
       // se ainda não temos corpo, tentar obter através da API Resend usando email_id (UUID)
-      if ((!html && !text) && (dataSrc.email_id || dataSrc.message_id)) {
-          // Prioriza email_id (UUID) pois message_id (SMTP ID <...>) causa erro 422 na API
-          const id = dataSrc.email_id || dataSrc.message_id;
-          try {
-              const apiResp = await axios.get(`https://api.resend.com/emails/${id}`, {
-                  headers: {
-                      Authorization: `Bearer ${RESEND_API_KEY}`,
-                      "User-Agent": "lavoro-app/1.0"
-                  }
-              });
-              const fetched = apiResp.data;
-              html = html || fetched.html;
-              text = text || fetched.text;
-              console.log('Fetched body from Resend API', { hasHtml: !!fetched.html, hasText: !!fetched.text });
-          } catch (err) {
-              const info = err.response?.data || err.message;
-              if (err.response?.status === 401 && info?.message?.includes('restricted')) {
-                  console.warn('CHAVE DA API RESEND SEM PERMISSÃO DE LEITURA. ' +
-                      'Crie uma key com acesso de leitura/total e defina RESEND_READ_KEY.');
+      if (!html && !text) {
+          // O Resend envia o email_id dentro de 'data'. Precisamos garantir que pegamos o UUID.
+          // O message_id (ex: <...>) NÃO funciona na API de GET /emails/:id, causa erro 422.
+          const emailId = dataSrc.email_id || (body.data && body.data.email_id);
+          
+          if (emailId && /^[0-9a-fA-F-]{36}$/.test(emailId)) {
+              console.log(`Tentando buscar conteúdo completo para email_id: ${emailId}`);
+              try {
+                  const apiResp = await axios.get(`https://api.resend.com/emails/${emailId}`, {
+                      headers: { Authorization: `Bearer ${RESEND_API_KEY}` }
+                  });
+                  const fetched = apiResp.data;
+                  html = html || fetched.html;
+                  text = text || fetched.text;
+                  console.log('Conteúdo recuperado via API Resend com sucesso.', { hasHtml: !!html, hasText: !!text });
+              } catch (err) {
+                  const info = err.response?.data || err.message;
+                  console.error('Erro ao buscar conteúdo via API Resend:', info);
               }
-              console.warn('Erro ao buscar conteúdo via API Resend:', info);
+          } else {
+              console.log('email_id válido (UUID) não encontrado para busca na API.', { 
+                  email_id: dataSrc.email_id, 
+                  message_id: dataSrc.message_id 
+              });
           }
       }
 
