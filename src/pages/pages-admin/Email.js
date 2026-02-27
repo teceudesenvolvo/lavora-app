@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPaperPlane, FaEnvelope, FaInbox, FaRegPaperPlane, FaExclamationTriangle, FaFileAlt, FaTrash, FaPlus, FaPaperclip, FaBold, FaItalic, FaListUl, FaTimes, FaSpinner } from 'react-icons/fa';
+import { FaPaperPlane, FaInbox, FaRegPaperPlane, FaExclamationTriangle, FaFileAlt, FaTrash, FaPlus, FaPaperclip, FaBold, FaItalic, FaListUl, FaTimes, FaSpinner } from 'react-icons/fa';
 import { auth } from '../../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 
