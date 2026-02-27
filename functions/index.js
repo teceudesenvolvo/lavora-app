@@ -564,6 +564,14 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
   // --- VERIFICAÇÃO DE SEGURANÇA (SIGNING SECRET) ---
   const SIGNING_SECRET = "whsec_gaMOHEIYpgtsClbkpc6vKFIEpZnq6fB+";
 
+  // chave para fazer chamadas de leitura ao Resend caso precisemos buscar corpo
+  // O webhook de inbound nem sempre inclui html/text, então buscamos
+  // via GET /emails/:id. A API exige uma key com permissão de leitura
+  // (não basta a key de envio, que costuma ser "send-only").
+  // Você pode cadastrar um segundo token no painel (`Read+Write` ou
+  // `Full Access`) e definir a variável RESEND_READ_KEY aqui.
+  const RESEND_API_KEY = process.env.RESEND_READ_KEY || process.env.RESEND_API_KEY || "re_8qQJWKFf_KhcZeZP61DMxQVbMDUhrJjQJ";
+
   if (req.method === "POST") {
     const svix_id = req.headers["svix-id"];
     const svix_timestamp = req.headers["svix-timestamp"];
@@ -648,6 +656,30 @@ exports.handleResendWebhook = functions.https.onRequest((req, res) => {
               console.log('Parsed raw MIME via mailparser', { hasHtml: !!parsed.html, hasText: !!parsed.text });
           } catch (err) {
               console.warn('Falha ao parsear raw MIME:', err.message);
+          }
+      }
+
+      // se ainda não temos corpo, tentar obter através da API Resend usando message_id/email_id
+      if ((!html && !text) && (dataSrc.message_id || dataSrc.email_id)) {
+          const id = dataSrc.message_id || dataSrc.email_id;
+          try {
+              const apiResp = await axios.get(`https://api.resend.com/emails/${id}`, {
+                  headers: {
+                      Authorization: `Bearer ${RESEND_API_KEY}`,
+                      "User-Agent": "lavoro-app/1.0"
+                  }
+              });
+              const fetched = apiResp.data;
+              html = html || fetched.html;
+              text = text || fetched.text;
+              console.log('Fetched body from Resend API', { hasHtml: !!fetched.html, hasText: !!fetched.text });
+          } catch (err) {
+              const info = err.response?.data || err.message;
+              if (err.response?.status === 401 && info?.message?.includes('restricted')) {
+                  console.warn('CHAVE DA API RESEND SEM PERMISSÃO DE LEITURA. ' +
+                      'Crie uma key com acesso de leitura/total e defina RESEND_READ_KEY.');
+              }
+              console.warn('Erro ao buscar conteúdo via API Resend:', info);
           }
       }
 

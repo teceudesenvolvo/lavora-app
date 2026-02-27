@@ -131,12 +131,26 @@ const Email = () => {
     }
     setSending(true);
 
+    // Criação do Rodapé Padrão (Assinatura)
+    const footer = `
+        <br><br>
+        <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #444;">
+            <div style="margin-bottom: 10px;">
+                <img src="https://placehold.co/120x40/1e90ff/ffffff?text=Lavoro" alt="Grupo Lavoro" style="height: 40px;" />
+            </div>
+            <strong>${currentUser?.displayName || ''}</strong><br>
+            <a href="mailto:${currentUser?.email}" style="color: #1e90ff; text-decoration: none;">${currentUser?.email || ''}</a>
+            ${currentUser?.phoneNumber ? `<br>${currentUser.phoneNumber}` : ''}
+        </div>
+    `;
+
     try {
       const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/sendWebmailViaResend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             ...emailData,
+            html: emailData.html + footer,
             fromEmail: currentUser?.email // Envia o e-mail do usuário logado
         })
       });
