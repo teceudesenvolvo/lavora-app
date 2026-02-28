@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink } from 'react-icons/fa';
+import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink, FaUserPlus } from 'react-icons/fa';
 import { auth } from '../../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -117,6 +117,17 @@ const Clientes = () => {
                 if (month > 12) { const temp = day; day = month; month = temp; }
                 return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
             };
+            
+            let vencimentoDay = '-';
+            if (item.VENCIMENTO) {
+                const vencStr = String(item.VENCIMENTO);
+                if (vencStr.includes('/')) {
+                    // Se for data completa, pega só o dia
+                    vencimentoDay = vencStr.split('/')[0];
+                } else {
+                    vencimentoDay = vencStr; // Já é só o dia
+                }
+            }
 
             return {
               id: key,
@@ -127,7 +138,7 @@ const Clientes = () => {
               ValorAdesao: item.ValorAdesao,
               plano: item.PLANO,
               telefone: item.TELEFONE,
-              vencimento: normalizeDate(item.VENCIMENTO),
+              vencimento: vencimentoDay,
               dataCadastro: normalizeDate(item['ADESÃO']),
               contratoTipo: item.CONTRATO,
               vendedor: item.VENDEDOR || '',
@@ -201,6 +212,8 @@ const Clientes = () => {
         tabMatch = cliente.status === 'Contato' || cliente.status === 'Pendente';
       } else if (listTab === 'cotacoes') {
         tabMatch = cliente.status === 'Cotação';
+      } else if (listTab === 'inclusao') {
+        tabMatch = cliente.status === 'INCLUSÃO';
       }
 
       // Filtros Avançados (Admin)
@@ -237,6 +250,11 @@ const Clientes = () => {
   const uniquePlans = useMemo(() => {
       const plans = new Set(clientes.map(c => c.plano).filter(Boolean));
       return [...plans].sort();
+  }, [clientes]);
+
+  // Contagem de clientes em inclusão para notificação
+  const inclusaoCount = useMemo(() => {
+    return clientes.filter(c => c.status === 'INCLUSÃO').length;
   }, [clientes]);
 
   const handleFilterChange = (e) => {
@@ -701,7 +719,12 @@ const Clientes = () => {
             <div className="form-group"><label>Plano</label><input type="text" name="plano" value={selectedClient.plano || ''} onChange={handleEditChange} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" value={maskCurrency(String(selectedClient.mensalidade))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Valor Adesão</label><input type="text" name="ValorAdesao" value={maskCurrency(String(selectedClient.ValorAdesao || selectedClient.mensalidade || ''))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Data de Vencimento</label><input type="text" name="vencimento" value={selectedClient.vencimento || ''} onChange={(e) => { e.target.value = maskDate(e.target.value); handleEditChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Dia de Vencimento</label>
+              <select name="vencimento" value={selectedClient.vencimento} onChange={handleEditChange} style={{ width: '100%' }}>
+                  <option value="">Selecione</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
             <div className="form-group"><label>Data de Adesão</label><input type="text" name="dataCadastro" value={selectedClient.dataCadastro || ''} disabled style={{ width: '100%', backgroundColor: '#f0f0f0' }} /></div>
             <div className="form-group"><label>Tipo</label>
               <select name="contratoTipo" defaultValue={selectedClient.contratoTipo} style={{ width: '100%' }}>
@@ -724,6 +747,7 @@ const Clientes = () => {
                 <option value="Contato">Contato</option>
                 <option value="Cotação">Cotação</option>
                 <option value="Pendente">Pendente</option>
+                <option value="INCLUSÃO">Inclusão</option>
               </select>
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -886,6 +910,8 @@ const Clientes = () => {
                 <option value="Inativo">Inativo</option>
                 <option value="Contato">Contato</option>
                 <option value="Cotação">Cotação</option>
+                <option value="Pendente">Pendente</option>
+                <option value="INCLUSÃO">Inclusão</option>
               </select>
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -957,6 +983,30 @@ const Clientes = () => {
           <button className={`btn-tab ${listTab === 'inativos' ? 'active' : ''}`} onClick={() => setListTab('inativos')}><FaExclamationCircle /> Inativos</button>
           <button className={`btn-tab ${listTab === 'contatos' ? 'active' : ''}`} onClick={() => setListTab('contatos')}><FaList /> Contatos</button>
           <button className={`btn-tab ${listTab === 'cotacoes' ? 'active' : ''}`} onClick={() => setListTab('cotacoes')}><FaQuoteRight /> Cotações</button>
+          <button className={`btn-tab ${listTab === 'inclusao' ? 'active' : ''}`} onClick={() => setListTab('inclusao')} style={{ position: 'relative' }}>
+            <FaUserPlus /> Inclusão
+            {inclusaoCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                backgroundColor: '#dc3545',
+                color: '#fff',
+                borderRadius: '50%',
+                width: '22px',
+                height: '22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                border: '2px solid #fff',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }}>
+                {inclusaoCount}
+              </span>
+            )}
+          </button>
         </div>
 
         <div className="filtros-clientes" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1029,7 +1079,7 @@ const Clientes = () => {
                   <td>{cliente.cpf}</td>
                   <td>{cliente.telefone}</td>
                   <td>{maskCurrency(String(cliente.mensalidade))}</td>
-                  <td>{cliente.vencimento}</td>
+                  <td>{cliente.vencimento !== '-' ? `Dia ${cliente.vencimento}` : '-'}</td>
                   <td>
                     <button onClick={() => handleGerenciarClick(cliente)} className="btn-gerenciar">
                       Gerenciar

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FaUser, FaIdCard, FaCalendarAlt, FaPhone, FaEnvelope, FaFileMedical, FaUpload, FaCheckCircle, FaSpinner } from 'react-icons/fa';
+import Logo from '../assets/images/logo-GL.png';
 
 const CadastroExterno = () => {
   const location = useLocation();
@@ -15,7 +16,8 @@ const CadastroExterno = () => {
     telefone: '',
     email: '',
     plano: '',
-    tipo: 'Titular'
+    tipo: 'Titular',
+    vencimento: ''
   });
 
   const [docs, setDocs] = useState({
@@ -36,6 +38,40 @@ const CadastroExterno = () => {
       });
     }
   }, [location]);
+
+  // --- Funções de Validação ---
+  const validateCPF = (cpf) => {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf === '') return false;
+    // Elimina CPFs invalidos conhecidos
+    if (cpf.length !== 11 ||
+      cpf === "00000000000" ||
+      cpf === "11111111111" ||
+      cpf === "22222222222" ||
+      cpf === "33333333333" ||
+      cpf === "44444444444" ||
+      cpf === "55555555555" ||
+      cpf === "66666666666" ||
+      cpf === "77777777777" ||
+      cpf === "88888888888" ||
+      cpf === "99999999999")
+      return false;
+    // Valida 1o digito
+    let add = 0;
+    for (let i = 0; i < 9; i++)
+      add += parseInt(cpf.charAt(i)) * (10 - i);
+    let rev = 11 - (add % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(cpf.charAt(9))) return false;
+    // Valida 2o digito
+    add = 0;
+    for (let i = 0; i < 10; i++)
+      add += parseInt(cpf.charAt(i)) * (11 - i);
+    rev = 11 - (add % 11);
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(cpf.charAt(10))) return false;
+    return true;
+  };
 
   // Máscaras
   const maskCPF = (value) => {
@@ -97,6 +133,24 @@ const CadastroExterno = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // --- Validação dos Campos ---
+    if (!formData.nome || !formData.cpf || !formData.dataNascimento || !formData.telefone || !formData.email || !formData.plano || !formData.vencimento) {
+        alert("Por favor, preencha todos os campos de dados cadastrais.");
+        return;
+    }
+
+    if (!validateCPF(formData.cpf)) {
+        alert("CPF inválido. Por favor, verifique o número digitado.");
+        return;
+    }
+
+    if (!docs.rgCnh || !docs.comprovanteEndereco) {
+        alert("É obrigatório anexar o RG/CNH e o Comprovante de Endereço.");
+        return;
+    }
+    // --- Fim da Validação ---
+
     setLoading(true);
 
     const payload = {
@@ -107,10 +161,11 @@ const CadastroExterno = () => {
       EMAIL: formData.email,
       PLANO: formData.plano,
       CONTRATO: formData.tipo,
+      VENCIMENTO: formData.vencimento,
       // Campos ocultos/padrão
       MENSALIDADE: '0', 
       ValorAdesao: '0',
-      STATUS: 'Pendente', // Entra como pendente para análise
+      STATUS: 'INCLUSÃO', // Entra como Inclusão para análise
       OBSERVACAO: 'Cadastro realizado via Link Externo',
       'ADESÃO': new Date().toLocaleDateString('pt-BR'),
       VENDEDOR: vendedorInfo.id,
@@ -144,9 +199,10 @@ const CadastroExterno = () => {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={{ textAlign: 'center', color: '#28a745' }}>
+          <img src={Logo} alt="Lavoro" style={styles.logo} />
+          <div style={{ textAlign: 'center', color: '#28a745', marginTop: '20px' }}>
             <FaCheckCircle size={60} />
-            <h2>Cadastro Recebido!</h2>
+            <h2 style={{ marginTop: '20px' }}>Cadastro Recebido!</h2>
             <p>Seus dados foram enviados com sucesso. Em breve entraremos em contato.</p>
           </div>
         </div>
@@ -158,6 +214,7 @@ const CadastroExterno = () => {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.header}>
+          <img src={Logo} alt="Lavoro" style={styles.logo} />
           <h2 style={{ margin: 0, color: '#333' }}>Ficha de Cadastro</h2>
           <p style={{ margin: '5px 0 0', color: '#666' }}>Preencha seus dados para prosseguir com a adesão.</p>
           {vendedorInfo.nome && (
@@ -209,6 +266,16 @@ const CadastroExterno = () => {
             </div>
           </div>
 
+          <div style={styles.inputGroup}>
+            <label style={styles.label}><FaCalendarAlt /> Dia de Vencimento da Mensalidade</label>
+            <select required name="vencimento" value={formData.vencimento} onChange={handleChange} style={styles.input}>
+                <option value="">Selecione o melhor dia</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <option key={day} value={day}>{String(day).padStart(2, '0')}</option>
+                ))}
+            </select>
+          </div>
+
           <div style={styles.divider}></div>
           <h4 style={{ margin: '0 0 15px 0', color: '#555' }}>Documentação (Fotos ou PDF)</h4>
 
@@ -218,7 +285,7 @@ const CadastroExterno = () => {
                 <label htmlFor="rgCnh" style={styles.uploadBtn}>
                     <FaUpload /> {docs.rgCnh ? 'Arquivo Selecionado' : 'Escolher Arquivo'}
                 </label>
-                <input id="rgCnh" type="file" onChange={(e) => handleFileChange(e, 'rgCnh')} style={{ display: 'none' }} />
+                <input id="rgCnh" type="file" required onChange={(e) => handleFileChange(e, 'rgCnh')} style={{ display: 'none' }} />
             </div>
           </div>
 
@@ -228,7 +295,7 @@ const CadastroExterno = () => {
                 <label htmlFor="compEnd" style={styles.uploadBtn}>
                     <FaUpload /> {docs.comprovanteEndereco ? 'Arquivo Selecionado' : 'Escolher Arquivo'}
                 </label>
-                <input id="compEnd" type="file" onChange={(e) => handleFileChange(e, 'comprovanteEndereco')} style={{ display: 'none' }} />
+                <input id="compEnd" type="file" required onChange={(e) => handleFileChange(e, 'comprovanteEndereco')} style={{ display: 'none' }} />
             </div>
           </div>
 
@@ -257,11 +324,11 @@ const styles = {
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: '10px',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+    borderRadius: '12px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
     width: '100%',
-    maxWidth: '600px',
-    padding: '30px',
+    maxWidth: '650px',
+    padding: '40px',
     boxSizing: 'border-box'
   },
   header: {
@@ -270,10 +337,14 @@ const styles = {
     borderBottom: '1px solid #eee',
     paddingBottom: '20px'
   },
+  logo: {
+    height: '50px',
+    marginBottom: '20px',
+  },
   vendedorBadge: {
     display: 'inline-block',
-    marginTop: '10px',
-    padding: '5px 10px',
+    marginTop: '15px',
+    padding: '6px 12px',
     backgroundColor: '#e3f2fd',
     color: '#0d47a1',
     borderRadius: '15px',
@@ -282,20 +353,17 @@ const styles = {
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px'
+    gap: '20px'
   },
   row: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '15px',
-    '@media (max-width: 500px)': {
-        gridTemplateColumns: '1fr'
-    }
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '20px'
   },
   inputGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '5px'
+    gap: '8px'
   },
   label: {
     fontSize: '0.9rem',
@@ -303,18 +371,19 @@ const styles = {
     color: '#444',
     display: 'flex',
     alignItems: 'center',
-    gap: '5px'
+    gap: '8px'
   },
   input: {
-    padding: '10px',
-    borderRadius: '5px',
-    border: '1px solid #ccc',
-    fontSize: '1rem'
+    padding: '12px 15px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    fontSize: '1rem',
+    transition: 'border-color 0.2s, box-shadow 0.2s'
   },
   divider: {
     height: '1px',
     backgroundColor: '#eee',
-    margin: '10px 0'
+    margin: '15px 0'
   },
   fileInputContainer: {
     marginBottom: '10px'
@@ -325,31 +394,32 @@ const styles = {
   uploadBtn: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '10px 15px',
+    gap: '10px',
+    padding: '12px 20px',
     backgroundColor: '#f8f9fa',
-    border: '1px dashed #ccc',
-    borderRadius: '5px',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
     cursor: 'pointer',
     width: '100%',
     boxSizing: 'border-box',
     color: '#555',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    transition: 'background-color 0.2s'
   },
   submitBtn: {
     marginTop: '20px',
-    padding: '12px',
+    padding: '15px',
     backgroundColor: '#007bff',
     color: '#fff',
     border: 'none',
-    borderRadius: '5px',
+    borderRadius: '8px',
     fontSize: '1.1rem',
     fontWeight: 'bold',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'background 0.2s'
+    transition: 'background-color 0.2s, transform 0.1s'
   }
 };
 

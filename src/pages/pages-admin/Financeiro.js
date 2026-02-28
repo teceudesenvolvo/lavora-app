@@ -200,14 +200,19 @@ const Financeiro = () => {
             // Para assinaturas, projetamos a data de vencimento para o mês selecionado
             let day = 1;
 
-            if (item.VENCIMENTO) {
-                const parts = item.VENCIMENTO.split('/');
-                if (parts.length === 3) {
-                    day = parseInt(parts[0], 10);
-                    // Se o "mês" for maior que 12, assume-se que é o dia (formato M/D/Y vindo do banco)
-                    const monthPart = parseInt(parts[1], 10);
-                    if (monthPart > 12) { day = monthPart; }
-                }
+            if (item.VENCIMENTO) { 
+                const vencimentoStr = String(item.VENCIMENTO);
+                if (vencimentoStr.includes('/')) {
+                    const parts = vencimentoStr.split('/');
+                    if (parts.length === 3) {
+                        day = parseInt(parts[0], 10);
+                        // Se o "mês" for maior que 12, assume-se que é o dia (formato M/D/Y vindo do banco)
+                        const monthPart = parseInt(parts[1], 10);
+                        if (monthPart > 12) { day = monthPart; }
+                    }
+                } else if (!isNaN(parseInt(vencimentoStr))) {
+                    day = parseInt(vencimentoStr, 10);
+                } 
             }
             
             const vencimentoDate = new Date(selectedYear, selectedMonth, day);
