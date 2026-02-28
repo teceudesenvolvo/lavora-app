@@ -118,7 +118,7 @@ const HapvidaSection = () => {
             <img 
                 src="https://www2.hapvida.com.br/o/hapvida-theme/images/logo.png" 
                 alt="Hapvida Logo" 
-                style={{ height: '80px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} 
+                style={{ height: '40px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} 
             />
         </div>
 

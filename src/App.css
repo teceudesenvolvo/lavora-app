@@ -1898,20 +1898,20 @@ input {
 .hapvida-logo-container {
     margin-bottom: 30px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 .hapvida-title {
     color: #0054a6;
     font-size: 2.8rem;
     margin-bottom: 25px;
     font-weight: 800;
-    text-align: right;
+    text-align: left;
 }
 .hapvida-subtitle {
     font-size: 1.25rem;
     color: #4a5568;
     line-height: 1.8;
-    text-align: right;
+    text-align: left;
     margin-left: auto;
     margin-right: 0;
     margin-bottom: 0;
