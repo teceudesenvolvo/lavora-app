@@ -195,8 +195,6 @@ const Financeiro = () => {
             if (!item) return null;
 
             const valor = parseMonetaryValue(item.MENSALIDADE);
-            // Usa ValorAdesao se existir, senão usa o valor da mensalidade como fallback
-            const valorAdesao = item.ValorAdesao ? parseMonetaryValue(item.ValorAdesao) : valor;
             
             // Normalização de Data (Trata M/D/Y e D/M/Y)
             // Para assinaturas, projetamos a data de vencimento para o mês selecionado
@@ -262,28 +260,46 @@ const Financeiro = () => {
             }
 
             // Lógica de Comissões (Atualizada):
-            // Considera todos os pagamentos do mês (mesma lógica do Dashboard - Total Pago)
-            if (status === 'Pago') {
-                const vendedorId = item.VENDEDOR;
-                
-                if (vendedorId) {
-                    // Garante que o vendedor existe no mapa (mesmo se não estiver em equipeData)
-                    if (!comissoesMap[vendedorId]) {
-                        comissoesMap[vendedorId] = {
-                            nome: 'Vendedor (ID: ' + vendedorId + ')',
-                            total: 0,
-                            vendas: 0,
-                            detalhes: []
-                        };
+            // Considera apenas o PRIMEIRO pagamento do histórico (index 0) para comissão
+            const vendedorId = item.VENDEDOR;
+            if (vendedorId && dataPagamentoArr.length > 0) {
+                const firstPayment = dataPagamentoArr[0];
+                if (typeof firstPayment === 'string') {
+                    // Extrai a data. Ex: "fevereiro: 25/02/2026 - Pix"
+                    let dateStr = '';
+                    if (firstPayment.includes(':')) {
+                        const parts = firstPayment.split(':');
+                        if (parts.length > 1) {
+                            dateStr = parts[1].split('-')[0].trim();
+                        }
+                    } else {
+                        dateStr = firstPayment.split('-')[0].trim();
                     }
                     
-                    comissoesMap[vendedorId].total += valor; // Usa o valor da mensalidade (igual ao Dashboard)
-                    comissoesMap[vendedorId].vendas += 1;
-                    comissoesMap[vendedorId].detalhes.push({
-                        cliente: item.USUARIO,
-                        valor: valor,
-                        data: dataPagamentoDisplay // Data do pagamento
-                    });
+                    const dateParts = dateStr.split('/');
+                    if (dateParts.length === 3) {
+                        const month = parseInt(dateParts[1], 10) - 1;
+                        const year = parseInt(dateParts[2], 10);
+
+                        if (month === selectedMonth && year === selectedYear) {
+                            if (!comissoesMap[vendedorId]) {
+                                comissoesMap[vendedorId] = {
+                                    nome: 'Vendedor (ID: ' + vendedorId + ')',
+                                    total: 0,
+                                    vendas: 0,
+                                    detalhes: []
+                                };
+                            }
+                            
+                            comissoesMap[vendedorId].total += valor;
+                            comissoesMap[vendedorId].vendas += 1;
+                            comissoesMap[vendedorId].detalhes.push({
+                                cliente: item.USUARIO,
+                                valor: valor,
+                                data: dateStr
+                            });
+                        }
+                    }
                 }
             }
 

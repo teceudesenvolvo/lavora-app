@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter } from 'react-icons/fa';
+import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink } from 'react-icons/fa';
 import { auth } from '../../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -927,6 +927,26 @@ const Clientes = () => {
     }
   };
 
+  const handleGenerateLink = () => {
+    const user = auth.currentUser;
+    if (!user) {
+        alert("Você precisa estar logado para gerar o link.");
+        return;
+    }
+
+    // Tenta encontrar o nome do vendedor na lista carregada
+    const currentVendedor = vendedores.find(v => v.id === user.uid);
+    const vendedorNome = currentVendedor ? currentVendedor.nome : (user.displayName || 'Consultor');
+    
+    // Monta a URL (assume que a rota /cadastro-externo existe)
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/cadastro-externo?vendedorId=${user.uid}&vendedorNome=${encodeURIComponent(vendedorNome)}`;
+
+    navigator.clipboard.writeText(link).then(() => {
+        alert("Link de cadastro copiado para a área de transferência!");
+    });
+  };
+
   return (
     <>
       <div className="profile-section">
@@ -950,6 +970,9 @@ const Clientes = () => {
           />
           <button className="btn btn-primary" onClick={handleAddClientClick} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <FaPlus /> Adicionar Cliente
+          </button>
+          <button className="btn btn-secondary" onClick={handleGenerateLink} style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#17a2b8', borderColor: '#17a2b8', color: '#fff' }}>
+            <FaLink /> Link de Cadastro
           </button>
           
           {currentUserRole === 'Admin' && (

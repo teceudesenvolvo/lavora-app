@@ -15,6 +15,8 @@ import CotacaoPage from './pages/pages-client/CotacaoPage';
 
 import RegisterPage from './pages/RegisterPage';
 
+import CadastroExterno from './pages/CadastroExterno';
+
 // Páginas do Cliente
 import VisaoGeralCliente from './pages/pages-client/VisaoGeral';
 import FaturasCliente from './pages/pages-client/Faturas';
@@ -47,6 +49,7 @@ function App() {
         <Route path="/politica-de-privacidade-cm-pacatuba" element={<PrivacyPolicy />} />
         <Route path="/politica-de-privacidade-oassessor" element={<PrivacyPolicyOassessor />} />
         <Route path="/pageCSAE" element={<PageCsae />} />
+        <Route path="/cadastro-externo" element={<CadastroExterno />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
