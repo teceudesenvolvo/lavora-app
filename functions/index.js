@@ -199,8 +199,13 @@ exports.pagarmeWebhook = functions.https.onRequest((req, res) => {
            const dateOptions = { timeZone: 'America/Sao_Paulo' };
            const paymentDate = new Date().toLocaleDateString('pt-BR', dateOptions);
            
-           const paymentMethod = charges && charges[0] ? charges[0].payment_method : 'API';
+           // Lógica melhorada: Procura a cobrança que está efetivamente paga
+           const paidCharge = charges ? charges.find(c => c.status === 'paid') : null;
+           const targetCharge = paidCharge || (charges && charges.length > 0 ? charges[0] : null);
+           const paymentMethod = targetCharge ? targetCharge.payment_method : 'API';
            const methodLabel = paymentMethod === 'pix' ? 'Pix' : (paymentMethod === 'boleto' ? 'Boleto' : 'Cartão');
+           
+           console.log(`Webhook Order Paid: ${data.id}, Method Detected: ${paymentMethod} -> Label: ${methodLabel}`);
 
            if (metadata.type === 'assinatura') {
              // Lógica para Assinatura: Adiciona ao histórico de pagamentos
@@ -335,9 +340,14 @@ exports.checkPagarmeOrderStatus = functions.https.onRequest((req, res) => {
       });
 
       const charges = response.data.charges || [];
-      const lastCharge = charges.length > 0 ? charges[charges.length - 1] : null;
-      const payment_method = lastCharge ? lastCharge.payment_method : 'API';
+      
+      // Lógica melhorada: Procura a cobrança que está efetivamente paga
+      const paidCharge = charges.find(c => c.status === 'paid');
+      const targetCharge = paidCharge || (charges.length > 0 ? charges[charges.length - 1] : null);
+      const payment_method = targetCharge ? targetCharge.payment_method : 'API';
 
+      console.log(`Check Status Order ${orderId}: Status=${response.data.status}, Method=${payment_method}`);
+      
       res.status(200).json({ 
         status: response.data.status,
         payment_method: payment_method

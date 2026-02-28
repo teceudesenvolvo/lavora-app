@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync, FaChartPie, FaSpinner } from 'react-icons/fa';
+import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync, FaChartPie, FaSpinner, FaHandHoldingUsd } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,8 +25,9 @@ ChartJS.register(
 const Financeiro = () => {
   // --- Dados Mockados para Exemplo ---
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [rawData, setRawData] = useState({ clientes: {}, cobrancas: {} });
+  const [rawData, setRawData] = useState({ clientes: {}, cobrancas: {}, equipe: {} });
   const [transacoes, setTransacoes] = useState([]);
+  const [comissoes, setComissoes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [mainTab, setMainTab] = useState('dashboard'); // 'dashboard' ou 'cobrancas'
   const [filterTab, setFilterTab] = useState('todos');
@@ -95,24 +96,40 @@ const Financeiro = () => {
       .replace(/(\d{4})\d+?$/, '$1');
   };
 
+  // Função robusta para converter valores monetários (R$ 1.200,00 ou 1200.00) para float
+  const parseMonetaryValue = (value) => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    const str = String(value).trim();
+    if (str.includes(',')) {
+        // Formato Brasileiro: remove pontos de milhar e troca vírgula por ponto
+        return parseFloat(str.replace(/[R$\s.]/g, '').replace(',', '.'));
+    }
+    // Formato Americano/Padrão: apenas remove R$ e espaços
+    return parseFloat(str.replace(/[R$\s]/g, ''));
+  };
+
   const fetchTransacoes = async () => {
       try {
-        // Busca Clientes (Assinaturas) e Cobranças Avulsas em paralelo
-        const [resClientes, resCobrancas] = await Promise.all([
+        // Busca Clientes (Assinaturas), Cobranças Avulsas e Equipe em paralelo
+        const [resClientes, resCobrancas, resEquipe] = await Promise.all([
           fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json'),
-          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json')
+          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json'),
+          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json')
         ]);
 
-        if (!resClientes.ok || !resCobrancas.ok) {
+        if (!resClientes.ok || !resCobrancas.ok || !resEquipe.ok) {
             throw new Error('Falha ao buscar dados: Acesso negado (401). Verifique as regras do Database.');
         }
 
         const dataClientes = await resClientes.json();
         const dataCobrancas = await resCobrancas.json();
+        const dataEquipe = await resEquipe.json();
 
         setRawData({
             clientes: dataClientes?.Clientes || dataClientes || {},
-            cobrancas: dataCobrancas || {}
+            cobrancas: dataCobrancas || {},
+            equipe: dataEquipe || {}
         });
       } catch (error) {
         console.error('Erro ao buscar transações:', error);
@@ -146,7 +163,7 @@ const Financeiro = () => {
 
   useEffect(() => {
       const processData = () => {
-          const { clientes: clientesData, cobrancas: cobrancasData } = rawData;
+          const { clientes: clientesData, cobrancas: cobrancasData, equipe: equipeData } = rawData;
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           
@@ -159,12 +176,27 @@ const Financeiro = () => {
           let pagosVal = 0;
           let pagosCount = 0;
 
+          // Inicializa mapa de comissões com a equipe
+          const comissoesMap = {};
+          if (equipeData) {
+              Object.keys(equipeData).forEach(uid => {
+                  comissoesMap[uid] = {
+                      nome: equipeData[uid].nome || 'Vendedor',
+                      total: 0,
+                      vendas: 0,
+                      detalhes: []
+                  };
+              });
+          }
+
           // Processa Assinaturas (Clientes)
           const loadedTransacoes = Object.keys(clientesData).map(key => {
             const item = clientesData[key];
             if (!item) return null;
 
-            const valor = parseFloat(item.MENSALIDADE) || 0;
+            const valor = parseMonetaryValue(item.MENSALIDADE);
+            // Usa ValorAdesao se existir, senão usa o valor da mensalidade como fallback
+            const valorAdesao = item.ValorAdesao ? parseMonetaryValue(item.ValorAdesao) : valor;
             
             // Normalização de Data (Trata M/D/Y e D/M/Y)
             // Para assinaturas, projetamos a data de vencimento para o mês selecionado
@@ -229,6 +261,32 @@ const Financeiro = () => {
                 formaPagamento = item.transactionId ? 'Pix Copia e Cola' : 'Dinheiro/Outros';
             }
 
+            // Lógica de Comissões (Atualizada):
+            // Considera todos os pagamentos do mês (mesma lógica do Dashboard - Total Pago)
+            if (status === 'Pago') {
+                const vendedorId = item.VENDEDOR;
+                
+                if (vendedorId) {
+                    // Garante que o vendedor existe no mapa (mesmo se não estiver em equipeData)
+                    if (!comissoesMap[vendedorId]) {
+                        comissoesMap[vendedorId] = {
+                            nome: 'Vendedor (ID: ' + vendedorId + ')',
+                            total: 0,
+                            vendas: 0,
+                            detalhes: []
+                        };
+                    }
+                    
+                    comissoesMap[vendedorId].total += valor; // Usa o valor da mensalidade (igual ao Dashboard)
+                    comissoesMap[vendedorId].vendas += 1;
+                    comissoesMap[vendedorId].detalhes.push({
+                        cliente: item.USUARIO,
+                        valor: valor,
+                        data: dataPagamentoDisplay // Data do pagamento
+                    });
+                }
+            }
+
             return {
               id: key,
               descricao: `${item.USUARIO}`,
@@ -251,7 +309,7 @@ const Financeiro = () => {
           // Processa Cobranças Avulsas
           const loadedCobrancas = Object.keys(cobrancasData).map(key => {
             const item = cobrancasData[key];
-            const valor = parseFloat(item.valor) || 0;
+            const valor = parseMonetaryValue(item.valor);
             
             let vencimentoDate = null;
             if (item.vencimento) {
@@ -318,6 +376,7 @@ const Financeiro = () => {
           });
 
           setTransacoes(todasTransacoes);
+          setComissoes(Object.values(comissoesMap));
           setMetrics(prev => ({
             ...prev,
             receitaMensal,
@@ -386,6 +445,13 @@ const Financeiro = () => {
   const createPagarmeOrder = async (charge, method = 'pix') => {
     console.log(`Solicitando criação de ${method.toUpperCase()} ao backend:`, charge);
     
+    // Validação de segurança para o valor
+    const amountInCents = Math.round(charge.valor * 100);
+    if (isNaN(amountInCents) || amountInCents <= 0) {
+        alert("Valor da cobrança inválido ou zerado. Verifique o cadastro.");
+        throw new Error("Valor inválido para geração de cobrança.");
+    }
+
     // 1. Extrai o nome do cliente e a descrição da cobrança de forma consistente
     const nameParts = charge.descricao.split(' - ');
     const customerName = nameParts.length > 1 ? nameParts[nameParts.length - 1].trim() : charge.descricao.trim();
@@ -405,7 +471,7 @@ const Financeiro = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                amount: Math.round(charge.valor * 100), // Valor em centavos
+                amount: amountInCents, // Valor em centavos validado
                 description: itemDescription,
                 payment_method: method,
                 customer: {
@@ -966,6 +1032,11 @@ const Financeiro = () => {
         <button className={`btn-tab ${mainTab === 'cobrancas' ? 'active' : ''}`} onClick={() => setMainTab('cobrancas')}>
           <FaFileInvoiceDollar style={{ marginRight: '5px' }} /> Cobranças e Faturas
         </button>
+        {userRole === 'Admin' && (
+             <button className={`btn-tab ${mainTab === 'comissoes' ? 'active' : ''}`} onClick={() => setMainTab('comissoes')}>
+                <FaHandHoldingUsd style={{ marginRight: '5px' }} /> Comissões
+             </button>
+        )}
       </div>
 
       {mainTab === 'dashboard' && userRole !== 'Financeiro' && (
@@ -1108,6 +1179,47 @@ const Financeiro = () => {
             </table>
           </div>
         </div>
+      )}
+
+      {mainTab === 'comissoes' && userRole === 'Admin' && (
+          <div className="faturas-section" style={{ marginTop: '30px' }}>
+              <h3 className="faturas-section-title">Comissões de Vendas ({currentDate.toLocaleString('pt-BR', { month: 'long' })})</h3>
+              <div className="table-container">
+                  <table className="historico-tabela">
+                      <thead>
+                          <tr>
+                              <th>Vendedor</th>
+                              <th>Vendas (Pagos)</th>
+                              <th>Total Comissão</th>
+                              <th>Detalhes</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {comissoes.map((c, idx) => (
+                              <tr key={idx}>
+                                  <td>{c.nome}</td>
+                                  <td>{c.vendas}</td>
+                                  <td style={{ color: '#28a745', fontWeight: 'bold' }}>{c.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                  <td>
+                                      <details>
+                                          <summary style={{cursor: 'pointer', color: '#007bff'}}>Ver Clientes</summary>
+                                          <ul style={{listStyle: 'none', padding: '10px', fontSize: '0.9rem', background: '#f8f9fa', borderRadius: '5px', marginTop: '5px'}}>
+                                              {c.detalhes.map((d, i) => (
+                                                  <li key={i} style={{marginBottom: '5px', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>
+                                                      <strong>{d.cliente}</strong> - {d.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <br/>
+                                                      <small>Pagamento em: {d.data}</small>
+                                                  </li>
+                                              ))}
+                                              {c.detalhes.length === 0 && <li>Nenhuma venda confirmada neste mês.</li>}
+                                          </ul>
+                                      </details>
+                                  </td>
+                              </tr>
+                          ))}
+                      </tbody>
+                  </table>
+              </div>
+          </div>
       )}
 
       {isModalOpen && (

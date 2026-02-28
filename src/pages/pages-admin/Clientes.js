@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck } from 'react-icons/fa';
+import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter } from 'react-icons/fa';
 import { auth } from '../../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 
 const Clientes = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [clientes, setClientes] = useState([]);
   const [filtroNome, setFiltroNome] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
@@ -12,15 +15,61 @@ const Clientes = () => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [activeTab, setActiveTab] = useState('dados');
   const [listTab, setListTab] = useState('ativos');
+  const [currentUserRole, setCurrentUserRole] = useState('');
+
+  // Estados para Filtros Avançados (Admin)
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    vendedor: '',
+    idadeMin: '',
+    idadeMax: '',
+    tempoMin: '', 
+    tempoMax: '', 
+    plano: ''
+  });
 
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', vendedor: '', status: 'Ativo', observacao: '' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: '', status: 'Ativo', observacao: '' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
   const [newCotacao, setNewCotacao] = useState({ descricao: '', valor: '', status: 'Em Análise' });
+
+  // Função auxiliar para calcular idade
+  const calculateAge = (dateString) => {
+    if (!dateString) return '';
+    const parts = dateString.split('/');
+    if (parts.length !== 3) return '';
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age >= 0 ? age : '';
+  };
+
+  // Função auxiliar para calcular tempo de permanência em meses
+  const calculateMonths = (dateString) => {
+      if (!dateString) return 0;
+      const parts = dateString.split('/');
+      if (parts.length !== 3) return 0;
+      const joinDate = new Date(parts[2], parts[1] - 1, parts[0]);
+      const today = new Date();
+      let months = (today.getFullYear() - joinDate.getFullYear()) * 12;
+      months -= joinDate.getMonth();
+      months += today.getMonth();
+      return months >= 0 ? months : 0;
+  };
 
   useEffect(() => {
     const fetchClientes = async (user) => {
@@ -32,6 +81,7 @@ const Clientes = () => {
             const roleData = await roleResponse.json();
             if (roleData && roleData.cargo) {
                 userRole = roleData.cargo;
+                setCurrentUserRole(userRole);
             }
         } catch (error) {
             console.error("Erro ao buscar cargo do usuário:", error);
@@ -74,6 +124,7 @@ const Clientes = () => {
               cpf: item.CPF,
               dataNascimento: normalizeDate(item['DATA NASC']),
               mensalidade: item.MENSALIDADE,
+              ValorAdesao: item.ValorAdesao,
               plano: item.PLANO,
               telefone: item.TELEFONE,
               vencimento: normalizeDate(item.VENCIMENTO),
@@ -101,7 +152,11 @@ const Clientes = () => {
         const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json');
         const data = await response.json();
         if (data) {
-          const lista = Object.values(data).filter(u => u.cargo === 'Vendedor');
+          // Mapeia todos os usuários da equipe, incluindo o ID
+          const lista = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          }));
           setVendedores(lista);
         }
       } catch (error) {
@@ -118,8 +173,21 @@ const Clientes = () => {
     return () => unsubscribe();
   }, []);
 
-  const clientesFiltrados = useMemo(() => {
+  // Efeito para abrir o modal automaticamente se vier da página de Análises
+  useEffect(() => {
+    if (location.state?.openClientId && clientes.length > 0) {
+        const clientToOpen = clientes.find(c => c.id === location.state.openClientId);
+        if (clientToOpen) {
+            setSelectedClient(clientToOpen);
+            setActiveTab('dados');
+            setModalOpen(true);
+            // Limpa o state para evitar reabertura indesejada ao atualizar a lista
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }
+  }, [clientes, location, navigate]);
 
+  const clientesFiltrados = useMemo(() => {
     return clientes.filter(cliente => {
       const nome = cliente.nome || '';
       const nomeMatch = nome.toLowerCase().includes(filtroNome.toLowerCase());
@@ -135,11 +203,46 @@ const Clientes = () => {
         tabMatch = cliente.status === 'Cotação';
       }
 
-      return nomeMatch && tabMatch;
+      // Filtros Avançados (Admin)
+      let advancedMatch = true;
+      if (currentUserRole === 'Admin') {
+          if (filters.vendedor && cliente.vendedor !== filters.vendedor) advancedMatch = false;
+          if (filters.plano && cliente.plano !== filters.plano) advancedMatch = false;
+          
+          if (filters.idadeMin || filters.idadeMax) {
+              const age = calculateAge(cliente.dataNascimento);
+              if (age !== '') {
+                  if (filters.idadeMin && age < parseInt(filters.idadeMin)) advancedMatch = false;
+                  if (filters.idadeMax && age > parseInt(filters.idadeMax)) advancedMatch = false;
+              } else if (filters.idadeMin || filters.idadeMax) {
+                  // Se tem filtro de idade mas o cliente não tem data válida, exclui
+                  advancedMatch = false;
+              }
+          }
+
+          if (filters.tempoMin || filters.tempoMax) {
+              const months = calculateMonths(cliente.dataCadastro);
+              if (filters.tempoMin && months < parseInt(filters.tempoMin)) advancedMatch = false;
+              if (filters.tempoMax && months > parseInt(filters.tempoMax)) advancedMatch = false;
+          }
+      }
+
+      return nomeMatch && tabMatch && advancedMatch;
     }).sort((a, b) => {
       return (a.nome || '').localeCompare(b.nome || '');
     });
-  }, [clientes, filtroNome, listTab]);
+  }, [clientes, filtroNome, listTab, filters, currentUserRole]);
+
+  // Lista única de planos para o filtro
+  const uniquePlans = useMemo(() => {
+      const plans = new Set(clientes.map(c => c.plano).filter(Boolean));
+      return [...plans].sort();
+  }, [clientes]);
+
+  const handleFilterChange = (e) => {
+      const { name, value } = e.target;
+      setFilters(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleGerenciarClick = (cliente) => {
     setSelectedClient(cliente);
@@ -150,6 +253,11 @@ const Clientes = () => {
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedClient(null);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setSelectedClient(prev => ({ ...prev, [name]: value }));
   };
 
   // --- Funções de Máscara ---
@@ -437,7 +545,8 @@ const Clientes = () => {
 
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', vendedor: '', status: 'Ativo', observacao: '' });
+    const currentUser = auth.currentUser;
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -446,7 +555,12 @@ const Clientes = () => {
 
   const handleNewClientChange = (e) => {
     const { name, value } = e.target;
-    setNewClientData(prev => ({ ...prev, [name]: value }));
+    setNewClientData(prev => {
+        const newData = { ...prev, [name]: value };
+        // Auto-preenche adesão ao digitar mensalidade
+        if (name === 'valor') newData.valorAdesao = value;
+        return newData;
+    });
   };
 
   const handleAddPlanItem = () => {
@@ -470,6 +584,7 @@ const Clientes = () => {
       PLANO: newClientData.plano,
       CONTRATO: newClientData.tipo,
       MENSALIDADE: removeCurrencyMask(newClientData.valor),
+      ValorAdesao: removeCurrencyMask(newClientData.valorAdesao),
       VENDEDOR: newClientData.vendedor,
       STATUS: newClientData.status,
       OBSERVACAO: newClientData.observacao,
@@ -494,6 +609,7 @@ const Clientes = () => {
           cpf: clientPayload.CPF,
           dataNascimento: clientPayload['DATA NASC'],
           mensalidade: clientPayload.MENSALIDADE,
+          ValorAdesao: clientPayload.ValorAdesao,
           plano: clientPayload.PLANO,
           telefone: clientPayload.TELEFONE,
           status: clientPayload.STATUS,
@@ -520,6 +636,7 @@ const Clientes = () => {
       TELEFONE: formData.get('telefone'),
       PLANO: formData.get('plano'),
       MENSALIDADE: removeCurrencyMask(formData.get('mensalidade')),
+      ValorAdesao: removeCurrencyMask(formData.get('ValorAdesao')),
       VENCIMENTO: formData.get('vencimento'),
       EMAIL: formData.get('email'),
       STATUS: formData.get('status'),
@@ -527,6 +644,13 @@ const Clientes = () => {
       VENDEDOR: formData.get('vendedor'),
       OBSERVACAO: formData.get('observacao')
     };
+
+    // Se o status mudou para 'Ativo' e não tem data de adesão, define a data atual
+    if (updatedData.STATUS === 'Ativo' && selectedClient.status !== 'Ativo' && !selectedClient.dataCadastro) {
+        updatedData['ADESÃO'] = new Date().toLocaleDateString('pt-BR');
+    } else if (selectedClient.dataCadastro) {
+        updatedData['ADESÃO'] = selectedClient.dataCadastro; // Mantém a data existente
+    }
 
     try {
       const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json`, {
@@ -544,12 +668,14 @@ const Clientes = () => {
           telefone: updatedData.TELEFONE,
           plano: updatedData.PLANO,
           mensalidade: updatedData.MENSALIDADE,
+          ValorAdesao: updatedData.ValorAdesao,
           vencimento: updatedData.VENCIMENTO,
           email: updatedData.EMAIL,
           status: updatedData.STATUS,
           contratoTipo: updatedData.CONTRATO,
           vendedor: updatedData.VENDEDOR,
-          observacao: updatedData.OBSERVACAO
+          observacao: updatedData.OBSERVACAO,
+          dataCadastro: updatedData['ADESÃO'] || selectedClient.dataCadastro
         } : c));
         alert('Cliente atualizado com sucesso!');
         handleCloseModal();
@@ -567,14 +693,16 @@ const Clientes = () => {
       case 'dados':
         return (
           <form className="profile-form" onSubmit={handleSaveClient} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Nome Completo</label><input type="text" name="nome" defaultValue={selectedClient.nome} style={{ width: '100%' }} /></div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>E-mail</label><input type="email" name="email" defaultValue={selectedClient.email} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>CPF</label><input type="text" name="cpf" defaultValue={selectedClient.cpf} onChange={(e) => e.target.value = maskCPF(e.target.value)} maxLength="14" style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Data de Nascimento</label><input type="text" name="dataNascimento" defaultValue={selectedClient.dataNascimento} onChange={(e) => e.target.value = maskDate(e.target.value)} maxLength="10" style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Telefone</label><input type="tel" name="telefone" defaultValue={selectedClient.telefone} onChange={(e) => e.target.value = maskPhone(e.target.value)} maxLength="15" style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Plano</label><input type="text" name="plano" defaultValue={selectedClient.plano} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" defaultValue={selectedClient.mensalidade} onChange={(e) => e.target.value = maskCurrency(e.target.value)} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Adesão</label><input type="text" name="vencimento" defaultValue={selectedClient.vencimento} onChange={(e) => e.target.value = maskDate(e.target.value)} maxLength="10" style={{ width: '100%' }} /></div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Nome Completo</label><input type="text" name="nome" value={selectedClient.nome || ''} onChange={handleEditChange} style={{ width: '100%' }} /></div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>E-mail</label><input type="email" name="email" value={selectedClient.email || ''} onChange={handleEditChange} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>CPF</label><input type="text" name="cpf" value={selectedClient.cpf || ''} onChange={(e) => { e.target.value = maskCPF(e.target.value); handleEditChange(e); }} maxLength="14" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Data de Nascimento {selectedClient.dataNascimento && <span style={{color: '#007bff', fontWeight: 'normal'}}>({calculateAge(selectedClient.dataNascimento)} anos)</span>}</label><input type="text" name="dataNascimento" value={selectedClient.dataNascimento || ''} onChange={(e) => { e.target.value = maskDate(e.target.value); handleEditChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Telefone</label><input type="tel" name="telefone" value={selectedClient.telefone || ''} onChange={(e) => { e.target.value = maskPhone(e.target.value); handleEditChange(e); }} maxLength="15" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Plano</label><input type="text" name="plano" value={selectedClient.plano || ''} onChange={handleEditChange} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" value={maskCurrency(String(selectedClient.mensalidade))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Valor Adesão</label><input type="text" name="ValorAdesao" value={maskCurrency(String(selectedClient.ValorAdesao || selectedClient.mensalidade || ''))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Data de Vencimento</label><input type="text" name="vencimento" value={selectedClient.vencimento || ''} onChange={(e) => { e.target.value = maskDate(e.target.value); handleEditChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Data de Adesão</label><input type="text" name="dataCadastro" value={selectedClient.dataCadastro || ''} disabled style={{ width: '100%', backgroundColor: '#f0f0f0' }} /></div>
             <div className="form-group"><label>Tipo</label>
               <select name="contratoTipo" defaultValue={selectedClient.contratoTipo} style={{ width: '100%' }}>
                 <option value="Titular">Titular</option>
@@ -584,8 +712,8 @@ const Clientes = () => {
             <div className="form-group"><label>Vendedor</label>
               <select name="vendedor" defaultValue={selectedClient.vendedor} style={{ width: '100%' }}>
                 <option value="">Selecione...</option>
-                {vendedores.map((v, i) => (
-                  <option key={i} value={v.nome}>{v.nome}</option>
+                {vendedores.map((v) => (
+                  <option key={v.id} value={v.id}>{v.nome}</option>
                 ))}
               </select>
             </div>
@@ -600,7 +728,7 @@ const Clientes = () => {
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label>Observação</label>
-              <textarea name="observacao" defaultValue={selectedClient.observacao} style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
+              <textarea name="observacao" value={selectedClient.observacao} onChange={handleEditChange} style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }} />
             </div>
             <div className="popup-actions" style={{ gridColumn: '1 / -1', justifyContent: 'flex-start', paddingTop: '10px' }}>
               <button type="submit" className="btn btn-primary">Salvar Alterações</button>
@@ -733,9 +861,11 @@ const Clientes = () => {
           <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Cliente</label><input name="nome" value={newClientData.nome} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>CPF</label><input name="cpf" value={newClientData.cpf} onChange={(e) => { e.target.value = maskCPF(e.target.value); handleNewClientChange(e); }} maxLength="14" style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Data de Nascimento</label><input name="dataNascimento" value={newClientData.dataNascimento} onChange={(e) => { e.target.value = maskDate(e.target.value); handleNewClientChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Data de Nascimento {newClientData.dataNascimento && <span style={{color: '#007bff', fontWeight: 'normal'}}>({calculateAge(newClientData.dataNascimento)} anos)</span>}</label><input name="dataNascimento" value={newClientData.dataNascimento} onChange={(e) => { e.target.value = maskDate(e.target.value); handleNewClientChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Telefone</label><input name="telefone" value={newClientData.telefone} onChange={(e) => { e.target.value = maskPhone(e.target.value); handleNewClientChange(e); }} maxLength="15" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Email</label><input name="email" value={newClientData.email} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Mensalidade</label><input name="valor" value={newClientData.valor} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Valor Adesão</label><input name="valorAdesao" value={newClientData.valorAdesao} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Tipo</label>
               <select name="tipo" value={newClientData.tipo} onChange={handleNewClientChange} style={{ width: '100%' }}>
                 <option value="Titular">Titular</option>
@@ -745,8 +875,8 @@ const Clientes = () => {
             <div className="form-group"><label>Vendedor</label>
               <select name="vendedor" value={newClientData.vendedor} onChange={handleNewClientChange} style={{ width: '100%' }}>
                 <option value="">Selecione...</option>
-                {vendedores.map((v, i) => (
-                  <option key={i} value={v.nome}>{v.nome}</option>
+                {vendedores.map((v) => (
+                  <option key={v.id} value={v.id}>{v.nome}</option>
                 ))}
               </select>
             </div>
@@ -821,13 +951,52 @@ const Clientes = () => {
           <button className="btn btn-primary" onClick={handleAddClientClick} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <FaPlus /> Adicionar Cliente
           </button>
+          
+          {currentUserRole === 'Admin' && (
+            <button className="btn btn-secondary" onClick={() => setShowFilters(!showFilters)} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <FaFilter /> {showFilters ? 'Ocultar Filtros' : 'Filtros Avançados'}
+            </button>
+          )}
         </div>
+
+        {showFilters && currentUserRole === 'Admin' && (
+            <div className="advanced-filters" style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', marginBottom: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', border: '1px solid #e9ecef' }}>
+                <div className="form-group">
+                    <label>Vendedor</label>
+                    <select name="vendedor" value={filters.vendedor} onChange={handleFilterChange}>
+                        <option value="">Todos</option>
+                        {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label>Idade (Anos)</label>
+                    <div style={{display: 'flex', gap: '5px'}}>
+                        <input type="number" name="idadeMin" placeholder="Min" value={filters.idadeMin} onChange={handleFilterChange} />
+                        <input type="number" name="idadeMax" placeholder="Max" value={filters.idadeMax} onChange={handleFilterChange} />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label>Permanência (Meses)</label>
+                    <div style={{display: 'flex', gap: '5px'}}>
+                        <input type="number" name="tempoMin" placeholder="Min" value={filters.tempoMin} onChange={handleFilterChange} />
+                        <input type="number" name="tempoMax" placeholder="Max" value={filters.tempoMax} onChange={handleFilterChange} />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label>Plano</label>
+                    <select name="plano" value={filters.plano} onChange={handleFilterChange}>
+                        <option value="">Todos</option>
+                        {uniquePlans.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                </div>
+            </div>
+        )}
 
         <div className="table-container">
           <table className="historico-tabela">
             <thead>
               <tr>
-                <th>Usuário</th><th>CPF</th><th>Telefone</th><th>Mensalidade</th><th>Adesão</th><th>Ações</th>
+                <th>Usuário</th><th>CPF</th><th>Telefone</th><th>Mensalidade</th><th>Vencimento</th><th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -836,7 +1005,7 @@ const Clientes = () => {
                   <td>{cliente.nome}</td>
                   <td>{cliente.cpf}</td>
                   <td>{cliente.telefone}</td>
-                  <td>R$ {cliente.mensalidade}</td>
+                  <td>{maskCurrency(String(cliente.mensalidade))}</td>
                   <td>{cliente.vencimento}</td>
                   <td>
                     <button onClick={() => handleGerenciarClick(cliente)} className="btn-gerenciar">

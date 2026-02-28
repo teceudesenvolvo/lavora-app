@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { auth as firebaseAuth } from '../firebaseConfig';
 import Logo from '../assets/images/logo-GL.png';
 
@@ -8,6 +8,26 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+      if (user) {
+        try {
+          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+          const equipeData = await response.json();
+
+          if (equipeData && equipeData.cargo) {
+            navigate('/dashboard-admin/clientes');
+          } else {
+            navigate('/dashboard');
+          }
+        } catch (error) {
+          console.error("Erro ao verificar redirecionamento:", error);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
