@@ -1022,7 +1022,7 @@ const Clientes = () => {
             <div className="form-group"><label>Dia de Vencimento</label>
               <select name="vencimento" value={newClientData.vencimento} onChange={handleNewClientChange} style={{ width: '100%' }}>
                   <option value="">Selecione</option>
-                  {Array.from({ length: 15 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
