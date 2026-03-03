@@ -8,6 +8,7 @@ const CadastroExterno = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [vendedorInfo, setVendedorInfo] = useState({ id: '', nome: '' });
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -21,8 +22,8 @@ const CadastroExterno = () => {
   });
 
   const [docs, setDocs] = useState({
-    rgCnh: null,
-    comprovanteEndereco: null
+    rgCnh: null, // Armazenará o objeto File
+    comprovanteEndereco: null // Armazenará o objeto File
   });
 
   // Captura parâmetros da URL (Vendedor)
@@ -38,6 +39,33 @@ const CadastroExterno = () => {
       });
     }
   }, [location]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.nome.trim()) newErrors.nome = "Nome completo é obrigatório.";
+    if (!formData.plano.trim()) newErrors.plano = "Plano de interesse é obrigatório.";
+    if (!formData.vencimento) newErrors.vencimento = "Dia de vencimento é obrigatório.";
+    if (!formData.email.trim()) {
+        newErrors.email = "E-mail é obrigatório.";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = "Formato de e-mail inválido.";
+    }
+    if (!formData.telefone.trim()) {
+        newErrors.telefone = "Telefone é obrigatório.";
+    } else if (formData.telefone.replace(/\D/g, '').length < 10) {
+        newErrors.telefone = "Telefone inválido.";
+    }
+    if (!validateCPF(formData.cpf)) {
+        newErrors.cpf = "CPF inválido. Verifique o número.";
+    }
+    if (!formData.dataNascimento.trim()) {
+        newErrors.dataNascimento = "Data de nascimento é obrigatória.";
+    }
+
+    if (!docs.rgCnh) newErrors.rgCnh = "RG ou CNH é obrigatório.";
+    if (!docs.comprovanteEndereco) newErrors.comprovanteEndereco = "Comprovante de endereço é obrigatório.";
+    return newErrors;
+  };
 
   // --- Funções de Validação ---
   const validateCPF = (cpf) => {
@@ -108,6 +136,10 @@ const CadastroExterno = () => {
     if (name === 'dataNascimento') finalValue = maskDate(value);
 
     setFormData(prev => ({ ...prev, [name]: finalValue }));
+    // Limpa o erro do campo ao ser alterado
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const convertToBase64 = (file) => {
@@ -119,39 +151,29 @@ const CadastroExterno = () => {
     });
   };
 
-  const handleFileChange = async (e, fieldName) => {
+  const handleFileChange = (e, fieldName) => {
     const file = e.target.files[0];
     if (file) {
-      try {
-        const base64 = await convertToBase64(file);
-        setDocs(prev => ({ ...prev, [fieldName]: base64 }));
-      } catch (error) {
-        console.error("Erro ao processar arquivo:", error);
-      }
+      setDocs(prev => ({ ...prev, [fieldName]: file }));
+      // Limpa o erro do campo ao selecionar um arquivo
+      setErrors(prev => ({ ...prev, [fieldName]: '' }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // --- Validação dos Campos ---
-    if (!formData.nome || !formData.cpf || !formData.dataNascimento || !formData.telefone || !formData.email || !formData.plano || !formData.vencimento) {
-        alert("Por favor, preencha todos os campos de dados cadastrais.");
-        return;
+    const formErrors = validateForm();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return; // Para a submissão se houver erros
     }
-
-    if (!validateCPF(formData.cpf)) {
-        alert("CPF inválido. Por favor, verifique o número digitado.");
-        return;
-    }
-
-    if (!docs.rgCnh || !docs.comprovanteEndereco) {
-        alert("É obrigatório anexar o RG/CNH e o Comprovante de Endereço.");
-        return;
-    }
-    // --- Fim da Validação ---
 
     setLoading(true);
+
+    // Converte arquivos para base64 apenas no momento do envio
+    const rgCnhBase64 = await convertToBase64(docs.rgCnh);
+    const comprovanteEnderecoBase64 = await convertToBase64(docs.comprovanteEndereco);
 
     const payload = {
       USUARIO: formData.nome,
@@ -170,8 +192,8 @@ const CadastroExterno = () => {
       'ADESÃO': new Date().toLocaleDateString('pt-BR'),
       VENDEDOR: vendedorInfo.id,
       documentos: {
-        rgCnh: docs.rgCnh || '',
-        comprovanteEndereco: docs.comprovanteEndereco || ''
+        rgCnh: rgCnhBase64,
+        comprovanteEndereco: comprovanteEnderecoBase64
       }
     };
 
@@ -227,35 +249,41 @@ const CadastroExterno = () => {
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
             <label style={styles.label}><FaUser /> Nome Completo</label>
-            <input required name="nome" value={formData.nome} onChange={handleChange} style={styles.input} placeholder="Seu nome completo" />
+            <input name="nome" value={formData.nome} onChange={handleChange} style={errors.nome ? styles.inputError : styles.input} placeholder="Seu nome completo" />
+            {errors.nome && <small style={styles.errorText}>{errors.nome}</small>}
           </div>
 
           <div style={styles.row}>
             <div style={styles.inputGroup}>
               <label style={styles.label}><FaIdCard /> CPF</label>
-              <input required name="cpf" value={formData.cpf} onChange={handleChange} style={styles.input} placeholder="000.000.000-00" maxLength="14" />
+              <input name="cpf" value={formData.cpf} onChange={handleChange} style={errors.cpf ? styles.inputError : styles.input} placeholder="000.000.000-00" maxLength="14" />
+              {errors.cpf && <small style={styles.errorText}>{errors.cpf}</small>}
             </div>
             <div style={styles.inputGroup}>
               <label style={styles.label}><FaCalendarAlt /> Data Nasc.</label>
-              <input required name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} style={styles.input} placeholder="DD/MM/AAAA" maxLength="10" />
+              <input name="dataNascimento" value={formData.dataNascimento} onChange={handleChange} style={errors.dataNascimento ? styles.inputError : styles.input} placeholder="DD/MM/AAAA" maxLength="10" />
+              {errors.dataNascimento && <small style={styles.errorText}>{errors.dataNascimento}</small>}
             </div>
           </div>
 
           <div style={styles.row}>
             <div style={styles.inputGroup}>
               <label style={styles.label}><FaPhone /> Telefone/WhatsApp</label>
-              <input required name="telefone" value={formData.telefone} onChange={handleChange} style={styles.input} placeholder="(00) 00000-0000" maxLength="15" />
+              <input name="telefone" value={formData.telefone} onChange={handleChange} style={errors.telefone ? styles.inputError : styles.input} placeholder="(00) 00000-0000" maxLength="15" />
+              {errors.telefone && <small style={styles.errorText}>{errors.telefone}</small>}
             </div>
             <div style={styles.inputGroup}>
               <label style={styles.label}><FaEnvelope /> E-mail</label>
-              <input required type="email" name="email" value={formData.email} onChange={handleChange} style={styles.input} placeholder="seu@email.com" />
+              <input type="email" name="email" value={formData.email} onChange={handleChange} style={errors.email ? styles.inputError : styles.input} placeholder="seu@email.com" />
+              {errors.email && <small style={styles.errorText}>{errors.email}</small>}
             </div>
           </div>
 
           <div style={styles.row}>
             <div style={styles.inputGroup}>
               <label style={styles.label}><FaFileMedical /> Plano de Interesse</label>
-              <input required name="plano" value={formData.plano} onChange={handleChange} style={styles.input} placeholder="Ex: Plano de Saúde X" />
+              <input name="plano" value={formData.plano} onChange={handleChange} style={errors.plano ? styles.inputError : styles.input} placeholder="Ex: Plano de Saúde X" />
+              {errors.plano && <small style={styles.errorText}>{errors.plano}</small>}
             </div>
             <div style={styles.inputGroup}>
               <label style={styles.label}>Tipo</label>
@@ -268,12 +296,13 @@ const CadastroExterno = () => {
 
           <div style={styles.inputGroup}>
             <label style={styles.label}><FaCalendarAlt /> Dia de Vencimento da Mensalidade</label>
-            <select required name="vencimento" value={formData.vencimento} onChange={handleChange} style={styles.input}>
+            <select name="vencimento" value={formData.vencimento} onChange={handleChange} style={errors.vencimento ? styles.inputError : styles.input}>
                 <option value="">Selecione o melhor dia</option>
                 {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
                     <option key={day} value={day}>{String(day).padStart(2, '0')}</option>
                 ))}
             </select>
+            {errors.vencimento && <small style={styles.errorText}>{errors.vencimento}</small>}
           </div>
 
           <div style={styles.divider}></div>
@@ -283,20 +312,24 @@ const CadastroExterno = () => {
             <label style={styles.label}>RG ou CNH</label>
             <div style={styles.fileWrapper}>
                 <label htmlFor="rgCnh" style={styles.uploadBtn}>
-                    <FaUpload /> {docs.rgCnh ? 'Arquivo Selecionado' : 'Escolher Arquivo'}
+                    <FaUpload /> {docs.rgCnh ? 'Alterar Arquivo' : 'Escolher Arquivo'}
                 </label>
-                <input id="rgCnh" type="file" required onChange={(e) => handleFileChange(e, 'rgCnh')} style={{ display: 'none' }} />
+                <input id="rgCnh" type="file" onChange={(e) => handleFileChange(e, 'rgCnh')} style={{ display: 'none' }} />
             </div>
+            {docs.rgCnh && <span style={styles.fileName}><FaCheckCircle style={{ marginRight: '5px' }} /> {docs.rgCnh.name}</span>}
+            {errors.rgCnh && <small style={styles.errorText}>{errors.rgCnh}</small>}
           </div>
 
           <div style={styles.fileInputContainer}>
             <label style={styles.label}>Comprovante de Endereço</label>
             <div style={styles.fileWrapper}>
                 <label htmlFor="compEnd" style={styles.uploadBtn}>
-                    <FaUpload /> {docs.comprovanteEndereco ? 'Arquivo Selecionado' : 'Escolher Arquivo'}
+                    <FaUpload /> {docs.comprovanteEndereco ? 'Alterar Arquivo' : 'Escolher Arquivo'}
                 </label>
-                <input id="compEnd" type="file" required onChange={(e) => handleFileChange(e, 'comprovanteEndereco')} style={{ display: 'none' }} />
+                <input id="compEnd" type="file" onChange={(e) => handleFileChange(e, 'comprovanteEndereco')} style={{ display: 'none' }} />
             </div>
+            {docs.comprovanteEndereco && <span style={styles.fileName}><FaCheckCircle style={{ marginRight: '5px' }} /> {docs.comprovanteEndereco.name}</span>}
+            {errors.comprovanteEndereco && <small style={styles.errorText}>{errors.comprovanteEndereco}</small>}
           </div>
 
           <button type="submit" disabled={loading} style={styles.submitBtn}>
@@ -378,7 +411,19 @@ const styles = {
     borderRadius: '8px',
     border: '1px solid #ddd',
     fontSize: '1rem',
-    transition: 'border-color 0.2s, box-shadow 0.2s'
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    width: '100%',
+    boxSizing: 'border-box'
+  },
+  inputError: {
+    padding: '12px 15px',
+    borderRadius: '8px',
+    border: '1px solid #dc3545',
+    fontSize: '1rem',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    width: '100%',
+    boxSizing: 'border-box',
+    boxShadow: '0 0 0 0.2rem rgba(220, 53, 69, 0.25)'
   },
   divider: {
     height: '1px',
@@ -420,6 +465,22 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'background-color 0.2s, transform 0.1s'
+  },
+  errorText: {
+    color: '#dc3545',
+    fontSize: '0.8rem',
+    marginTop: '5px'
+  },
+  fileName: {
+    display: 'flex',
+    alignItems: 'center',
+    marginTop: '8px',
+    fontSize: '0.9rem',
+    color: '#28a745',
+    fontWeight: '500',
+    background: '#e9f7ef',
+    padding: '8px 12px',
+    borderRadius: '6px'
   }
 };
 
