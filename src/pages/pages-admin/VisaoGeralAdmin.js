@@ -230,7 +230,7 @@ const VisaoGeralAdmin = () => {
         <div className="widget">
           <h3>Receita (Mês)</h3>
           <p className="widget-value">R$ {metrics.receitaMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          <span className="widget-trend">Pagamentos confirmados</span>
+          <span className="widget-trend">Confirmados</span>
         </div>
         <div className="widget">
           <h3>Cotações Pendentes</h3>
