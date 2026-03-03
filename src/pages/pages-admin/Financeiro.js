@@ -1283,7 +1283,7 @@ const Financeiro = () => {
 
       {isModalOpen && (
         <div className="popup-overlay">
-          <div className="popup-content cliente-modal" style={{ maxWidth: '500px' }}>
+          <div className="popup-content cliente-modal" style={{ maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={() => setModalOpen(false)} className="popup-close">&times;</button>
             <div className="cliente-modal-header">
               <h3>Financeiro</h3>
@@ -1308,7 +1308,7 @@ const Financeiro = () => {
 
       {pixModalData.isOpen && (
         <div className="popup-overlay">
-          <div className="popup-content cliente-modal" style={{ maxWidth: '650px' }}>
+          <div className="popup-content cliente-modal" style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={() => setPixModalData({ ...pixModalData, isOpen: false })} className="popup-close">&times;</button>
             <div className="cliente-modal-header">
               <h3>Enviar Cobrança {pixModalData.type === 'pix' ? 'PIX' : 'Boleto'} via WhatsApp</h3>
@@ -1370,7 +1370,7 @@ const Financeiro = () => {
 
       {confirmPaymentModal.isOpen && (
         <div className="popup-overlay">
-          <div className="popup-content cliente-modal" style={{ maxWidth: '450px', textAlign: 'center' }}>
+          <div className="popup-content cliente-modal" style={{ maxWidth: '450px', textAlign: 'center', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={() => setConfirmPaymentModal({ isOpen: false, trx: null, isPaidOnline: false, detectedMethod: null })} className="popup-close">&times;</button>
             <div className="cliente-modal-header" style={{ justifyContent: 'center' }}>
               <h3>Confirmar Pagamento</h3>
@@ -1413,7 +1413,7 @@ const Financeiro = () => {
 
       {isEditPaymentModalOpen && editingTransaction && (
         <div className="popup-overlay">
-          <div className="popup-content cliente-modal" style={{ maxWidth: '600px' }}>
+          <div className="popup-content cliente-modal" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={() => setEditPaymentModalOpen(false)} className="popup-close">&times;</button>
             <div className="cliente-modal-header">
               <h3>Editar Detalhes e Histórico</h3>

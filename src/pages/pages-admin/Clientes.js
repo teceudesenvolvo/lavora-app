@@ -10,6 +10,7 @@ const Clientes = () => {
   const navigate = useNavigate();
   const [clientes, setClientes] = useState([]);
   const [filtroNome, setFiltroNome] = useState('');
+  const [planos, setPlanos] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -31,7 +32,7 @@ const Clientes = () => {
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
@@ -69,6 +70,20 @@ const Clientes = () => {
       months -= joinDate.getMonth();
       months += today.getMonth();
       return months >= 0 ? months : 0;
+  };
+
+  const getAgeBracket = (age) => {
+    if (age <= 18) return '00-18 anos';
+    if (age >= 19 && age <= 23) return '19-23 anos';
+    if (age >= 24 && age <= 28) return '24-28 anos';
+    if (age >= 29 && age <= 33) return '29-33 anos';
+    if (age >= 34 && age <= 38) return '34-38 anos';
+    if (age >= 39 && age <= 43) return '39-43 anos';
+    if (age >= 44 && age <= 48) return '44-48 anos';
+    if (age >= 49 && age <= 53) return '49-53 anos';
+    if (age >= 54 && age <= 58) return '54-58 anos';
+    if (age >= 59) return '59+ anos';
+    return null;
   };
 
   useEffect(() => {
@@ -164,6 +179,7 @@ const Clientes = () => {
               dataCadastro: normalizeDate(item['ADESÃO']),
               contratoTipo: item.CONTRATO,
               vendedor: item.VENDEDOR || '',
+              planoId: item.planoId || '', // Adiciona o ID do plano
               status: item.STATUS || 'Ativo', // Valor padrão
               email: item.EMAIL || '', // Valor padrão
               documentos: normalizedDocs,
@@ -197,10 +213,28 @@ const Clientes = () => {
       }
     };
 
+    const fetchPlanos = async () => {
+      try {
+        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/planos.json');
+        const data = await response.json();
+        if (data) {
+          const lista = Object.keys(data).map(key => {
+            const item = data[key];
+            if (!item) return null;
+            return { id: key, ...item };
+          }).filter(plano => plano && (!plano.status || plano.status === 'Ativo'));
+          setPlanos(lista);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar planos:", error);
+      }
+    };
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         fetchClientes(user);
         fetchVendedores();
+        fetchPlanos();
       }
     });
     return () => unsubscribe();
@@ -219,6 +253,55 @@ const Clientes = () => {
         }
     }
   }, [clientes, location, navigate]);
+
+  // Efeito para preencher o valor da mensalidade ao selecionar plano e data de nascimento (NOVO CLIENTE)
+  useEffect(() => {
+    if (newClientData.planoId && newClientData.dataNascimento && planos.length > 0) {
+        const age = calculateAge(newClientData.dataNascimento);
+        if (age === '' || age < 0) return;
+
+        const selectedPlanData = planos.find(p => p.id === newClientData.planoId);
+        if (!selectedPlanData) return;
+
+        const ageBracket = getAgeBracket(age);
+        if (!ageBracket) return;
+
+        let price = selectedPlanData[ageBracket];
+        if (price) {
+            // Normaliza o preço (ex: "431,9" -> 431.90) para garantir que o maskCurrency funcione corretamente
+            const numericPrice = parseFloat(price.replace(/\./g, '').replace(',', '.'));
+            setNewClientData(prev => ({
+                ...prev,
+                valor: maskCurrency(numericPrice.toFixed(2)),
+                valorAdesao: maskCurrency(numericPrice.toFixed(2))
+            }));
+        }
+    }
+  }, [newClientData.planoId, newClientData.dataNascimento, planos]);
+
+  // Efeito para preencher o valor da mensalidade ao selecionar plano e data de nascimento (EDITAR CLIENTE)
+  useEffect(() => {
+    if (selectedClient && selectedClient.planoId && selectedClient.dataNascimento && planos.length > 0) {
+      const age = calculateAge(selectedClient.dataNascimento);
+      if (age === '' || age < 0) return;
+
+      const selectedPlanData = planos.find(p => p.id === selectedClient.planoId);
+      if (!selectedPlanData) return;
+
+      const ageBracket = getAgeBracket(age);
+      if (!ageBracket) return;
+
+      let price = selectedPlanData[ageBracket];
+      // Adiciona verificação para evitar loop infinito de re-renderização
+      if (price) {
+        const numericPrice = parseFloat(price.replace(/\./g, '').replace(',', '.'));
+        const formattedPrice = maskCurrency(numericPrice.toFixed(2));
+        if (selectedClient.mensalidade !== formattedPrice) {
+            setSelectedClient(prev => ({ ...prev, mensalidade: formattedPrice }));
+        }
+      }
+    }
+  }, [selectedClient, planos]);
 
   const clientesFiltrados = useMemo(() => {
     return clientes.filter(cliente => {
@@ -270,11 +353,11 @@ const Clientes = () => {
     });
   }, [clientes, filtroNome, listTab, filters, currentUserRole]);
 
-  // Lista única de planos para o filtro
-  const uniquePlans = useMemo(() => {
-      const plans = new Set(clientes.map(c => c.plano).filter(Boolean));
-      return [...plans].sort();
-  }, [clientes]);
+  // Lista única de planos para o filtro, baseada nos planos ativos carregados
+  const uniquePlansForFilter = useMemo(() => {
+      // Usamos o estado 'planos' que já é buscado e filtrado por status 'Ativo'
+      return [...new Set(planos.map(p => `${p.Plano} - ${p.Acomodação}`))].sort((a, b) => a.localeCompare(b));
+  }, [planos]);
 
   // Contagem de clientes em inclusão para notificação
   const inclusaoCount = useMemo(() => {
@@ -588,7 +671,7 @@ const Clientes = () => {
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
     const currentUser = auth.currentUser;
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -628,7 +711,7 @@ const Clientes = () => {
       'DATA NASC': newClientData.dataNascimento,
       TELEFONE: newClientData.telefone,
       EMAIL: newClientData.email,
-      PLANO: newClientData.plano,
+      planoId: newClientData.planoId, // Salva o ID do plano
       CONTRATO: newClientData.tipo,
       MENSALIDADE: removeCurrencyMask(newClientData.valor),
       ValorAdesao: removeCurrencyMask(newClientData.valorAdesao),
@@ -639,8 +722,11 @@ const Clientes = () => {
       createdId: auth.currentUser ? auth.currentUser.uid : null,
       itensPlano: planItems.map(item => ({ ...item, valor: removeCurrencyMask(item.valor) })),
       documentos: newClientDocs,
-      ...(newClientData.tipo === 'Dependente' && { titularId: newClientData.titularId })
+      ...(newClientData.tipo === 'Dependente' && { titularId: newClientData.titularId }),
     };
+    
+    const selectedPlan = planos.find(p => p.id === newClientData.planoId);
+    if (selectedPlan) clientPayload.PLANO = `${selectedPlan.Plano} - ${selectedPlan.Acomodação}`;
 
     try {
       const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json', {
@@ -657,8 +743,8 @@ const Clientes = () => {
           cpf: clientPayload.CPF,
           dataNascimento: clientPayload['DATA NASC'],
           mensalidade: clientPayload.MENSALIDADE,
-          ValorAdesao: clientPayload.ValorAdesao,
-          plano: clientPayload.PLANO,
+          ValorAdesao: clientPayload.ValorAdesao,          
+          planoId: clientPayload.planoId,
           telefone: clientPayload.TELEFONE,
           status: clientPayload.STATUS,
           vencimento: '-'
@@ -682,7 +768,7 @@ const Clientes = () => {
       CPF: formData.get('cpf'),
       'DATA NASC': formData.get('dataNascimento'),
       TELEFONE: formData.get('telefone'),
-      PLANO: formData.get('plano'),
+      planoId: formData.get('planoId'), // Salva o ID do plano
       MENSALIDADE: removeCurrencyMask(formData.get('mensalidade')),
       ValorAdesao: removeCurrencyMask(formData.get('ValorAdesao')),
       VENCIMENTO: formData.get('vencimento'),
@@ -692,6 +778,9 @@ const Clientes = () => {
       VENDEDOR: formData.get('vendedor'),
       OBSERVACAO: formData.get('observacao')
     };
+
+    const selectedPlan = planos.find(p => p.id === updatedData.planoId);
+    if (selectedPlan) updatedData.PLANO = `${selectedPlan.Plano} - ${selectedPlan.Acomodação}`;
 
     // Se o status mudou para 'Ativo' e não tem data de adesão, define a data atual
     if (updatedData.STATUS === 'Ativo' && selectedClient.status !== 'Ativo' && !selectedClient.dataCadastro) {
@@ -714,7 +803,7 @@ const Clientes = () => {
           cpf: updatedData.CPF,
           dataNascimento: updatedData['DATA NASC'],
           telefone: updatedData.TELEFONE,
-          plano: updatedData.PLANO,
+          planoId: updatedData.planoId,
           mensalidade: updatedData.MENSALIDADE,
           ValorAdesao: updatedData.ValorAdesao,
           vencimento: updatedData.VENCIMENTO,
@@ -746,7 +835,15 @@ const Clientes = () => {
             <div className="form-group"><label>CPF</label><input type="text" name="cpf" value={selectedClient.cpf || ''} onChange={(e) => { e.target.value = maskCPF(e.target.value); handleEditChange(e); }} maxLength="14" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Data de Nascimento {selectedClient.dataNascimento && <span style={{color: '#007bff', fontWeight: 'normal'}}>({calculateAge(selectedClient.dataNascimento)} anos)</span>}</label><input type="text" name="dataNascimento" value={selectedClient.dataNascimento || ''} onChange={(e) => { e.target.value = maskDate(e.target.value); handleEditChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Telefone</label><input type="tel" name="telefone" value={selectedClient.telefone || ''} onChange={(e) => { e.target.value = maskPhone(e.target.value); handleEditChange(e); }} maxLength="15" style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Plano</label><input type="text" name="plano" value={selectedClient.plano || ''} onChange={handleEditChange} style={{ width: '100%' }} /></div>
+            <div className="form-group">
+              <label>Plano</label>
+              <select name="planoId" value={selectedClient.planoId || ''} onChange={handleEditChange} style={{ width: '100%' }}>
+                  <option value="">Selecione um plano...</option>
+                  {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
+                  {/* Lógica para exibir o plano antigo se não estiver na lista de ativos */}
+                  {!planos.some(p => p.id === selectedClient.planoId) && selectedClient.plano && (<option value={selectedClient.planoId}>{selectedClient.plano} (Inativo/Personalizado)</option>)}
+              </select>
+            </div>
             <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" value={maskCurrency(String(selectedClient.mensalidade))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Valor Adesão</label><input type="text" name="ValorAdesao" value={maskCurrency(String(selectedClient.ValorAdesao || selectedClient.mensalidade || ''))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Dia de Vencimento</label>
@@ -921,6 +1018,13 @@ const Clientes = () => {
             <div className="form-group"><label>Email</label><input name="email" value={newClientData.email} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Mensalidade</label><input name="valor" value={newClientData.valor} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Valor Adesão</label><input name="valorAdesao" value={newClientData.valorAdesao} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Plano</label>
+              <select name="planoId" value={newClientData.planoId} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                  <option value="">Selecione um plano...</option>
+                  {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
+              </select>
+            </div>
             <div className="form-group"><label>Tipo</label>
               <select name="tipo" value={newClientData.tipo} onChange={handleNewClientChange} style={{ width: '100%' }}>
                 <option value="Titular">Titular</option>
@@ -1103,7 +1207,7 @@ const Clientes = () => {
                     <label>Plano</label>
                     <select name="plano" value={filters.plano} onChange={handleFilterChange}>
                         <option value="">Todos</option>
-                        {uniquePlans.map(p => <option key={p} value={p}>{p}</option>)}
+                        {uniquePlansForFilter.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                 </div>
             </div>

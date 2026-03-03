@@ -8,6 +8,7 @@ const CadastroExterno = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [vendedorInfo, setVendedorInfo] = useState({ id: '', nome: '' });
+  const [planos, setPlanos] = useState([]);
   const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
@@ -16,7 +17,7 @@ const CadastroExterno = () => {
     dataNascimento: '',
     telefone: '',
     email: '',
-    plano: '',
+    planoId: '',
     tipo: 'Titular',
     vencimento: ''
   });
@@ -40,10 +41,63 @@ const CadastroExterno = () => {
     }
   }, [location]);
 
+  useEffect(() => {
+    const fetchPlanos = async () => {
+      try {
+        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/planos.json');
+        const data = await response.json();
+        console.log("Planos disponíveis:", data);
+        if (data) {
+          const lista = Object.keys(data).map(key => {
+            const item = data[key];
+            if (!item) return null;
+            return { id: key, ...item };
+          }).filter(plano => plano && (!plano.status || plano.status === 'Ativo'));
+          setPlanos(lista);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar planos:", error);
+      }
+    };
+    fetchPlanos();
+  }, []);
+
+  const calculateAge = (dateString) => {
+    if (!dateString) return '';
+    const parts = dateString.split('/');
+    if (parts.length !== 3) return '';
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age >= 0 ? age : '';
+  };
+
+  const getAgeBracket = (age) => {
+    if (age <= 18) return '00-18 anos';
+    if (age >= 19 && age <= 23) return '19-23 anos';
+    if (age >= 24 && age <= 28) return '24-28 anos';
+    if (age >= 29 && age <= 33) return '29-33 anos';
+    if (age >= 34 && age <= 38) return '34-38 anos';
+    if (age >= 39 && age <= 43) return '39-43 anos';
+    if (age >= 44 && age <= 48) return '44-48 anos';
+    if (age >= 49 && age <= 53) return '49-53 anos';
+    if (age >= 54 && age <= 58) return '54-58 anos';
+    if (age >= 59) return '59+ anos';
+    return null;
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.nome.trim()) newErrors.nome = "Nome completo é obrigatório.";
-    if (!formData.plano.trim()) newErrors.plano = "Plano de interesse é obrigatório.";
+    if (!formData.planoId.trim()) newErrors.planoId = "Plano de interesse é obrigatório.";
     if (!formData.vencimento) newErrors.vencimento = "Dia de vencimento é obrigatório.";
     if (!formData.email.trim()) {
         newErrors.email = "E-mail é obrigatório.";
@@ -181,7 +235,7 @@ const CadastroExterno = () => {
       'DATA NASC': formData.dataNascimento,
       TELEFONE: formData.telefone,
       EMAIL: formData.email,
-      PLANO: formData.plano,
+      planoId: formData.planoId,
       CONTRATO: formData.tipo,
       VENCIMENTO: formData.vencimento,
       // Campos ocultos/padrão
@@ -196,6 +250,22 @@ const CadastroExterno = () => {
         comprovanteEndereco: comprovanteEnderecoBase64
       }
     };
+
+    const selectedPlan = planos.find(p => p.id === formData.planoId);
+    if (selectedPlan) {
+        payload.PLANO = `${selectedPlan.Plano} - ${selectedPlan.Acomodação}`;
+        
+        // Calcula MENSALIDADE baseado na idade
+        const age = calculateAge(formData.dataNascimento);
+        const ageBracket = getAgeBracket(age);
+        if (ageBracket && selectedPlan[ageBracket]) {
+             const priceStr = selectedPlan[ageBracket];
+             const numericPrice = parseFloat(priceStr.replace(/\./g, '').replace(',', '.'));
+             if (!isNaN(numericPrice)) {
+                 payload.MENSALIDADE = numericPrice.toFixed(2);
+             }
+        }
+    }
 
     try {
       const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json', {
@@ -282,14 +352,16 @@ const CadastroExterno = () => {
           <div style={styles.row}>
             <div style={styles.inputGroup}>
               <label style={styles.label}><FaFileMedical /> Plano de Interesse</label>
-              <input name="plano" value={formData.plano} onChange={handleChange} style={errors.plano ? styles.inputError : styles.input} placeholder="Ex: Plano de Saúde X" />
-              {errors.plano && <small style={styles.errorText}>{errors.plano}</small>}
+              <select name="planoId" value={formData.planoId} onChange={handleChange} style={errors.planoId ? styles.inputError : styles.input}>
+                <option value="">Selecione um plano...</option>
+                {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
+              </select>
+              {errors.planoId && <small style={styles.errorText}>{errors.planoId}</small>}
             </div>
             <div style={styles.inputGroup}>
               <label style={styles.label}>Tipo</label>
               <select name="tipo" value={formData.tipo} onChange={handleChange} style={styles.input}>
                 <option value="Titular">Titular</option>
-                <option value="Dependente">Dependente</option>
               </select>
             </div>
           </div>

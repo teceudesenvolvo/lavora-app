@@ -224,7 +224,7 @@ const Equipe = () => {
 
       {isModalOpen && (
         <div className="popup-overlay">
-          <div className="popup-content cliente-modal" style={{ maxWidth: '500px' }}>
+          <div className="popup-content cliente-modal" style={{ maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
             <button onClick={handleCloseModal} className="popup-close">&times;</button>
             <div className="cliente-modal-header">
               <h3>{currentUser ? 'Editar Usuário' : 'Novo Usuário'}</h3>
