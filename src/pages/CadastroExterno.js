@@ -298,7 +298,7 @@ const CadastroExterno = () => {
             <label style={styles.label}><FaCalendarAlt /> Dia de Vencimento da Mensalidade</label>
             <select name="vencimento" value={formData.vencimento} onChange={handleChange} style={errors.vencimento ? styles.inputError : styles.input}>
                 <option value="">Selecione o melhor dia</option>
-                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                {Array.from({ length: 15 }, (_, i) => i + 1).map(day => (
                     <option key={day} value={day}>{String(day).padStart(2, '0')}</option>
                 ))}
             </select>

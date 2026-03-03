@@ -102,6 +102,28 @@ const Clientes = () => {
             const item = clientesData[key];
             if (!item) return null;
 
+            // --- NORMALIZAÇÃO DE DOCUMENTOS ---
+            // Unifica o formato dos documentos, seja do formulário externo (objeto) ou upload interno (array)
+            let normalizedDocs = [];
+            if (item.documentos) {
+                if (Array.isArray(item.documentos)) {
+                    // Formato de array (upload interno), apenas usa
+                    normalizedDocs = item.documentos;
+                } else if (typeof item.documentos === 'object' && item.documentos !== null && !Array.isArray(item.documentos)) {
+                    // Formato de objeto (formulário externo), converte para array
+                    if (item.documentos.rgCnh) {
+                        normalizedDocs.push({
+                            nome: 'RG_CNH_(Cadastro Externo).pdf',
+                            arquivo: item.documentos.rgCnh,
+                            data: item['ADESÃO'] || new Date().toLocaleDateString('pt-BR')
+                        });
+                    }
+                    if (item.documentos.comprovanteEndereco) {
+                        normalizedDocs.push({ nome: 'Comprovante_Endereco_(Cadastro Externo).pdf', arquivo: item.documentos.comprovanteEndereco, data: item['ADESÃO'] || new Date().toLocaleDateString('pt-BR') });
+                    }
+                }
+            }
+
             // Filtra apenas os clientes criados pelo usuário logado, exceto se for Admin ou Financeiro
             if (userRole !== 'Admin' && userRole !== 'Financeiro' && item.createdId !== user.uid) return null;
 
@@ -144,7 +166,7 @@ const Clientes = () => {
               vendedor: item.VENDEDOR || '',
               status: item.STATUS || 'Ativo', // Valor padrão
               email: item.EMAIL || '', // Valor padrão
-              documentos: item.documentos || [],
+              documentos: normalizedDocs,
               contratos: item.contratos || [],
               faturas: item.faturas || [],
               cotacoes: item.cotacoes || [],
