@@ -32,7 +32,7 @@ const Clientes = () => {
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
@@ -671,7 +671,7 @@ const Clientes = () => {
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
     const currentUser = auth.currentUser;
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -715,6 +715,7 @@ const Clientes = () => {
       CONTRATO: newClientData.tipo,
       MENSALIDADE: removeCurrencyMask(newClientData.valor),
       ValorAdesao: removeCurrencyMask(newClientData.valorAdesao),
+      VENCIMENTO: newClientData.vencimento,
       VENDEDOR: newClientData.vendedor,
       STATUS: newClientData.status,
       OBSERVACAO: newClientData.observacao,
@@ -747,7 +748,7 @@ const Clientes = () => {
           planoId: clientPayload.planoId,
           telefone: clientPayload.TELEFONE,
           status: clientPayload.STATUS,
-          vencimento: '-'
+          vencimento: clientPayload.VENCIMENTO || '-'
         };
         setClientes(prev => [...prev, newClientLocal]);
         alert('Cliente adicionado com sucesso!');
@@ -1018,6 +1019,12 @@ const Clientes = () => {
             <div className="form-group"><label>Email</label><input name="email" value={newClientData.email} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Mensalidade</label><input name="valor" value={newClientData.valor} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Valor Adesão</label><input name="valorAdesao" value={newClientData.valorAdesao} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Dia de Vencimento</label>
+              <select name="vencimento" value={newClientData.vencimento} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                  <option value="">Selecione</option>
+                  {Array.from({ length: 15 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label>Plano</label>
               <select name="planoId" value={newClientData.planoId} onChange={handleNewClientChange} style={{ width: '100%' }}>
