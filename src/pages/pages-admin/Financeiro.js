@@ -176,6 +176,38 @@ const Financeiro = () => {
           let pagosVal = 0;
           let pagosCount = 0;
 
+          // Step 1: Pre-process clients to calculate total fees for holders and identify dependents
+          const holderData = {};
+          const dependentIds = new Set();
+
+          if (clientesData) {
+              // Initialize holders with their own data and prepare for aggregation
+              Object.keys(clientesData).forEach(key => {
+                  const cliente = clientesData[key];
+                  if (cliente && cliente.CONTRATO === 'Titular') {
+                      holderData[key] = {
+                          ...cliente,
+                          id: key,
+                          mensalidadeTotal: parseMonetaryValue(cliente.MENSALIDADE),
+                          numDependentes: 0
+                      };
+                  }
+              });
+
+              // Add dependent fees to holders and mark dependents
+              Object.keys(clientesData).forEach(key => {
+                  const cliente = clientesData[key];
+                  if (cliente && cliente.CONTRATO === 'Dependente' && cliente.titularId) {
+                      dependentIds.add(key);
+                      const holder = holderData[cliente.titularId];
+                      if (holder) {
+                          holder.mensalidadeTotal += parseMonetaryValue(cliente.MENSALIDADE);
+                          holder.numDependentes += 1;
+                      }
+                  }
+              });
+          }
+
           // Inicializa mapa de comissões com a equipe
           const comissoesMap = {};
           if (equipeData) {
@@ -190,12 +222,18 @@ const Financeiro = () => {
           }
 
           // Processa Assinaturas (Clientes)
-          const loadedTransacoes = Object.keys(clientesData).map(key => {
-            const item = clientesData[key];
-            if (!item) return null;
+          const loadedTransacoes = Object.keys(clientesData)
+            .filter(key => !dependentIds.has(key)) // Filter out dependents
+            .map(key => {
+              const item = clientesData[key];
+              if (!item) return null;
 
-            const valor = parseMonetaryValue(item.MENSALIDADE);
-            
+              // For holders, use the aggregated data. For others, use their own data.
+              const isHolder = item.CONTRATO === 'Titular' && holderData[key];
+              const valor = isHolder ? holderData[key].mensalidadeTotal : parseMonetaryValue(item.MENSALIDADE);
+              const numDependents = isHolder ? holderData[key].numDependentes : 0;
+              const descricao = numDependents > 0 ? `${item.USUARIO} (+${numDependents} dep.)` : item.USUARIO;
+
             // Normalização de Data (Trata M/D/Y e D/M/Y)
             // Para assinaturas, projetamos a data de vencimento para o mês selecionado
             let day = 1;
@@ -310,10 +348,10 @@ const Financeiro = () => {
 
             return {
               id: key,
-              descricao: `${item.USUARIO}`,
+              descricao: descricao,
               cpf: item.CPF ? String(item.CPF) : '',
               valor: valor,
-              valorFormatado: `R$ ${item.MENSALIDADE}`,
+              valorFormatado: `R$ ${valor.toFixed(2).replace('.', ',')}`,
               tipo: item.CONTRATO,
               data: diaVencimento,
               dataObj: vencimentoDate,

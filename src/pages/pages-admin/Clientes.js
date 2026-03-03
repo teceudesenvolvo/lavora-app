@@ -31,7 +31,7 @@ const Clientes = () => {
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: '', status: 'Ativo', observacao: '' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
@@ -588,7 +588,7 @@ const Clientes = () => {
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
     const currentUser = auth.currentUser;
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '' });
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', plano: '', tipo: 'Titular', valor: '', valorAdesao: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -617,6 +617,11 @@ const Clientes = () => {
   };
 
   const saveNewClient = async () => {
+    if (newClientData.tipo === 'Dependente' && !newClientData.titularId) {
+        alert('Para dependentes, é obrigatório selecionar um titular responsável.');
+        return;
+    }
+
     const clientPayload = {
       USUARIO: newClientData.nome,
       CPF: newClientData.cpf,
@@ -633,7 +638,8 @@ const Clientes = () => {
       'ADESÃO': new Date().toLocaleDateString('pt-BR'),
       createdId: auth.currentUser ? auth.currentUser.uid : null,
       itensPlano: planItems.map(item => ({ ...item, valor: removeCurrencyMask(item.valor) })),
-      documentos: newClientDocs
+      documentos: newClientDocs,
+      ...(newClientData.tipo === 'Dependente' && { titularId: newClientData.titularId })
     };
 
     try {
@@ -921,6 +927,17 @@ const Clientes = () => {
                 <option value="Dependente">Dependente</option>
               </select>
             </div>
+            {newClientData.tipo === 'Dependente' && (
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Titular Responsável</label>
+                <select name="titularId" value={newClientData.titularId} onChange={handleNewClientChange} style={{ width: '100%' }} required>
+                  <option value="">Selecione o titular...</option>
+                  {clientes.filter(c => c.contratoTipo === 'Titular' && c.status === 'Ativo').map(titular => (
+                    <option key={titular.id} value={titular.id}>{titular.nome} - CPF: {titular.cpf}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="form-group"><label>Vendedor</label>
               <select name="vendedor" value={newClientData.vendedor} onChange={handleNewClientChange} style={{ width: '100%' }}>
                 <option value="">Selecione...</option>
