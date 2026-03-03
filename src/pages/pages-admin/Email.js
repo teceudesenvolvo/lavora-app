@@ -145,7 +145,7 @@ const Email = () => {
     `;
 
     try {
-      const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/sendWebmailViaResend`, {
+      const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/sendWebmail`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -221,8 +221,12 @@ const Email = () => {
                         <button onClick={() => setSelectedEmail(null)} className="btn btn-secondary" style={{ marginBottom: '15px', fontSize: '0.8rem' }}>&larr; Voltar</button>
                         <h2 style={{ margin: '0 0 10px 0' }}>{selectedEmail.subject}</h2>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', fontSize: '0.9rem' }}>
-                            <span><strong>De:</strong> {selectedEmail.fromName || selectedEmail.from || 'Desconhecido'}</span>
-                            <span>{new Date(selectedEmail.date).toLocaleString()}</span>
+                            {activeTab === 'sent' ? (
+                                <span><strong>Para:</strong> {selectedEmail.to || 'N/A'}</span>
+                            ) : (
+                                <span><strong>De:</strong> {selectedEmail.fromName || selectedEmail.from || 'Desconhecido'}</span>
+                            )}
+                            <span style={{ flexShrink: 0, marginLeft: '15px' }}>{new Date(selectedEmail.date).toLocaleString()}</span>
                         </div>
                        
                     </div>
@@ -280,11 +284,17 @@ const Email = () => {
                     {filteredEmails.map(email => (
                         <li key={email.id} className="email-list-item" onClick={() => handleViewEmail(email)}>
                             <div className="email-avatar">
-                                {(email.fromName || '?').charAt(0).toUpperCase()}
+                                {activeTab === 'sent' 
+                                    ? (email.to || '?').charAt(0).toUpperCase()
+                                    : (email.fromName || email.from || '?').charAt(0).toUpperCase()
+                                }
                             </div>
                             <div className="email-info">
                                 <div className="email-header">
-                                    <span className="email-sender">{email.fromName || email.from || 'Desconhecido'}</span>
+                                    <span className="email-sender">{activeTab === 'sent' 
+                                        ? email.to 
+                                        : (email.fromName || email.from || 'Desconhecido')}
+                                    </span>
                                     <span className="email-date">{new Date(email.date).toLocaleDateString()}</span>
                                 </div>
                                 <div className="email-subject">{email.subject}</div>

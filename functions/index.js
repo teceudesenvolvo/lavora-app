@@ -306,19 +306,46 @@ exports.inviteUser = functions.https.onRequest((req, res) => {
 });
 
 /**
- * Exclui um usuário do Firebase Auth
+ * Exclui um usuário do Firebase Auth e todos os seus dados relacionados no Realtime DB.
  */
 exports.deleteUser = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
       const { uid } = req.body;
-      if (!uid) return res.status(400).json({ error: "UID is required" });
+      if (!uid) {
+        return res.status(400).json({ error: "UID do usuário é obrigatório." });
+      }
 
+      // 1. Excluir do Firebase Auth
       await admin.auth().deleteUser(uid);
-      res.status(200).json({ message: "Usuário excluído do Auth com sucesso" });
+      console.log(`Usuário Auth ${uid} excluído com sucesso.`);
+
+      // 2. Excluir do Realtime Database (equipe, webmail_users, webmail)
+      const db = admin.database();
+      await Promise.all([
+        db.ref(`equipe/${uid}`).remove(),
+        db.ref(`webmail_users/${uid}`).remove(),
+        db.ref(`webmail/${uid}`).remove()
+      ]);
+      console.log(`Dados do usuário ${uid} removidos do Realtime Database.`);
+
+      res.status(200).json({ message: "Usuário e todos os seus dados foram excluídos com sucesso." });
+
     } catch (error) {
-      console.error("Erro ao excluir usuário Auth:", error);
-      res.status(500).json({ error: error.message });
+      console.error(`Erro ao excluir usuário ${req.body.uid}:`, error);
+      
+      if (error.code === 'auth/user-not-found') {
+          const { uid } = req.body;
+          console.warn(`Usuário Auth ${uid} não encontrado. Tentando limpar dados do DB...`);
+          try {
+              const db = admin.database();
+              await Promise.all([ db.ref(`equipe/${uid}`).remove(), db.ref(`webmail_users/${uid}`).remove(), db.ref(`webmail/${uid}`).remove() ]);
+              return res.status(200).json({ message: "Usuário já havia sido removido do Auth, dados do DB foram limpos." });
+          } catch (dbError) {
+              return res.status(500).json({ error: "Usuário Auth não encontrado, mas ocorreu um erro ao limpar os dados do banco.", details: dbError.message });
+          }
+      }
+      res.status(500).json({ error: "Ocorreu um erro interno ao excluir o usuário.", details: error.message });
     }
   });
 });
@@ -457,57 +484,53 @@ exports.createWebmailAccount = functions.https.onRequest((req, res) => {
 });
 
 /**
- * Envia e-mail usando a API do Resend
- * Requer configuração da chave de API do Resend
+ * Envia e-mail usando o Nodemailer com o transporter configurado.
  */
-exports.sendWebmailViaResend = functions.https.onRequest((req, res) => {
+exports.sendWebmail = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
       if (req.method !== "POST") {
         return res.status(405).send("Método não permitido");
       }
 
-      const { to, subject, html, fromName, attachments, fromEmail } = req.body;
-      const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_8qQJWKFf_KhcZeZP61DMxQVbMDUhrJjQJ"; // Configure sua chave aqui ou nas variáveis de ambiente
+      const { to, subject, html, fromName, attachments, fromEmail } = req.body;      
+      const toEmails = to.split(',').map(email => email.trim()).filter(email => email);
+      if (toEmails.length === 0) {
+        return res.status(400).json({ error: "Destinatário 'to' é inválido ou não foi fornecido." });
+      }
 
-      // Envia via Axios para a API do Resend
-      const response = await axios.post(
-        "https://api.resend.com/emails",
-        {
-          from: `${fromName || 'Webmail'} <${fromEmail || 'nao-responda@lavoroservicos.com.br'}>`, // Domínio deve estar verificado no Resend
-          to: [to],
-          subject: subject,
-          html: html,
-          attachments: attachments // Array de anexos { filename, content }
-        },
-        {
-          headers: {
-            "Authorization": `Bearer ${RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // Monta as opções para o Nodemailer
+      const mailOptions = {
+        from: `"${fromName || 'Webmail Lavoro'}" <${transporter.options.auth.user}>`,
+        to: toEmails.join(', '),
+        subject: subject,
+        html: html,
+        // Nodemailer espera que o conteúdo do anexo seja um buffer ou string, e a codificação seja especificada
+        attachments: attachments ? attachments.map(att => ({
+            filename: att.filename,
+            content: att.content,
+            encoding: 'base64'
+        })) : []
+      };
+
+      // Adiciona o campo 'replyTo' se o e-mail do remetente for fornecido
+      if (fromEmail) {
+        mailOptions.replyTo = fromEmail;
+      }
+
+      // Envia o e-mail
+      const info = await transporter.sendMail(mailOptions);
 
       // --- LÓGICA DE PERSISTÊNCIA (Webmail) ---
       const db = admin.database();
       const timestamp = new Date().toISOString();
       const previewText = html ? html.replace(/<[^>]+>/g, '').substring(0, 50) + '...' : '';
 
-      // 1. Salvar na pasta "Enviados" do Remetente
       if (fromEmail) {
         try {
            const senderUser = await admin.auth().getUserByEmail(fromEmail);
            if (senderUser) {
-             await db.ref(`webmail/${senderUser.uid}/sent`).push({
-               to,
-               subject,
-               preview: previewText,
-               body: html || `<p><i>(Email sem conteúdo visível)</i></p>`,
-               date: timestamp,
-               fromName: fromName || fromEmail,
-               hasAttachments: !!(attachments && attachments.length),
-               attachments: attachments || [] // Salva os anexos (Base64) no banco
-             });
+             await db.ref(`webmail/${senderUser.uid}/sent`).push({ to, subject, preview: previewText, body: html || `<p><i>(Email sem conteúdo visível)</i></p>`, date: timestamp, fromName: fromName || fromEmail, hasAttachments: !!(attachments && attachments.length), attachments: attachments || [] });
              console.log(`Email salvo em Enviados para: ${fromEmail}`);
            }
         } catch (err) {
@@ -517,36 +540,23 @@ exports.sendWebmailViaResend = functions.https.onRequest((req, res) => {
          console.warn("fromEmail não fornecido. O e-mail não foi salvo na pasta Enviados.");
       }
 
-      // 2. Simular Entrega Interna (Inbox) se o destinatário for do mesmo domínio
-      // Isso permite que usuários do sistema recebam e-mails uns dos outros na Caixa de Entrada
       if (to && to.includes('@lavoroservicos.com.br')) {
          try {
            const recipientUser = await admin.auth().getUserByEmail(to);
            if (recipientUser) {
-             await db.ref(`webmail/${recipientUser.uid}/inbox`).push({
-               from: fromEmail || 'nao-responda@lavoroservicos.com.br',
-               fromName: fromName || fromEmail,
-               subject,
-               preview: previewText,
-               body: html || `<p><i>(Email sem conteúdo visível)</i></p>`,
-               date: timestamp,
-               hasAttachments: !!(attachments && attachments.length),
-               read: false,
-               attachments: attachments || [] // Salva os anexos (Base64) no banco
-             });
+             await db.ref(`webmail/${recipientUser.uid}/inbox`).push({ from: fromEmail || 'nao-responda@lavoroservicos.com.br', fromName: fromName || fromEmail, subject, preview: previewText, body: html || `<p><i>(Email sem conteúdo visível)</i></p>`, date: timestamp, hasAttachments: !!(attachments && attachments.length), read: false, attachments: attachments || [] });
              console.log(`Entrega interna realizada para: ${to}`);
            }
          } catch (err) {
             console.warn("Erro ao entregar internamente:", err.message);
          }
       }
-      // -----------------------------------------
 
-      res.status(200).json(response.data);
+      res.status(200).json({ message: "E-mail enviado com sucesso!", messageId: info.messageId });
 
     } catch (error) {
-      console.error("Erro ao enviar via Resend:", error.response?.data || error.message);
-      res.status(500).json({ error: "Falha ao enviar e-mail", details: error.response?.data });
+      console.error("Erro ao enviar e-mail via Nodemailer:", error);
+      res.status(500).json({ error: "Falha ao enviar e-mail", details: error.message });
     }
   });
 });
@@ -955,6 +965,58 @@ exports.sendBillingEmail = functions.https.onRequest((req, res) => {
     } catch (error) {
       console.error("Erro ao enviar e-mail individual:", error);
       res.status(500).json({ error: "Erro ao enviar e-mail.", details: error.message });
+    }
+  });
+});
+
+/**
+ * Envia e-mails diários para clientes em Pré-Cancelamento
+ */
+exports.sendPreCancellationEmails = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).send("Método não permitido");
+      }
+
+      const snapshot = await admin.database().ref('clientes').once('value');
+      const clientes = snapshot.val();
+
+      if (!clientes) {
+        return res.status(200).json({ message: "Nenhum cliente encontrado." });
+      }
+
+      const emailPromises = [];
+      let count = 0;
+
+      Object.values(clientes).forEach(cliente => {
+        if (cliente.STATUS === 'Pré-Cancelamento' && cliente.EMAIL) {
+           const mailOptions = {
+             from: '"Lavoro Financeiro" <blutecnologiasbr@gmail.com>',
+             to: cliente.EMAIL,
+             subject: 'AVISO IMPORTANTE: Seu plano está em processo de cancelamento',
+             html: `
+               <div style="font-family: Arial, sans-serif; color: #333;">
+                 <h3>Olá, ${cliente.USUARIO || 'Cliente'}.</h3>
+                 <p>Informamos que seu plano encontra-se em <strong>Pré-Cancelamento</strong> devido a pendências financeiras ou administrativas.</p>
+                 <p>Para evitar o cancelamento definitivo e a interrupção dos serviços, por favor, entre em contato conosco imediatamente.</p>
+                 <br>
+                 <p>Caso já tenha regularizado sua situação, desconsidere este aviso.</p>
+                 <p>Atenciosamente,<br><strong>Equipe Lavoro</strong></p>
+               </div>
+             `
+           };
+           emailPromises.push(transporter.sendMail(mailOptions));
+           count++;
+        }
+      });
+
+      await Promise.all(emailPromises);
+      res.status(200).json({ message: `E-mails de pré-cancelamento enviados para ${count} clientes.` });
+
+    } catch (error) {
+      console.error("Erro ao enviar e-mails de pré-cancelamento:", error);
+      res.status(500).json({ error: "Erro interno ao processar envios." });
     }
   });
 });

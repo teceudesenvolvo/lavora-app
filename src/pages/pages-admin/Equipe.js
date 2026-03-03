@@ -124,24 +124,29 @@ const Equipe = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este usuário?")) return;
+    if (!window.confirm("Tem certeza que deseja excluir este usuário? Esta ação é irreversível e removerá todos os dados associados.")) return;
 
     try {
-      // 1. Exclui do Auth via Backend (Cloud Function)
-      await fetch(`${CLOUD_FUNCTIONS_BASE}/deleteUser`, {
+      // A Cloud Function 'deleteUser' agora cuida de excluir do Auth e de todas as
+      // referências no Realtime Database (equipe, webmail, webmail_users).
+      const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/deleteUser`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ uid: id })
       });
 
-      // 2. Exclui do Database
-      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${id}.json`, {
-        method: 'DELETE'
-      });
+      const data = await response.json();
+
+      if (!response.ok) {
+          throw new Error(data.error || "Erro ao excluir usuário.");
+      }
+
+      // Apenas atualiza o estado local após o sucesso
       setEquipe(prev => prev.filter(u => u.id !== id));
-      alert("Usuário excluído.");
+      alert(data.message || "Usuário excluído com sucesso.");
     } catch (error) {
       console.error("Erro ao excluir:", error);
+      alert(`Falha ao excluir: ${error.message}`);
     }
   };
 

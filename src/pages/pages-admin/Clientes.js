@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink, FaUserPlus } from 'react-icons/fa';
+import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink, FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
 import { auth } from '../../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -214,6 +214,8 @@ const Clientes = () => {
         tabMatch = cliente.status === 'Cotação';
       } else if (listTab === 'inclusao') {
         tabMatch = cliente.status === 'INCLUSÃO';
+      } else if (listTab === 'pre-cancelamento') {
+        tabMatch = cliente.status === 'Pré-Cancelamento';
       }
 
       // Filtros Avançados (Admin)
@@ -747,6 +749,7 @@ const Clientes = () => {
                 <option value="Contato">Contato</option>
                 <option value="Cotação">Cotação</option>
                 <option value="Pendente">Pendente</option>
+                <option value="Pré-Cancelamento">Pré-Cancelamento</option>
                 <option value="INCLUSÃO">Inclusão</option>
               </select>
             </div>
@@ -911,6 +914,7 @@ const Clientes = () => {
                 <option value="Contato">Contato</option>
                 <option value="Cotação">Cotação</option>
                 <option value="Pendente">Pendente</option>
+                <option value="Pré-Cancelamento">Pré-Cancelamento</option>
                 <option value="INCLUSÃO">Inclusão</option>
               </select>
             </div>
@@ -983,6 +987,7 @@ const Clientes = () => {
           <button className={`btn-tab ${listTab === 'inativos' ? 'active' : ''}`} onClick={() => setListTab('inativos')}><FaExclamationCircle /> Inativos</button>
           <button className={`btn-tab ${listTab === 'contatos' ? 'active' : ''}`} onClick={() => setListTab('contatos')}><FaList /> Contatos</button>
           <button className={`btn-tab ${listTab === 'cotacoes' ? 'active' : ''}`} onClick={() => setListTab('cotacoes')}><FaQuoteRight /> Cotações</button>
+          <button className={`btn-tab ${listTab === 'pre-cancelamento' ? 'active' : ''}`} onClick={() => setListTab('pre-cancelamento')} style={{ color: '#dc3545' }}><FaExclamationTriangle /> Pré-Cancelamento</button>
           <button className={`btn-tab ${listTab === 'inclusao' ? 'active' : ''}`} onClick={() => setListTab('inclusao')} style={{ position: 'relative' }}>
             <FaUserPlus /> Inclusão
             {inclusaoCount > 0 && (
