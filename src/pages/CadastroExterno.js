@@ -29,6 +29,9 @@ const CadastroExterno = () => {
     comprovanteEndereco: null // Armazenará o objeto File
   });
 
+  // URL base das Cloud Functions
+  const CLOUD_FUNCTIONS_BASE = 'https://us-central1-lavoro-servicos-c10fd.cloudfunctions.net';
+
   // Captura parâmetros da URL (Vendedor)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -232,6 +235,27 @@ const CadastroExterno = () => {
 
     setLoading(true);
 
+    // 1. Criar usuário no Auth (Email + CPF) - Apenas para Titulares
+    let authUid = null;
+    if (formData.tipo === 'Titular') {
+        try {
+            const authResponse = await fetch(`${CLOUD_FUNCTIONS_BASE}/createClientAuth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.email,
+                    cpf: formData.cpf,
+                    nome: formData.nome
+                })
+            });
+            const authData = await authResponse.json();
+            if (authResponse.ok) authUid = authData.uid;
+            else console.warn("Erro ao criar login do cliente:", authData.error);
+        } catch (error) {
+            console.error("Erro na criação do usuário Auth:", error);
+        }
+    }
+
     // Converte arquivos para base64 apenas no momento do envio
     const rgCnhBase64 = await convertToBase64(docs.rgCnh);
     const comprovanteEnderecoBase64 = await convertToBase64(docs.comprovanteEndereco);
@@ -256,6 +280,7 @@ const CadastroExterno = () => {
         rgCnh: rgCnhBase64,
         comprovanteEndereco: comprovanteEnderecoBase64
       },
+      authUid: authUid,
       ...(formData.tipo === 'Dependente' && { titularId: formData.titularId })
     };
 

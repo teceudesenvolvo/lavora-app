@@ -42,6 +42,9 @@ const Clientes = () => {
   const [newCotacao, setNewCotacao] = useState({ descricao: '', valor: '', status: 'Em Análise' });
   const [errors, setErrors] = useState({}); // Estado para erros de validação
 
+  // URL base das Cloud Functions
+  const CLOUD_FUNCTIONS_BASE = 'https://us-central1-lavoro-servicos-c10fd.cloudfunctions.net';
+
   // Função auxiliar para calcular idade
   const calculateAge = (dateString) => {
     if (!dateString) return '';
@@ -836,6 +839,27 @@ const Clientes = () => {
         return;
     }
 
+    // 1. Criar usuário no Auth (Email + CPF) - Apenas para Titulares
+    let authUid = null;
+    if (newClientData.tipo === 'Titular') {
+        try {
+            const authResponse = await fetch(`${CLOUD_FUNCTIONS_BASE}/createClientAuth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: newClientData.email,
+                    cpf: newClientData.cpf,
+                    nome: newClientData.nome
+                })
+            });
+            const authData = await authResponse.json();
+            if (authResponse.ok) authUid = authData.uid;
+            else console.warn("Erro ao criar login do cliente:", authData.error);
+        } catch (error) {
+            console.error("Erro na criação do usuário Auth:", error);
+        }
+    }
+
     const clientPayload = {
       USUARIO: newClientData.nome,
       CPF: newClientData.cpf,
@@ -855,6 +879,7 @@ const Clientes = () => {
       createdId: auth.currentUser ? auth.currentUser.uid : null,
       itensPlano: planItems.map(item => ({ ...item, valor: removeCurrencyMask(item.valor) })),
       documentos: newClientDocs,
+      authUid: authUid, // Salva o UID do Auth no registro do cliente
       ...(newClientData.tipo === 'Dependente' && { titularId: newClientData.titularId }),
     };
     

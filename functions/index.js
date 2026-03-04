@@ -1201,3 +1201,49 @@ function generateBillingEmailHtml(nome, mes, pixCode, titulo) {
       </div>
     `;
 }
+
+/**
+ * Cria usuário de Cliente no Auth com senha = CPF e define claim 'cliente'
+ */
+exports.createClientAuth = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).send("Método não permitido");
+      }
+
+      const { email, cpf, nome } = req.body;
+      
+      if (!email || !cpf) {
+        return res.status(400).json({ error: "Email e CPF são obrigatórios." });
+      }
+
+      const password = String(cpf).replace(/\D/g, '');
+      if (password.length < 6) {
+         return res.status(400).json({ error: "CPF inválido para senha (mínimo 6 dígitos)." });
+      }
+
+      let userRecord;
+      try {
+        userRecord = await admin.auth().createUser({
+          email,
+          password,
+          displayName: nome
+        });
+      } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+           userRecord = await admin.auth().getUserByEmail(email);
+        } else {
+           throw error;
+        }
+      }
+
+      await admin.auth().setCustomUserClaims(userRecord.uid, { type: 'cliente' });
+      res.status(200).json({ uid: userRecord.uid });
+
+    } catch (error) {
+      console.error("Erro ao criar cliente Auth:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+});
