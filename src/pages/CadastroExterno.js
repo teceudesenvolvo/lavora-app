@@ -98,7 +98,6 @@ const CadastroExterno = () => {
     const newErrors = {};
     if (!formData.nome.trim()) newErrors.nome = "Nome completo é obrigatório.";
     if (!formData.planoId.trim()) newErrors.planoId = "Plano de interesse é obrigatório.";
-    if (!formData.vencimento) newErrors.vencimento = "Dia de vencimento é obrigatório.";
     if (!formData.email.trim()) {
         newErrors.email = "E-mail é obrigatório.";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
