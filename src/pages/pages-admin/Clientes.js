@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink, FaUserPlus, FaExclamationTriangle, FaUserFriends } from 'react-icons/fa';
 import { auth } from '../../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
+import Logo from '../../assets/images/logo-GL.png';
 
 const Clientes = () => {
   const location = useLocation();
@@ -679,8 +681,12 @@ const Clientes = () => {
   };
 
   const handleNextStep = () => {
-    if (addModalTab === 'dados') setAddModalTab('documentacao');
-    else if (addModalTab === 'documentacao') setAddModalTab('plano');
+    if (addModalTab === 'dados') {
+      if (!validateInternalForm()) return;
+      setAddModalTab('documentacao');
+    } else if (addModalTab === 'documentacao') {
+      setAddModalTab('plano');
+    }
   };
 
   const handlePrevStep = () => {
@@ -750,6 +756,81 @@ const Clientes = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const generateProposalPDF = (clientData, items) => {
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = Logo;
+    
+    img.onload = () => {
+        // Logo
+        doc.addImage(img, 'PNG', 15, 10, 40, 15);
+        
+        // Cabeçalho
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("Grupo Lavoro", 195, 15, null, null, "right");
+        doc.text(new Date().toLocaleDateString('pt-BR'), 195, 20, null, null, "right");
+
+        // Título
+        doc.setFontSize(20);
+        doc.setTextColor(0, 84, 166); // Azul Lavoro
+        doc.text("Proposta Comercial", 105, 40, null, null, "center");
+
+        // Dados do Cliente
+        doc.setDrawColor(220);
+        doc.setFillColor(250, 250, 250);
+        doc.roundedRect(15, 50, 180, 25, 3, 3, 'FD');
+        
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Cliente: ${clientData.USUARIO}`, 20, 60);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Email: ${clientData.EMAIL || '-'}`, 20, 68);
+        doc.text(`Telefone: ${clientData.TELEFONE || '-'}`, 110, 68);
+
+        if (clientData.PLANO) {
+             doc.text(`Plano de Interesse: ${clientData.PLANO}`, 20, 85);
+        }
+
+        // Tabela de Valores
+        const tableBody = [];
+        const mensalidade = parseFloat(clientData.MENSALIDADE || 0);
+        if (mensalidade > 0) tableBody.push(["Mensalidade do Plano", `R$ ${mensalidade.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`]);
+        
+        const adesao = parseFloat(clientData.ValorAdesao || 0);
+        if (adesao > 0) tableBody.push(["Taxa de Adesão (Única)", `R$ ${adesao.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`]);
+
+        let totalExtras = 0;
+        if (items && items.length > 0) {
+            items.forEach(item => {
+                const val = parseFloat(item.valor);
+                totalExtras += val;
+                tableBody.push([item.descricao, `R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`]);
+            });
+        }
+
+        const total = mensalidade + adesao + totalExtras;
+        tableBody.push([{content: 'TOTAL ESTIMADO', styles: {fontStyle: 'bold', fillColor: [240, 240, 240]}}, {content: `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, styles: {fontStyle: 'bold', fillColor: [240, 240, 240]}}]);
+
+        autoTable(doc, {
+            startY: 95,
+            head: [['Descrição', 'Valor']],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: { fillColor: [0, 84, 166] },
+            columnStyles: { 1: { halign: 'right', cellWidth: 50 } }
+        });
+
+        const finalY = doc.lastAutoTable.finalY + 20;
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("Proposta válida por 5 dias úteis.", 105, finalY, null, null, "center");
+        
+        doc.save(`Proposta_${clientData.USUARIO.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+    };
+  };
+
   const saveNewClient = async () => {
     if (!validateInternalForm()) {
         return;
@@ -803,6 +884,12 @@ const Clientes = () => {
           vencimento: clientPayload.VENCIMENTO || '-'
         };
         setClientes(prev => [...prev, newClientLocal]);
+        
+        // Gera PDF se for Cotação
+        if (clientPayload.STATUS === 'Cotação') {
+            generateProposalPDF(clientPayload, clientPayload.itensPlano);
+        }
+
         alert('Cliente adicionado com sucesso!');
         setAddModalOpen(false);
       }
@@ -1124,8 +1211,6 @@ const Clientes = () => {
             <div className="form-group"><label>Data de Nascimento {newClientData.dataNascimento && <span style={{color: '#007bff', fontWeight: 'normal'}}>({calculateAge(newClientData.dataNascimento)} anos)</span>}</label><input name="dataNascimento" value={newClientData.dataNascimento} onChange={(e) => { e.target.value = maskDate(e.target.value); handleNewClientChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Telefone</label><input name="telefone" value={newClientData.telefone} onChange={(e) => { e.target.value = maskPhone(e.target.value); handleNewClientChange(e); }} maxLength="15" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Email</label><input name="email" value={newClientData.email} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Mensalidade</label><input name="valor" value={newClientData.valor} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Valor Adesão</label><input name="valorAdesao" value={newClientData.valorAdesao} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Dia de Vencimento</label>
               <select name="vencimento" value={newClientData.vencimento} onChange={handleNewClientChange} style={{ width: '100%' }}>
                   <option value="">Selecione</option>
@@ -1139,6 +1224,8 @@ const Clientes = () => {
                   {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
               </select>
             </div>
+            <div className="form-group"><label>Mensalidade</label><input name="valor" value={newClientData.valor} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
+            <div className="form-group"><label>Valor Adesão</label><input name="valorAdesao" value={newClientData.valorAdesao} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label>Empresa</label>
               <select name="empresaId" value={newClientData.empresaId} onChange={handleNewClientChange} style={{ width: '100%' }}>
