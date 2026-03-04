@@ -14,6 +14,7 @@ import {
   FaUser,
   FaEnvelope,
   FaClipboardList,
+  FaBuilding,
 } from 'react-icons/fa';
 
 const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar, userRole }) => {
@@ -48,6 +49,9 @@ const MenuAdmin = ({ isSidebarOpen, Logo, toggleSidebar, userRole }) => {
             )}
             {userRole === 'Admin' && (
               <li><NavLink to="/dashboard-admin/planos" onClick={toggleSidebar}><FaClipboardList /> Planos</NavLink></li>
+            )}
+            {userRole === 'Admin' && (
+              <li><NavLink to="/dashboard-admin/empresas" onClick={toggleSidebar}><FaBuilding /> Empresas</NavLink></li>
             )}
             {userRole !== 'Vendedor' && (
               <li><NavLink to="/dashboard-admin/financeiro" onClick={toggleSidebar}><FaWallet /> Financeiro</NavLink></li>

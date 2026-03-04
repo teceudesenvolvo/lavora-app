@@ -11,6 +11,7 @@ const Clientes = () => {
   const [clientes, setClientes] = useState([]);
   const [filtroNome, setFiltroNome] = useState('');
   const [planos, setPlanos] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -32,7 +33,7 @@ const Clientes = () => {
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', empresaId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
@@ -179,6 +180,7 @@ const Clientes = () => {
               dataCadastro: normalizeDate(item['ADESÃO']),
               contratoTipo: item.CONTRATO,
               vendedor: item.VENDEDOR || '',
+              empresaId: item.empresaId || '',
               planoId: item.planoId || '', // Adiciona o ID do plano
               status: item.STATUS || 'Ativo', // Valor padrão
               email: item.EMAIL || '', // Valor padrão
@@ -230,11 +232,27 @@ const Clientes = () => {
       }
     };
 
+    const fetchEmpresas = async () => {
+      try {
+        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/empresas.json');
+        const data = await response.json();
+        if (data) {
+          const lista = Object.keys(data)
+            .map(key => ({ id: key, ...data[key] }))
+            .filter(empresa => empresa.status === 'Ativa');
+          setEmpresas(lista);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar empresas:", error);
+      }
+    };
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         fetchClientes(user);
         fetchVendedores();
         fetchPlanos();
+        fetchEmpresas();
       }
     });
     return () => unsubscribe();
@@ -671,7 +689,7 @@ const Clientes = () => {
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
     const currentUser = auth.currentUser;
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', empresaId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -713,6 +731,7 @@ const Clientes = () => {
       EMAIL: newClientData.email,
       planoId: newClientData.planoId, // Salva o ID do plano
       CONTRATO: newClientData.tipo,
+      empresaId: newClientData.empresaId,
       MENSALIDADE: removeCurrencyMask(newClientData.valor),
       ValorAdesao: removeCurrencyMask(newClientData.valorAdesao),
       VENCIMENTO: newClientData.vencimento,
@@ -747,6 +766,7 @@ const Clientes = () => {
           ValorAdesao: clientPayload.ValorAdesao,          
           planoId: clientPayload.planoId,
           telefone: clientPayload.TELEFONE,
+          empresaId: clientPayload.empresaId,
           status: clientPayload.STATUS,
           vencimento: clientPayload.VENCIMENTO || '-'
         };
@@ -777,6 +797,7 @@ const Clientes = () => {
       STATUS: formData.get('status'),
       CONTRATO: formData.get('contratoTipo'),
       VENDEDOR: formData.get('vendedor'),
+      empresaId: formData.get('empresaId'),
       OBSERVACAO: formData.get('observacao')
     };
 
@@ -805,6 +826,7 @@ const Clientes = () => {
           dataNascimento: updatedData['DATA NASC'],
           telefone: updatedData.TELEFONE,
           planoId: updatedData.planoId,
+          empresaId: updatedData.empresaId,
           mensalidade: updatedData.MENSALIDADE,
           ValorAdesao: updatedData.ValorAdesao,
           vencimento: updatedData.VENCIMENTO,
@@ -843,6 +865,13 @@ const Clientes = () => {
                   {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
                   {/* Lógica para exibir o plano antigo se não estiver na lista de ativos */}
                   {!planos.some(p => p.id === selectedClient.planoId) && selectedClient.plano && (<option value={selectedClient.planoId}>{selectedClient.plano} (Inativo/Personalizado)</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Empresa</label>
+              <select name="empresaId" value={selectedClient.empresaId || ''} onChange={handleEditChange} style={{ width: '100%' }}>
+                  <option value="">Nenhuma</option>
+                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nomeFantasia || e.razaoSocial}</option>)}
               </select>
             </div>
             <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" value={maskCurrency(String(selectedClient.mensalidade))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
@@ -1030,6 +1059,13 @@ const Clientes = () => {
               <select name="planoId" value={newClientData.planoId} onChange={handleNewClientChange} style={{ width: '100%' }}>
                   <option value="">Selecione um plano...</option>
                   {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Empresa</label>
+              <select name="empresaId" value={newClientData.empresaId} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                  <option value="">Nenhuma</option>
+                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nomeFantasia || e.razaoSocial}</option>)}
               </select>
             </div>
             <div className="form-group"><label>Tipo</label>

@@ -36,6 +36,7 @@ import Equipe from './pages/pages-admin/Equipe';
 import Perfil from './pages/pages-admin/Perfil';
 import Email from './pages/pages-admin/Email';
 import Planos from './pages/pages-admin/Planos';
+import Empresas from './pages/pages-admin/Empresas';
 
 import './App.css'; // Importa o CSS global
   
@@ -66,6 +67,7 @@ function App() {
           <Route path="perfil" element={<Perfil />} />
           <Route path="email" element={<Email />} />
           <Route path="planos" element={<Planos />} />
+          <Route path="empresas" element={<Empresas />} />
         </Route>
         <Route path="/dashboard" element={<ClientDashboard />}>
           <Route index element={<VisaoGeralCliente />} />
