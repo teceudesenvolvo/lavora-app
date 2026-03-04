@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink, FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { FaEdit, FaFileAlt, FaFileContract, FaQuoteRight, FaList, FaExclamationCircle, FaCheckCircle, FaPlus, FaTrash, FaCheck, FaFilter, FaLink, FaUserPlus, FaExclamationTriangle, FaUserFriends } from 'react-icons/fa';
 import { auth } from '../../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -181,6 +181,7 @@ const Clientes = () => {
               contratoTipo: item.CONTRATO,
               vendedor: item.VENDEDOR || '',
               empresaId: item.empresaId || '',
+              titularId: item.titularId || '',
               planoId: item.planoId || '', // Adiciona o ID do plano
               status: item.STATUS || 'Ativo', // Valor padrão
               email: item.EMAIL || '', // Valor padrão
@@ -1031,6 +1032,33 @@ const Clientes = () => {
                 </div>
             </div>
         );
+      case 'dependentes':
+        const dependentesList = clientes.filter(c => c.titularId === selectedClient.id);
+        return (
+            <div className="form-grid">
+                <div style={{ gridColumn: '1 / -1' }}>
+                    <table className="historico-tabela">
+                        <thead><tr><th>Nome</th><th>CPF</th><th>Nascimento</th><th>Status</th><th>Ação</th></tr></thead>
+                        <tbody>
+                            {dependentesList.map((dep) => (
+                                <tr key={dep.id}>
+                                    <td>{dep.nome}</td>
+                                    <td>{dep.cpf}</td>
+                                    <td>{dep.dataNascimento}</td>
+                                    <td>{dep.status}</td>
+                                    <td>
+                                        <button onClick={() => handleGerenciarClick(dep)} className="btn-gerenciar" style={{ fontSize: '0.8rem', padding: '4px 8px' }}>
+                                            Ver
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {dependentesList.length === 0 && <tr><td colSpan="5" style={{textAlign: 'center', padding: '20px', color: '#666'}}>Nenhum dependente encontrado.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
       default:
         return null;
     }
@@ -1297,6 +1325,9 @@ const Clientes = () => {
               <button onClick={() => setActiveTab('documentos')} className={activeTab === 'documentos' ? 'active' : ''}><FaFileAlt /> Documentação</button>
               <button onClick={() => setActiveTab('contratos')} className={activeTab === 'contratos' ? 'active' : ''}><FaFileContract /> Contratos</button>
               <button onClick={() => setActiveTab('cotacoes')} className={activeTab === 'cotacoes' ? 'active' : ''}><FaQuoteRight /> Cotações</button>
+              {selectedClient.contratoTipo === 'Titular' && (
+                <button onClick={() => setActiveTab('dependentes')} className={activeTab === 'dependentes' ? 'active' : ''}><FaUserFriends /> Dependentes</button>
+              )}
             </nav>
 
             <div className="cliente-modal-content">
