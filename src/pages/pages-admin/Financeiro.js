@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync, FaChartPie, FaSpinner, FaHandHoldingUsd } from 'react-icons/fa';
+import { FaArrowDown, FaWallet, FaExclamationCircle, FaCheckCircle, FaClock, FaList, FaFileInvoiceDollar, FaBell, FaCheck, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaWhatsapp, FaEdit, FaTrash, FaPlus, FaEnvelope, FaBarcode, FaQrcode, FaFilter, FaSync, FaChartPie, FaSpinner, FaHandHoldingUsd, FaRobot } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -64,6 +64,15 @@ const Financeiro = () => {
   const [filterVencimento, setFilterVencimento] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSendingEmails, setIsSendingEmails] = useState(false);
+
+  // Estados para Automação de Cobrança
+  const [isAutomationModalOpen, setAutomationModalOpen] = useState(false);
+  const [automationConfig, setAutomationConfig] = useState({
+    active: false,
+    daysBefore: 3,
+    sendOnDueDate: true,
+    frequencyAfter: 5 // A cada X dias após vencimento
+  });
 
   const maskCurrency = (value) => {
     const v = value.replace(/\D/g, "");
@@ -139,6 +148,20 @@ const Financeiro = () => {
 
   useEffect(() => {
     fetchTransacoes();
+  }, []);
+
+  // Busca configurações de automação
+  useEffect(() => {
+    const fetchAutomationConfig = async () => {
+        try {
+            const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/automacoes_cobranca.json');
+            const data = await response.json();
+            if (data) setAutomationConfig(data);
+        } catch (error) {
+            console.error("Erro ao buscar configurações de automação:", error);
+        }
+    };
+    fetchAutomationConfig();
   }, []);
 
   useEffect(() => {
@@ -668,6 +691,22 @@ const Financeiro = () => {
     }
   };
 
+  const handleSaveAutomation = async (e) => {
+    e.preventDefault();
+    try {
+        await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/automacoes_cobranca.json', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(automationConfig)
+        });
+        setAutomationModalOpen(false);
+        alert('Configurações de automação salvas com sucesso!');
+    } catch (error) {
+        console.error("Erro ao salvar automação:", error);
+        alert("Erro ao salvar configurações.");
+    }
+  };
+
   const handleEditPaymentClick = async (trx) => {
     if (trx.origem !== 'assinatura') {
       return;
@@ -1135,6 +1174,9 @@ const Financeiro = () => {
                   <button onClick={() => setModalOpen(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <FaPlus /> Nova Cobrança
                   </button>
+                  <button onClick={() => setAutomationModalOpen(true)} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#6f42c1', borderColor: '#6f42c1', color: '#fff' }}>
+                      <FaRobot /> Automação
+                  </button>
                   <button onClick={handleSendBulkEmails} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }} disabled={isSyncing || isSendingEmails}>
                       {isSendingEmails ? <FaSpinner className="icon-spin" /> : <FaEnvelope />}
                       {isSendingEmails ? 'Enviando...' : 'Enviar Cobrança Geral'}
@@ -1407,6 +1449,55 @@ const Financeiro = () => {
                     </button>
                 </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isAutomationModalOpen && (
+        <div className="popup-overlay">
+          <div className="popup-content cliente-modal" style={{ maxWidth: '500px' }}>
+            <button onClick={() => setAutomationModalOpen(false)} className="popup-close">&times;</button>
+            <div className="cliente-modal-header">
+              <h3>Configurar</h3>
+              <h2>Automação de Cobrança</h2>
+            </div>
+            <form onSubmit={handleSaveAutomation} className="form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
+                
+                <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                        type="checkbox" 
+                        id="activeAuto" 
+                        checked={automationConfig.active} 
+                        onChange={(e) => setAutomationConfig({...automationConfig, active: e.target.checked})} 
+                        style={{ width: '20px', height: '20px' }}
+                    />
+                    <label htmlFor="activeAuto" style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>Ativar Disparos Automáticos</label>
+                </div>
+
+                <hr style={{ border: '0', borderTop: '1px solid #eee', width: '100%' }} />
+
+                <div className="form-group">
+                    <label>Lembrete Pré-Vencimento (Dias antes)</label>
+                    <input type="number" min="1" max="10" value={automationConfig.daysBefore} onChange={(e) => setAutomationConfig({...automationConfig, daysBefore: parseInt(e.target.value)})} />
+                    <small>Envia um lembrete X dias antes do vencimento.</small>
+                </div>
+
+                <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                    <input type="checkbox" id="sendOnDueDate" checked={automationConfig.sendOnDueDate} onChange={(e) => setAutomationConfig({...automationConfig, sendOnDueDate: e.target.checked})} style={{ width: '18px', height: '18px' }} />
+                    <label htmlFor="sendOnDueDate" style={{ margin: 0 }}>Enviar no Dia do Vencimento</label>
+                </div>
+
+                <div className="form-group">
+                    <label>Cobrança de Atraso (Frequência em dias)</label>
+                    <input type="number" min="1" max="30" value={automationConfig.frequencyAfter} onChange={(e) => setAutomationConfig({...automationConfig, frequencyAfter: parseInt(e.target.value)})} />
+                    <small>Envia e-mail de cobrança a cada X dias após o vencimento.</small>
+                </div>
+
+                <div className="popup-actions" style={{ marginTop: '10px', justifyContent: 'flex-end' }}>
+                    <button type="button" onClick={() => setAutomationModalOpen(false)} className="btn btn-secondary">Cancelar</button>
+                    <button type="submit" className="btn btn-primary">Salvar Configurações</button>
+                </div>
+            </form>
           </div>
         </div>
       )}
