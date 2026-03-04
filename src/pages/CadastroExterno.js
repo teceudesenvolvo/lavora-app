@@ -8,6 +8,7 @@ const CadastroExterno = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [vendedorInfo, setVendedorInfo] = useState({ id: '', nome: '' });
+  const [titularInfo, setTitularInfo] = useState({ id: '', nome: '' });
   const [planos, setPlanos] = useState([]);
   const [errors, setErrors] = useState({});
 
@@ -19,7 +20,8 @@ const CadastroExterno = () => {
     email: '',
     planoId: '',
     tipo: 'Titular',
-    vencimento: ''
+    vencimento: '',
+    titularId: ''
   });
 
   const [docs, setDocs] = useState({
@@ -32,12 +34,18 @@ const CadastroExterno = () => {
     const params = new URLSearchParams(location.search);
     const id = params.get('vendedorId');
     const nome = params.get('vendedorNome');
+    const tId = params.get('titularId');
+    const tNome = params.get('titularNome');
     
     if (id || nome) {
       setVendedorInfo({
         id: id || '',
         nome: nome || ''
       });
+    }
+    if (tId) {
+      setTitularInfo({ id: tId, nome: tNome || '' });
+      setFormData(prev => ({ ...prev, tipo: 'Dependente', titularId: tId }));
     }
   }, [location]);
 
@@ -247,7 +255,8 @@ const CadastroExterno = () => {
       documentos: {
         rgCnh: rgCnhBase64,
         comprovanteEndereco: comprovanteEnderecoBase64
-      }
+      },
+      ...(formData.tipo === 'Dependente' && { titularId: formData.titularId })
     };
 
     const selectedPlan = planos.find(p => p.id === formData.planoId);
@@ -313,6 +322,11 @@ const CadastroExterno = () => {
               <small>Consultor: <strong>{vendedorInfo.nome}</strong></small>
             </div>
           )}
+          {titularInfo.nome && (
+            <div style={{ ...styles.vendedorBadge, marginLeft: '10px', backgroundColor: '#e8f5e9', color: '#2e7d32' }}>
+              <small>Titular Responsável: <strong>{titularInfo.nome}</strong></small>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
@@ -359,8 +373,9 @@ const CadastroExterno = () => {
             </div>
             <div style={styles.inputGroup}>
               <label style={styles.label}>Tipo</label>
-              <select name="tipo" value={formData.tipo} onChange={handleChange} style={styles.input}>
+              <select name="tipo" value={formData.tipo} onChange={handleChange} style={styles.input} disabled={!!titularInfo.id}>
                 <option value="Titular">Titular</option>
+                {titularInfo.id && <option value="Dependente">Dependente</option>}
               </select>
             </div>
           </div>

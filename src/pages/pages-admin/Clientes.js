@@ -1329,6 +1329,19 @@ const Clientes = () => {
     });
   };
 
+  const handleGenerateDependentLink = (cliente) => {
+    const baseUrl = window.location.origin;
+    const currentVendedor = vendedores.find(v => v.id === cliente.vendedor);
+    const vendedorNome = currentVendedor ? currentVendedor.nome : '';
+    const vendedorId = cliente.vendedor || '';
+
+    const link = `${baseUrl}/cadastro-externo?vendedorId=${vendedorId}&vendedorNome=${encodeURIComponent(vendedorNome)}&titularId=${cliente.id}&titularNome=${encodeURIComponent(cliente.nome)}`;
+
+    navigator.clipboard.writeText(link).then(() => {
+        alert(`Link de cadastro de dependente para ${cliente.nome} copiado!`);
+    });
+  };
+
   return (
     <>
       <div className="profile-section">
@@ -1441,6 +1454,11 @@ const Clientes = () => {
                     <button onClick={() => handleGerenciarClick(cliente)} className="btn-gerenciar">
                       Gerenciar
                     </button>
+                    {cliente.contratoTipo === 'Titular' && (
+                      <button onClick={() => handleGenerateDependentLink(cliente)} className="btn-gerenciar" style={{ marginLeft: '5px', backgroundColor: '#17a2b8', borderColor: '#17a2b8', color: '#fff' }} title="Gerar Link para Dependente">
+                        <FaUserPlus />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

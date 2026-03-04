@@ -2373,3 +2373,10 @@ input {
 .contact-info-link:hover {
     color: #1e90ff;
 }
+
+.btn-gerenciar{
+    background-color: #0054a6;
+    color: white;
+    border: none;
+    border-radius: 50px;
+}
