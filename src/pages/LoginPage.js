@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { auth as firebaseAuth } from '../firebaseConfig';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth as firebaseAuth } from '../firebaseConfig'; // Renomeado para evitar conflito de nome
 import Logo from '../assets/images/logo-GL.png';
 
 const LoginPage = () => {
@@ -12,14 +12,24 @@ const LoginPage = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
       if (user) {
+        // Usuário já está logado, verificar para onde redirecionar
         try {
-          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
-          const equipeData = await response.json();
+          const equipeResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+          const equipeData = await equipeResponse.json();
 
           if (equipeData && equipeData.cargo) {
-            navigate('/dashboard-admin/clientes');
+            navigate('/dashboard-admin');
           } else {
-            navigate('/dashboard');
+            // Se não for da equipe, verifica se é cliente
+            const clientesResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?orderBy="authUid"&equalTo="${user.uid}"`);
+            const clientesData = await clientesResponse.json();
+            if (clientesData && Object.keys(clientesData).length > 0) {
+              navigate('/dashboard');
+            } else {
+              // Usuário autenticado mas sem perfil no DB, desloga para segurança
+              console.warn("Usuário autenticado sem perfil de equipe ou cliente. Deslogando.");
+              await signOut(firebaseAuth);
+            }
           }
         } catch (error) {
           console.error("Erro ao verificar redirecionamento:", error);
@@ -36,23 +46,32 @@ const LoginPage = () => {
       const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
       const user = userCredential.user;
 
-      // Verifica se o usuário está na coleção 'equipe' para redirecionar ao painel admin
-      const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
-      const equipeData = await response.json();
+      // 1. Verifica se o usuário está na coleção 'equipe'
+      const equipeResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+      const equipeData = await equipeResponse.json();
 
       if (equipeData && equipeData.cargo) {
         navigate('/dashboard-admin');
       } else {
-        navigate('/dashboard');
+        // 2. Se não for da equipe, verifica se é um cliente
+        const clientesResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?orderBy="authUid"&equalTo="${user.uid}"`);
+        const clientesData = await clientesResponse.json();
+        if (clientesData && Object.keys(clientesData).length > 0) {
+          navigate('/dashboard');
+        } else {
+          // 3. Se não for nenhum dos dois, é um erro de permissão
+          await signOut(firebaseAuth);
+          alert("Credenciais corretas, mas seu usuário não tem permissão de acesso. Contate o suporte.");
+        }
       }
     } catch (error) {
       console.error("Erro ao fazer login:", error);
       
       // Tratamento de erros detalhado para facilitar o diagnóstico
       let msg = "Falha no login.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        msg = "Usuário não encontrado. Verifique se o cadastro foi criado no Firebase Authentication.";
-      } else if (error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        msg = "E-mail ou senha incorretos.";
+      } else if (error.code === 'auth/invalid-email') {
         msg = "Senha incorreta.";
       } else if (error.code === 'auth/invalid-email') {
         msg = "Formato de e-mail inválido.";
