@@ -38,6 +38,7 @@ const Clientes = () => {
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
   const [newCotacao, setNewCotacao] = useState({ descricao: '', valor: '', status: 'Em Análise' });
+  const [errors, setErrors] = useState({}); // Estado para erros de validação
 
   // Função auxiliar para calcular idade
   const calculateAge = (dateString) => {
@@ -694,6 +695,7 @@ const Clientes = () => {
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
+    setErrors({}); // Limpa erros ao abrir
     setAddModalOpen(true);
   };
 
@@ -705,6 +707,10 @@ const Clientes = () => {
         if (name === 'valor') newData.valorAdesao = value;
         return newData;
     });
+    // Limpa erro do campo específico ao digitar
+    if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleAddPlanItem = () => {
@@ -718,9 +724,34 @@ const Clientes = () => {
     setPlanItems(planItems.filter(item => item.id !== id));
   };
 
-  const saveNewClient = async () => {
+  const validateInternalForm = () => {
+    const newErrors = {};
+    
+    // Validação: Nome Obrigatório
+    if (!newClientData.nome || !newClientData.nome.trim()) {
+        newErrors.nome = "O nome do cliente é obrigatório.";
+    }
+
+    // Validação: Duplicidade de CPF (se preenchido)
+    if (newClientData.cpf) {
+        const cpfLimpo = newClientData.cpf.replace(/\D/g, '');
+        const duplicado = clientes.find(c => c.cpf && String(c.cpf).replace(/\D/g, '') === cpfLimpo);
+        if (duplicado) {
+            newErrors.cpf = "Este CPF já está cadastrado no sistema.";
+        }
+    }
+
+    // Validação: Dependente sem Titular
     if (newClientData.tipo === 'Dependente' && !newClientData.titularId) {
-        alert('Para dependentes, é obrigatório selecionar um titular responsável.');
+        newErrors.titularId = "Selecione um titular responsável.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const saveNewClient = async () => {
+    if (!validateInternalForm()) {
         return;
     }
 
@@ -890,6 +921,17 @@ const Clientes = () => {
                 <option value="Dependente">Dependente</option>
               </select>
             </div>
+            {selectedClient.contratoTipo === 'Dependente' && (
+              <div className="form-group">
+                <label>Titular Responsável</label>
+                <select name="titularId" value={selectedClient.titularId || ''} onChange={handleEditChange} style={{ width: '100%' }}>
+                  <option value="">Selecione o titular...</option>
+                  {clientes.filter(c => c.contratoTipo === 'Titular' && c.status === 'Ativo').map(titular => (
+                    <option key={titular.id} value={titular.id}>{titular.nome} - CPF: {titular.cpf}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="form-group"><label>Vendedor</label>
               <select name="vendedor" defaultValue={selectedClient.vendedor} style={{ width: '100%' }}>
                 <option value="">Selecione...</option>
@@ -1069,8 +1111,16 @@ const Clientes = () => {
       case 'dados':
         return (
           <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Cliente</label><input name="nome" value={newClientData.nome} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>CPF</label><input name="cpf" value={newClientData.cpf} onChange={(e) => { e.target.value = maskCPF(e.target.value); handleNewClientChange(e); }} maxLength="14" style={{ width: '100%' }} /></div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Cliente <span style={{color: 'red'}}>*</span></label>
+                <input name="nome" value={newClientData.nome} onChange={handleNewClientChange} style={{ width: '100%', borderColor: errors.nome ? 'red' : '#ccc' }} />
+                {errors.nome && <small style={{color: 'red'}}>{errors.nome}</small>}
+            </div>
+            <div className="form-group">
+                <label>CPF</label>
+                <input name="cpf" value={newClientData.cpf} onChange={(e) => { e.target.value = maskCPF(e.target.value); handleNewClientChange(e); }} maxLength="14" style={{ width: '100%', borderColor: errors.cpf ? 'red' : '#ccc' }} />
+                {errors.cpf && <small style={{color: 'red'}}>{errors.cpf}</small>}
+            </div>
             <div className="form-group"><label>Data de Nascimento {newClientData.dataNascimento && <span style={{color: '#007bff', fontWeight: 'normal'}}>({calculateAge(newClientData.dataNascimento)} anos)</span>}</label><input name="dataNascimento" value={newClientData.dataNascimento} onChange={(e) => { e.target.value = maskDate(e.target.value); handleNewClientChange(e); }} maxLength="10" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Telefone</label><input name="telefone" value={newClientData.telefone} onChange={(e) => { e.target.value = maskPhone(e.target.value); handleNewClientChange(e); }} maxLength="15" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Email</label><input name="email" value={newClientData.email} onChange={handleNewClientChange} style={{ width: '100%' }} /></div>
@@ -1105,12 +1155,13 @@ const Clientes = () => {
             {newClientData.tipo === 'Dependente' && (
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label>Titular Responsável</label>
-                <select name="titularId" value={newClientData.titularId} onChange={handleNewClientChange} style={{ width: '100%' }} required>
+                <select name="titularId" value={newClientData.titularId} onChange={handleNewClientChange} style={{ width: '100%', borderColor: errors.titularId ? 'red' : '#ccc' }}>
                   <option value="">Selecione o titular...</option>
                   {clientes.filter(c => c.contratoTipo === 'Titular' && c.status === 'Ativo').map(titular => (
                     <option key={titular.id} value={titular.id}>{titular.nome} - CPF: {titular.cpf}</option>
                   ))}
                 </select>
+                {errors.titularId && <small style={{color: 'red'}}>{errors.titularId}</small>}
               </div>
             )}
             <div className="form-group"><label>Vendedor</label>
