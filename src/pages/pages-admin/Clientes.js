@@ -730,6 +730,12 @@ const Clientes = () => {
         const newData = { ...prev, [name]: value };
         // Auto-preenche adesão ao digitar mensalidade
         if (name === 'valor') newData.valorAdesao = value;
+        // Se o tipo for alterado para Dependente, muda o status padrão para Inclusão
+        if (name === 'tipo' && value === 'Dependente') {
+            newData.status = 'INCLUSÃO';
+        } else if (name === 'tipo' && value === 'Titular') {
+            newData.status = 'Ativo'; // Volta para o padrão de titular
+        }
         return newData;
     });
     // Limpa erro do campo específico ao digitar
