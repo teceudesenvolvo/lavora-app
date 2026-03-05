@@ -196,7 +196,8 @@ const Clientes = () => {
               contratos: item.contratos || [],
               faturas: item.faturas || [],
               cotacoes: item.cotacoes || [],
-              observacao: item.OBSERVACAO || ''
+              observacao: item.OBSERVACAO || '',
+              authUid: item.authUid || null
             };
           }).filter(item => item !== null);
           setClientes(loadedClientes);
@@ -908,9 +909,9 @@ const Clientes = () => {
         return;
     }
 
-    // 1. Criar usuário no Auth (Email + CPF) - Apenas para Titulares
+    // 1. Criar usuário no Auth (Email + CPF) - Apenas para Titulares Ativos
     let authUid = null;
-    if (newClientData.tipo === 'Titular') {
+    if (newClientData.tipo === 'Titular' && newClientData.status === 'Ativo') {
         try {
             const authResponse = await fetch(`${CLOUD_FUNCTIONS_BASE}/createClientAuth`, {
                 method: 'POST',
@@ -1017,6 +1018,42 @@ const Clientes = () => {
       OBSERVACAO: formData.get('observacao')
     };
 
+    // Lógica para criar autenticação ao ativar cliente
+    const isBecomingActiveTitular = 
+        updatedData.STATUS === 'Ativo' && 
+        selectedClient.status !== 'Ativo' &&
+        updatedData.CONTRATO === 'Titular' &&
+        !selectedClient.authUid;
+
+    if (isBecomingActiveTitular) {
+        if (!updatedData.EMAIL || !updatedData.CPF) {
+            alert("Para ativar e criar um login, o cliente precisa ter um E-mail e CPF válidos.");
+            return; // Impede o salvamento se os dados para auth estiverem faltando
+        }
+        try {
+            const authResponse = await fetch(`${CLOUD_FUNCTIONS_BASE}/createClientAuth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: updatedData.EMAIL,
+                    cpf: updatedData.CPF,
+                    nome: updatedData.USUARIO
+                })
+            });
+            const authData = await authResponse.json();
+            if (authResponse.ok) {
+                updatedData.authUid = authData.uid; // Adiciona o UID ao payload de atualização
+                alert("Cliente ativado e login criado com sucesso!");
+            } else {
+                console.warn("Erro ao criar login do cliente na ativação:", authData.error);
+                alert(`Não foi possível criar o login para o cliente: ${authData.error}`);
+            }
+        } catch (error) {
+            console.error("Erro na criação do usuário Auth na ativação:", error);
+            alert("Ocorreu um erro ao tentar criar o login para o cliente.");
+        }
+    }
+
     const selectedPlan = planos.find(p => p.id === updatedData.planoId);
     if (selectedPlan) updatedData.PLANO = `${selectedPlan.Plano} - ${selectedPlan.Acomodação}`;
 
@@ -1052,9 +1089,12 @@ const Clientes = () => {
           contratoTipo: updatedData.CONTRATO,
           vendedor: updatedData.VENDEDOR,
           observacao: updatedData.OBSERVACAO,
-          dataCadastro: updatedData['ADESÃO'] || selectedClient.dataCadastro
+          dataCadastro: updatedData['ADESÃO'] || selectedClient.dataCadastro,
+          authUid: updatedData.authUid || selectedClient.authUid // Atualiza o authUid no estado local
         } : c));
-        alert('Cliente atualizado com sucesso!');
+        if (!isBecomingActiveTitular) { // Evita alerta duplo
+            alert('Cliente atualizado com sucesso!');
+        }
         handleCloseModal();
       }
     } catch (error) {
