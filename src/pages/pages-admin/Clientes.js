@@ -35,7 +35,7 @@ const Clientes = () => {
   // Estados para o Modal de Adicionar Cliente
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [addModalTab, setAddModalTab] = useState('dados');
-  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', empresaId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '' });
+  const [newClientData, setNewClientData] = useState({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', empresaId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: '', status: 'Ativo', observacao: '', titularId: '', desconto: '' });
   const [newClientDocs, setNewClientDocs] = useState({ rgCnh: '', comprovanteEndereco: '' });
   const [planItems, setPlanItems] = useState([]);
   const [tempPlanItem, setTempPlanItem] = useState({ descricao: '', valor: '' });
@@ -189,6 +189,7 @@ const Clientes = () => {
               empresaId: item.empresaId || '',
               titularId: item.titularId || '',
               planoId: item.planoId || '', // Adiciona o ID do plano
+              desconto: item.DESCONTO || '',
               status: item.STATUS || 'Ativo', // Valor padrão
               email: item.EMAIL || '', // Valor padrão
               documentos: normalizedDocs,
@@ -295,14 +296,21 @@ const Clientes = () => {
         if (price) {
             // Normaliza o preço (ex: "431,9" -> 431.90) para garantir que o maskCurrency funcione corretamente
             const numericPrice = parseFloat(price.replace(/\./g, '').replace(',', '.'));
+            
+            let finalPrice = numericPrice;
+            const discount = parseFloat(newClientData.desconto);
+            if (!isNaN(discount) && discount > 0) {
+                finalPrice = numericPrice - (numericPrice * (discount / 100));
+            }
+
             setNewClientData(prev => ({
                 ...prev,
-                valor: maskCurrency(numericPrice.toFixed(2)),
-                valorAdesao: maskCurrency(numericPrice.toFixed(2))
+                valor: maskCurrency(finalPrice.toFixed(2)),
+                valorAdesao: maskCurrency(finalPrice.toFixed(2))
             }));
         }
     }
-  }, [newClientData.planoId, newClientData.dataNascimento, planos]);
+  }, [newClientData.planoId, newClientData.dataNascimento, planos, newClientData.desconto]);
 
   // Efeito para preencher o valor da mensalidade ao selecionar plano e data de nascimento (EDITAR CLIENTE)
   useEffect(() => {
@@ -320,7 +328,14 @@ const Clientes = () => {
       // Adiciona verificação para evitar loop infinito de re-renderização
       if (price) {
         const numericPrice = parseFloat(price.replace(/\./g, '').replace(',', '.'));
-        const formattedPrice = maskCurrency(numericPrice.toFixed(2));
+        
+        let finalPrice = numericPrice;
+        const discount = parseFloat(selectedClient.desconto);
+        if (!isNaN(discount) && discount > 0) {
+            finalPrice = numericPrice - (numericPrice * (discount / 100));
+        }
+
+        const formattedPrice = maskCurrency(finalPrice.toFixed(2));
         if (selectedClient.mensalidade !== formattedPrice) {
             setSelectedClient(prev => ({ ...prev, mensalidade: formattedPrice }));
         }
@@ -700,7 +715,7 @@ const Clientes = () => {
   // --- Funções para Adicionar Cliente ---
   const handleAddClientClick = () => {
     const currentUser = auth.currentUser;
-    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', empresaId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '' });
+    setNewClientData({ nome: '', cpf: '', dataNascimento: '', telefone: '', email: '', planoId: '', empresaId: '', tipo: 'Titular', valor: '', valorAdesao: '', vencimento: '', vendedor: currentUser ? currentUser.uid : '', status: 'Ativo', observacao: '', titularId: '', desconto: '' });
     setNewClientDocs({ rgCnh: '', comprovanteEndereco: '' });
     setPlanItems([]);
     setAddModalTab('dados');
@@ -763,74 +778,128 @@ const Clientes = () => {
     const doc = new jsPDF();
     const img = new Image();
     img.src = Logo;
-    
+
     img.onload = () => {
-        // Logo
-        doc.addImage(img, 'PNG', 15, 10, 40, 15);
-        
-        // Cabeçalho
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text("Grupo Lavoro", 195, 15, null, null, "right");
-        doc.text(new Date().toLocaleDateString('pt-BR'), 195, 20, null, null, "right");
+      // Logo
+      const logoWidth = 40;
+      const logoHeight = (img.height * logoWidth) / img.width;
+      doc.addImage(img, 'PNG', 15, 10, logoWidth, logoHeight);
 
-        // Título
-        doc.setFontSize(20);
-        doc.setTextColor(0, 84, 166); // Azul Lavoro
-        doc.text("Proposta Comercial", 105, 40, null, null, "center");
+      // Cabeçalho
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text("Grupo Lavoro", 195, 15, { align: 'right' });
+      doc.text(new Date().toLocaleDateString('pt-BR'), 195, 20, { align: 'right' });
 
-        // Dados do Cliente
-        doc.setDrawColor(220);
-        doc.setFillColor(250, 250, 250);
-        doc.roundedRect(15, 50, 180, 25, 3, 3, 'FD');
-        
-        doc.setFontSize(12);
-        doc.setTextColor(0);
-        doc.setFont(undefined, 'bold');
-        doc.text(`Cliente: ${clientData.USUARIO}`, 20, 60);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Email: ${clientData.EMAIL || '-'}`, 20, 68);
-        doc.text(`Telefone: ${clientData.TELEFONE || '-'}`, 110, 68);
+      // Título
+      doc.setFontSize(20);
+      doc.setTextColor(0, 84, 166); // Azul Lavoro
+      doc.text("Proposta Comercial", 105, 40, { align: 'center' });
 
-        if (clientData.PLANO) {
-             doc.text(`Plano de Interesse: ${clientData.PLANO}`, 20, 85);
+      // Dados do Cliente
+      doc.setDrawColor(220);
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(15, 50, 180, 25, 3, 3, 'FD');
+
+      doc.setFontSize(12);
+      doc.setTextColor(0);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Cliente: ${clientData.USUARIO}`, 20, 60);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Email: ${clientData.EMAIL || '-'}`, 20, 68);
+      doc.text(`Telefone: ${clientData.TELEFONE || '-'}`, 110, 68);
+
+      if (clientData.PLANO) {
+        doc.text(`Plano de Interesse: ${clientData.PLANO}`, 20, 85);
+      }
+
+      // Tabela de Valores
+      const tableBody = [];
+      const mensalidadeComDesconto = parseFloat(clientData.MENSALIDADE || 0);
+      const adesaoComDesconto = parseFloat(clientData.ValorAdesao || 0);
+      const descontoPercent = parseFloat(clientData.DESCONTO || 0);
+      const hasDiscount = descontoPercent > 0;
+
+      let tableHead = [['Descrição', 'Valor']];
+      let columnStyles = { 1: { halign: 'right' } };
+
+      if (hasDiscount) {
+          tableHead = [['Descrição', 'Valor Original', 'Valor com Desconto']];
+          columnStyles = { 
+              1: { halign: 'right' },
+              2: { halign: 'right' } 
+          };
+      }
+
+      if (mensalidadeComDesconto > 0) {
+        if (hasDiscount) {
+          const mensalidadeOriginal = mensalidadeComDesconto / (1 - descontoPercent / 100);
+          tableBody.push([
+              `Mensalidade do Plano (${descontoPercent}% de desconto)`, 
+              `R$ ${mensalidadeOriginal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+              `R$ ${mensalidadeComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+          ]);
+        } else {
+          tableBody.push(["Mensalidade do Plano", `R$ ${mensalidadeComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
         }
+      }
 
-        // Tabela de Valores
-        const tableBody = [];
-        const mensalidade = parseFloat(clientData.MENSALIDADE || 0);
-        if (mensalidade > 0) tableBody.push(["Mensalidade do Plano", `R$ ${mensalidade.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`]);
-        
-        const adesao = parseFloat(clientData.ValorAdesao || 0);
-        if (adesao > 0) tableBody.push(["Taxa de Adesão (Única)", `R$ ${adesao.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`]);
-
-        let totalExtras = 0;
-        if (items && items.length > 0) {
-            items.forEach(item => {
-                const val = parseFloat(item.valor);
-                totalExtras += val;
-                tableBody.push([item.descricao, `R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`]);
-            });
+      if (adesaoComDesconto > 0) {
+        if (hasDiscount) {
+          const adesaoOriginal = adesaoComDesconto / (1 - descontoPercent / 100);
+          tableBody.push([
+              "Taxa de Adesão (Única)", 
+              `R$ ${adesaoOriginal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+              `R$ ${adesaoComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+          ]);
+        } else {
+          tableBody.push(["Taxa de Adesão (Única)", `R$ ${adesaoComDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
         }
+      }
 
-        const total = mensalidade + adesao + totalExtras;
-        tableBody.push([{content: 'TOTAL ESTIMADO', styles: {fontStyle: 'bold', fillColor: [240, 240, 240]}}, {content: `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, styles: {fontStyle: 'bold', fillColor: [240, 240, 240]}}]);
-
-        autoTable(doc, {
-            startY: 95,
-            head: [['Descrição', 'Valor']],
-            body: tableBody,
-            theme: 'grid',
-            headStyles: { fillColor: [0, 84, 166] },
-            columnStyles: { 1: { halign: 'right', cellWidth: 50 } }
+      let totalExtras = 0;
+      if (items && items.length > 0) {
+        items.forEach(item => {
+          const val = parseFloat(item.valor);
+          totalExtras += val;
+          if (hasDiscount) {
+            tableBody.push([item.descricao, '-', `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
+          } else {
+            tableBody.push([item.descricao, `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
+          }
         });
+      }
 
-        const finalY = doc.lastAutoTable.finalY + 20;
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text("Proposta válida por 5 dias úteis.", 105, finalY, null, null, "center");
-        
-        doc.save(`Proposta_${clientData.USUARIO.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+      const total = adesaoComDesconto + totalExtras;
+      let totalRow;
+      if (hasDiscount) {
+          totalRow = [
+              { content: 'TOTAL NA ADESÃO', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240], halign: 'right' } }, 
+              { content: `R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+          ];
+      } else {
+          totalRow = [
+              { content: 'TOTAL NA ADESÃO', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, 
+              { content: `R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+          ];
+      }
+      tableBody.push(totalRow);
+
+      autoTable(doc, {
+        startY: 95,
+        head: tableHead,
+        body: tableBody,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 84, 166] },
+        columnStyles: columnStyles,
+      });
+
+      const finalY = doc.lastAutoTable.finalY + 20;
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text("Proposta válida por 5 dias úteis.", 105, finalY, { align: 'center' });
+
+      doc.save(`Proposta_${clientData.USUARIO.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
     };
   };
 
@@ -867,6 +936,7 @@ const Clientes = () => {
       TELEFONE: newClientData.telefone,
       EMAIL: newClientData.email,
       planoId: newClientData.planoId, // Salva o ID do plano
+      DESCONTO: newClientData.desconto,
       CONTRATO: newClientData.tipo,
       empresaId: newClientData.empresaId,
       MENSALIDADE: removeCurrencyMask(newClientData.valor),
@@ -903,6 +973,7 @@ const Clientes = () => {
           mensalidade: clientPayload.MENSALIDADE,
           ValorAdesao: clientPayload.ValorAdesao,          
           planoId: clientPayload.planoId,
+          desconto: clientPayload.DESCONTO,
           telefone: clientPayload.TELEFONE,
           empresaId: clientPayload.empresaId,
           status: clientPayload.STATUS,
@@ -934,6 +1005,7 @@ const Clientes = () => {
       'DATA NASC': formData.get('dataNascimento'),
       TELEFONE: formData.get('telefone'),
       planoId: formData.get('planoId'), // Salva o ID do plano
+      DESCONTO: formData.get('desconto'),
       MENSALIDADE: removeCurrencyMask(formData.get('mensalidade')),
       ValorAdesao: removeCurrencyMask(formData.get('ValorAdesao')),
       VENCIMENTO: formData.get('vencimento'),
@@ -970,6 +1042,7 @@ const Clientes = () => {
           dataNascimento: updatedData['DATA NASC'],
           telefone: updatedData.TELEFONE,
           planoId: updatedData.planoId,
+          desconto: updatedData.DESCONTO,
           empresaId: updatedData.empresaId,
           mensalidade: updatedData.MENSALIDADE,
           ValorAdesao: updatedData.ValorAdesao,
@@ -1018,6 +1091,7 @@ const Clientes = () => {
                   {empresas.map(e => <option key={e.id} value={e.id}>{e.nomeFantasia || e.razaoSocial}</option>)}
               </select>
             </div>
+            <div className="form-group"><label>Desconto (%)</label><input type="number" name="desconto" value={selectedClient.desconto || ''} onChange={handleEditChange} placeholder="0" style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Mensalidade</label><input type="text" name="mensalidade" value={maskCurrency(String(selectedClient.mensalidade))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Valor Adesão</label><input type="text" name="ValorAdesao" value={maskCurrency(String(selectedClient.ValorAdesao || selectedClient.mensalidade || ''))} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleEditChange(e); }} style={{ width: '100%' }} /></div>
             <div className="form-group"><label>Dia de Vencimento</label>
@@ -1242,22 +1316,6 @@ const Clientes = () => {
                   {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-              <label>Plano</label>
-              <select name="planoId" value={newClientData.planoId} onChange={handleNewClientChange} style={{ width: '100%' }}>
-                  <option value="">Selecione um plano...</option>
-                  {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
-              </select>
-            </div>
-            <div className="form-group"><label>Mensalidade</label><input name="valor" value={newClientData.valor} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
-            <div className="form-group"><label>Valor Adesão</label><input name="valorAdesao" value={newClientData.valorAdesao} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} /></div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-              <label>Empresa</label>
-              <select name="empresaId" value={newClientData.empresaId} onChange={handleNewClientChange} style={{ width: '100%' }}>
-                  <option value="">Nenhuma</option>
-                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nomeFantasia || e.razaoSocial}</option>)}
-              </select>
-            </div>
             <div className="form-group"><label>Tipo</label>
               <select name="tipo" value={newClientData.tipo} onChange={handleNewClientChange} style={{ width: '100%' }}>
                 <option value="Titular">Titular</option>
@@ -1276,6 +1334,13 @@ const Clientes = () => {
                 {errors.titularId && <small style={{color: 'red'}}>{errors.titularId}</small>}
               </div>
             )}
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Empresa</label>
+              <select name="empresaId" value={newClientData.empresaId} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                  <option value="">Nenhuma</option>
+                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nomeFantasia || e.razaoSocial}</option>)}
+              </select>
+            </div>
             <div className="form-group"><label>Vendedor</label>
               <select name="vendedor" value={newClientData.vendedor} onChange={handleNewClientChange} style={{ width: '100%' }}>
                 <option value="">Selecione...</option>
@@ -1310,24 +1375,55 @@ const Clientes = () => {
         );
       case 'plano':
         return (
-          <div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '15px' }}>
-              <div className="form-group" style={{ flex: 1 }}><label>Descrição</label><input value={tempPlanItem.descricao} onChange={(e) => setTempPlanItem({...tempPlanItem, descricao: e.target.value})} style={{ width: '100%' }} /></div>
-              <div className="form-group" style={{ width: '150px' }}><label>Valor</label><input value={tempPlanItem.valor} onChange={(e) => setTempPlanItem({...tempPlanItem, valor: maskCurrency(e.target.value)})} style={{ width: '100%' }} /></div>
-              <button type="button" className="btn btn-primary" onClick={handleAddPlanItem} style={{ marginBottom: '2px', height: '38px' }}><FaPlus /> Adicionar</button>
+          <div className="form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Seção de Plano Principal */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Plano</label>
+                <select name="planoId" value={newClientData.planoId} onChange={handleNewClientChange} style={{ width: '100%' }}>
+                    <option value="">Selecione um plano...</option>
+                    {planos.map(p => <option key={p.id} value={p.id}>{p.Plano} - {p.Acomodação}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Desconto (%)</label>
+                <input name="desconto" type="number" value={newClientData.desconto} onChange={handleNewClientChange} placeholder="0" style={{ width: '100%' }} />
+              </div>
+              <div className="form-group">
+                <label>Mensalidade (Automático)</label>
+                <input name="valor" value={newClientData.valor} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} />
+              </div>
+              <div className="form-group">
+                <label>Valor Adesão</label>
+                <input name="valorAdesao" value={newClientData.valorAdesao} onChange={(e) => { e.target.value = maskCurrency(e.target.value); handleNewClientChange(e); }} style={{ width: '100%' }} />
+              </div>
             </div>
-            <table className="historico-tabela">
-              <thead><tr><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
-              <tbody>
-                {planItems.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.descricao}</td>
-                    <td>{item.valor}</td>
-                    <td><button onClick={() => handleRemovePlanItem(item.id)} className="btn-remove-faq" style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}><FaTrash /></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+            <hr />
+
+            {/* Seção de Itens Adicionais */}
+            <div>
+              <h4 style={{ marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Itens Adicionais (Opcional)</h4>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '15px' }}>
+                <div className="form-group" style={{ flex: 1 }}><label>Descrição</label><input value={tempPlanItem.descricao} onChange={(e) => setTempPlanItem({...tempPlanItem, descricao: e.target.value})} placeholder='Plano Odontologico' style={{ width: '100%' }} /></div>
+                <div className="form-group" style={{ width: '150px' }}><label>Valor</label><input value={tempPlanItem.valor} onChange={(e) => setTempPlanItem({...tempPlanItem, valor: maskCurrency(e.target.value)})} placeholder='R$ 100,00' style={{ width: '100%' }} /></div>
+                <button type="button" className="btn btn-primary" onClick={handleAddPlanItem} style={{ marginBottom: '2px', height: '38px' }}><FaPlus /> Adicionar</button>
+              </div>
+              {planItems.length > 0 && (
+                <table className="historico-tabela">
+                  <thead><tr><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
+                  <tbody>
+                    {planItems.map(item => (
+                      <tr key={item.id}>
+                        <td>{item.descricao}</td>
+                        <td>{item.valor}</td>
+                        <td><button onClick={() => handleRemovePlanItem(item.id)} className="btn-remove-faq" style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}><FaTrash /></button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         );
       default: return null;
