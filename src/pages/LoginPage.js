@@ -14,14 +14,15 @@ const LoginPage = () => {
       if (user) {
         // Usuário já está logado, verificar para onde redirecionar
         try {
-          const equipeResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+          const idToken = await user.getIdToken();
+          const equipeResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json?auth=${idToken}`);
           const equipeData = await equipeResponse.json();
 
           if (equipeData && equipeData.cargo) {
             navigate('/dashboard-admin');
           } else {
             // Se não for da equipe, verifica se é cliente
-            const clientesResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?orderBy="authUid"&equalTo="${user.uid}"`);
+            const clientesResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?orderBy="authUid"&equalTo="${user.uid}"&auth=${idToken}`);
             const clientesData = await clientesResponse.json();
             if (clientesData && Object.keys(clientesData).length > 0) {
               navigate('/dashboard');
@@ -45,16 +46,17 @@ const LoginPage = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
       const user = userCredential.user;
+      const idToken = await user.getIdToken();
 
       // 1. Verifica se o usuário está na coleção 'equipe'
-      const equipeResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+      const equipeResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json?auth=${idToken}`);
       const equipeData = await equipeResponse.json();
 
       if (equipeData && equipeData.cargo) {
         navigate('/dashboard-admin');
       } else {
         // 2. Se não for da equipe, verifica se é um cliente
-        const clientesResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?orderBy="authUid"&equalTo="${user.uid}"`);
+        const clientesResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?orderBy="authUid"&equalTo="${user.uid}"&auth=${idToken}`);
         const clientesData = await clientesResponse.json();
         if (clientesData && Object.keys(clientesData).length > 0) {
           navigate('/dashboard');

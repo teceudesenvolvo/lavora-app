@@ -19,7 +19,8 @@ const Dashboard = () => {
         setUser(currentUser);
         // Busca o cargo do usuário na coleção equipe
         try {
-          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${currentUser.uid}.json`);
+          const idToken = await currentUser.getIdToken();
+          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${currentUser.uid}.json?auth=${idToken}`);
           const data = await response.json();
           if (data && data.cargo) {
             setUserRole(data.cargo);

@@ -68,10 +68,11 @@ const Analises = () => {
       if (!user) return;
 
       try {
+        const idToken = await user.getIdToken();
         // Busca o cargo do usuário para aplicar filtro
         let userRole = 'Vendedor';
         try {
-            const roleResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+            const roleResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json?auth=${idToken}`);
             const roleData = await roleResponse.json();
             if (roleData && roleData.cargo) {
                 userRole = roleData.cargo;
@@ -80,7 +81,7 @@ const Analises = () => {
             console.error("Erro ao buscar cargo do usuário:", error);
         }
 
-        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json');
+        const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?auth=${idToken}`);
         const data = await response.json();
         
         if (data) {

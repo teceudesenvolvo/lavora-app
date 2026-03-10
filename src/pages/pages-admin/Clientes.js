@@ -97,9 +97,10 @@ const Clientes = () => {
     const fetchClientes = async (user) => {
       try {
         // Busca o cargo do usuário para aplicar filtro
+        const idToken = await user.getIdToken();
         let userRole = 'Vendedor';
         try {
-            const roleResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+            const roleResponse = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json?auth=${idToken}`);
             const roleData = await roleResponse.json();
             if (roleData && roleData.cargo) {
                 userRole = roleData.cargo;
@@ -109,7 +110,7 @@ const Clientes = () => {
             console.error("Erro ao buscar cargo do usuário:", error);
         }
 
-        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json');
+        const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?auth=${idToken}`);
         
         if (!response.ok) {
           throw new Error(`Erro HTTP: ${response.status} (Verifique as Regras do Firebase)`);
@@ -209,7 +210,10 @@ const Clientes = () => {
 
     const fetchVendedores = async () => {
       try {
-        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json');
+        const user = auth.currentUser;
+        if (!user) return;
+        const idToken = await user.getIdToken();
+        const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json?auth=${idToken}`);
         const data = await response.json();
         if (data) {
           // Mapeia todos os usuários da equipe, incluindo o ID
@@ -243,7 +247,10 @@ const Clientes = () => {
 
     const fetchEmpresas = async () => {
       try {
-        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/empresas.json');
+        const user = auth.currentUser;
+        if (!user) return;
+        const idToken = await user.getIdToken();
+        const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/empresas.json?auth=${idToken}`);
         const data = await response.json();
         if (data) {
           const lista = Object.keys(data)
@@ -506,7 +513,9 @@ const Clientes = () => {
       
       const newList = [...currentList, newDoc];
 
-      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/${category}.json`, {
+      const user = auth.currentUser;
+      const idToken = await user.getIdToken();
+      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/${category}.json?auth=${idToken}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newList)
@@ -535,7 +544,9 @@ const Clientes = () => {
     const newList = currentList.filter((_, i) => i !== index);
 
     try {
-        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/${category}.json`, {
+        const user = auth.currentUser;
+        const idToken = await user.getIdToken();
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/${category}.json?auth=${idToken}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newList)
@@ -599,7 +610,9 @@ const Clientes = () => {
     const newList = [...currentList, newCot];
 
     try {
-        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/cotacoes.json`, {
+        const user = auth.currentUser;
+        const idToken = await user.getIdToken();
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/cotacoes.json?auth=${idToken}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newList)
@@ -646,7 +659,9 @@ const Clientes = () => {
     updatedCotacoes[index] = { ...cotacao, status: 'Aprovada' };
 
     try {
-        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json`, {
+        const user = auth.currentUser;
+        const idToken = await user.getIdToken();
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json?auth=${idToken}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -682,7 +697,9 @@ const Clientes = () => {
     const newList = currentList.filter((_, i) => i !== index);
 
     try {
-        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/cotacoes.json`, {
+        const user = auth.currentUser;
+        const idToken = await user.getIdToken();
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}/cotacoes.json?auth=${idToken}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newList)
@@ -964,7 +981,9 @@ const Clientes = () => {
     if (selectedPlan) clientPayload.PLANO = `${selectedPlan.Plano} - ${selectedPlan.Acomodação}`;
 
     try {
-      const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json', {
+      const user = auth.currentUser;
+      const idToken = await user.getIdToken();
+      const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?auth=${idToken}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(clientPayload)
@@ -1071,7 +1090,9 @@ const Clientes = () => {
     }
 
     try {
-      const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json`, {
+      const user = auth.currentUser;
+      const idToken = await user.getIdToken();
+      const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${selectedClient.id}.json?auth=${idToken}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)

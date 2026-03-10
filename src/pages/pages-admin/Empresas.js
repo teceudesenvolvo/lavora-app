@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaBuilding, FaSearch, FaSpinner } from 'react-icons/fa';
+import { auth } from '../../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const Empresas = () => {
   const [empresas, setEmpresas] = useState([]);
@@ -20,15 +22,21 @@ const Empresas = () => {
     status: 'Ativa'
   });
 
-  const FIREBASE_URL = 'https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/empresas.json';
+  const FIREBASE_BASE_URL = 'https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com';
 
   useEffect(() => {
-    fetchEmpresas();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchEmpresas(user);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const fetchEmpresas = async () => {
+  const fetchEmpresas = async (user) => {
     try {
-      const response = await fetch(FIREBASE_URL);
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${FIREBASE_BASE_URL}/empresas.json?auth=${idToken}`);
       const data = await response.json();
       if (data) {
         const loadedEmpresas = Object.keys(data).map(key => ({ id: key, ...data[key] }));
@@ -125,13 +133,19 @@ const Empresas = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     const payload = { ...formData, cnpj: formData.cnpj.replace(/\D/g, '') };
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Usuário não autenticado.");
+      return;
+    }
 
     try {
-      let url = FIREBASE_URL;
+      const idToken = await user.getIdToken();
+      let url = `${FIREBASE_BASE_URL}/empresas.json?auth=${idToken}`;
       let method = 'POST';
 
       if (currentEmpresa) {
-        url = `https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/empresas/${currentEmpresa.id}.json`;
+        url = `${FIREBASE_BASE_URL}/empresas/${currentEmpresa.id}.json?auth=${idToken}`;
         method = 'PATCH';
       }
 
@@ -142,7 +156,7 @@ const Empresas = () => {
       });
       
       alert(currentEmpresa ? 'Empresa atualizada com sucesso!' : 'Empresa criada com sucesso!');
-      fetchEmpresas();
+      fetchEmpresas(user);
       handleCloseModal();
     } catch (error) {
       console.error("Erro ao salvar empresa:", error);
@@ -152,13 +166,19 @@ const Empresas = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir esta empresa?")) return;
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Usuário não autenticado.");
+      return;
+    }
 
     try {
-      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/empresas/${id}.json`, {
+      const idToken = await user.getIdToken();
+      await fetch(`${FIREBASE_BASE_URL}/empresas/${id}.json?auth=${idToken}`, {
         method: 'DELETE'
       });
       alert("Empresa excluída com sucesso.");
-      fetchEmpresas();
+      fetchEmpresas(user);
     } catch (error) {
       console.error("Erro ao excluir empresa:", error);
       alert("Erro ao excluir empresa.");

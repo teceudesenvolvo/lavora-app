@@ -109,36 +109,51 @@ const Financeiro = () => {
   const parseMonetaryValue = (value) => {
     if (typeof value === 'number') return value;
     if (!value) return 0;
-    const str = String(value).trim();
-    if (str.includes(',')) {
-        // Formato Brasileiro: remove pontos de milhar e troca vírgula por ponto
-        return parseFloat(str.replace(/[R$\s.]/g, '').replace(',', '.'));
+    
+    let str = String(value).replace(/[R$\s]/g, ''); // Remove R$ and spaces
+
+    // Check if the last separator is a comma (Brazilian format like 1.234,56)
+    if (str.includes(',') && str.lastIndexOf(',') > str.lastIndexOf('.')) {
+        str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+        // Assumes US format (1,234.56) or no thousands separators (1234.56)
+        str = str.replace(/,/g, '');
     }
-    // Formato Americano/Padrão: apenas remove R$ e espaços
-    return parseFloat(str.replace(/[R$\s]/g, ''));
+
+    const number = parseFloat(str);
+    return isNaN(number) ? 0 : number;
   };
 
-  const fetchTransacoes = async () => {
+  const fetchTransacoes = async (user, role) => {
       try {
+        if (!user) return;
+        const idToken = await user.getIdToken();
+
+        const userIsAdminOrFinanceiro = role === 'Admin' || role === 'Financeiro';
+
         // Busca Clientes (Assinaturas), Cobranças Avulsas e Equipe em paralelo
-        const [resClientes, resCobrancas, resEquipe] = await Promise.all([
-          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json'),
-          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json'),
-          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json')
-        ]);
+        const fetchPromises = [
+          fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?auth=${idToken}`),
+          // Apenas busca cobranças se o usuário tiver permissão, para evitar erros 401
+          userIsAdminOrFinanceiro
+            ? fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json?auth=${idToken}`)
+            : Promise.resolve({ ok: true, json: () => Promise.resolve({}) }), // Retorna uma promessa resolvida com dados vazios
+          fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe.json?auth=${idToken}`)
+        ];
+
+        const [resClientes, resCobrancas, resEquipe] = await Promise.all(fetchPromises);
 
         if (!resClientes.ok || !resCobrancas.ok || !resEquipe.ok) {
-            throw new Error('Falha ao buscar dados: Acesso negado (401). Verifique as regras do Database.');
+          throw new Error('Falha ao buscar dados do financeiro.');
         }
-
         const dataClientes = await resClientes.json();
         const dataCobrancas = await resCobrancas.json();
         const dataEquipe = await resEquipe.json();
 
         setRawData({
-            clientes: dataClientes?.Clientes || dataClientes || {},
-            cobrancas: dataCobrancas || {},
-            equipe: dataEquipe || {}
+          clientes: dataClientes?.Clientes || dataClientes || {},
+          cobrancas: dataCobrancas || {},
+          equipe: dataEquipe || {}
         });
       } catch (error) {
         console.error('Erro ao buscar transações:', error);
@@ -146,39 +161,42 @@ const Financeiro = () => {
     };
 
 
-  useEffect(() => {
-    fetchTransacoes();
-  }, []);
-
   // Busca configurações de automação
   useEffect(() => {
-    const fetchAutomationConfig = async () => {
-        try {
-            const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/automacoes_cobranca.json');
-            const data = await response.json();
-            if (data) setAutomationConfig(data);
-        } catch (error) {
-            console.error("Erro ao buscar configurações de automação:", error);
+    const fetchAutomationConfig = async (user, role) => {
+        if (!user) return;
+        // Apenas busca se for Admin ou Financeiro
+        if (role === 'Admin' || role === 'Financeiro') {
+            try {
+                const idToken = await user.getIdToken();
+                const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/automacoes_cobranca.json?auth=${idToken}`);
+                const data = await response.json();
+                if (data) setAutomationConfig(data);
+            } catch (error) {
+                console.error("Erro ao buscar configurações de automação:", error);
+            }
         }
     };
-    fetchAutomationConfig();
-  }, []);
 
-  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        let role = null;
         try {
-          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+          const idToken = await user.getIdToken();
+          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json?auth=${idToken}`);
           const data = await response.json();
           if (data && data.cargo) {
-            setUserRole(data.cargo);
-            if (data.cargo === 'Financeiro') {
+            role = data.cargo;
+            setUserRole(role);
+            if (role === 'Financeiro') {
               setMainTab('cobrancas');
             }
           }
         } catch (error) {
-          console.error("Erro ao buscar cargo:", error);
+          console.error("Erro ao buscar permissões do usuário:", error);
         }
+        fetchTransacoes(user, role);
+        fetchAutomationConfig(user, role);
       }
     });
     return () => unsubscribe();
@@ -279,7 +297,16 @@ const Financeiro = () => {
             const vencimentoDate = new Date(selectedYear, selectedMonth, day);
 
             // Verifica pagamento no histórico (array dataPagamento)
-            const dataPagamentoArr = item.dataPagamento ? (Array.isArray(item.dataPagamento) ? item.dataPagamento : Object.values(item.dataPagamento)) : [];
+            let dataPagamentoArr = [];
+            if (item.dataPagamento) {
+                if (Array.isArray(item.dataPagamento)) {
+                    dataPagamentoArr = item.dataPagamento;
+                } else if (typeof item.dataPagamento === 'object' && item.dataPagamento !== null) {
+                    dataPagamentoArr = Object.values(item.dataPagamento);
+                } else if (typeof item.dataPagamento === 'string') {
+                    dataPagamentoArr = [item.dataPagamento]; // Trata string como array de um item
+                }
+            }
             const monthName = vencimentoDate.toLocaleString('pt-BR', { month: 'long' });
             
             // Normalização para evitar erros com acentos (ex: "março" vs "marco")
@@ -590,7 +617,6 @@ const Financeiro = () => {
   const generatePix = async (trx) => {
       // Em um app real, o número de telefone do cliente seria buscado do banco de dados.
       let mockPhoneNumber = trx.telefone ? String(trx.telefone).replace(/\D/g, '') : ''; 
-      
       // Garante o código do país (55) se o número tiver 10 ou 11 dígitos
       if (mockPhoneNumber && !mockPhoneNumber.startsWith('55') && (mockPhoneNumber.length === 10 || mockPhoneNumber.length === 11)) {
         mockPhoneNumber = '55' + mockPhoneNumber;
@@ -600,9 +626,11 @@ const Financeiro = () => {
       try {
           const pagarmeResponse = await createPagarmeOrder(trx, 'pix');
           
+          const user = auth.currentUser;
+          const idToken = await user.getIdToken();
           // Salva o ID da transação no Firebase para conciliação futura
           const path = trx.origem === 'assinatura' ? `clientes/${trx.id}` : `cobrancas/${trx.id}`;
-          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/${path}.json`, {
+          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/${path}.json?auth=${idToken}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ transactionId: pagarmeResponse.id })
@@ -610,13 +638,13 @@ const Financeiro = () => {
           
           const message = `Olá! Segue o código PIX para pagamento da seu plano "${trx.descricao}" no valor de ${trx.valorFormatado}:\n\n${pagarmeResponse.pixCopyPaste}\n\nBasta copiar o código e colar na área "PIX Copia e Cola" do seu aplicativo de banco.`;
           
-          const whatsAppUrl = `https://wa.me/${mockPhoneNumber}?text=${encodeURIComponent(message)}`;
-
+          const whatsAppUrl = `https://wa.me/${mockPhoneNumber}?text=$
+         {encodeURIComponent(message)}`;
           setPixModalData({ 
               isOpen: true, 
+              clientName: trx.descricao.split(' - ')[0],
               code: pagarmeResponse.pixCopyPaste, 
               whatsAppUrl: whatsAppUrl, 
-              clientName: trx.descricao.split(' - ')[0],
               phone: mockPhoneNumber,
               message: message,
               type: 'pix'
@@ -639,9 +667,11 @@ const Financeiro = () => {
       try {
           const pagarmeResponse = await createPagarmeOrder(trx, 'boleto');
 
+          const user = auth.currentUser;
+          const idToken = await user.getIdToken();
           // Salva o ID da transação no Firebase para conciliação futura
           const path = trx.origem === 'assinatura' ? `clientes/${trx.id}` : `cobrancas/${trx.id}`;
-          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/${path}.json`, {
+          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/${path}.json?auth=${idToken}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ transactionId: pagarmeResponse.id })
@@ -652,13 +682,12 @@ const Financeiro = () => {
           const whatsAppUrl = `https://wa.me/${mockPhoneNumber}?text=${encodeURIComponent(message)}`;
 
           setPixModalData({ 
-              isOpen: true, 
-              code: pagarmeResponse.boletoLine, 
+              isOpen: true,
+              code: pagarmeResponse.boletoLine,
               boletoUrl: pagarmeResponse.boletoUrl,
-              whatsAppUrl: whatsAppUrl, 
+              whatsAppUrl: whatsAppUrl,
               clientName: trx.descricao.split(' - ')[0],
               phone: mockPhoneNumber,
-              message: message,
               type: 'boleto'
           });
 
@@ -677,14 +706,16 @@ const Financeiro = () => {
     };
 
     try {
-      await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json', {
+      const user = auth.currentUser;
+      const idToken = await user.getIdToken();
+      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json?auth=${idToken}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       setModalOpen(false);
       setNewCharge({ cliente: '', descricao: '', valor: '', vencimento: '', status: 'Pendente', cpf: '', email: '' });
-      await fetchTransacoes();
+      await fetchTransacoes(auth.currentUser, userRole);
       alert('Cobrança avulsa criada com sucesso!');
     } catch (error) {
       console.error("Erro ao salvar cobrança", error);
@@ -694,7 +725,9 @@ const Financeiro = () => {
   const handleSaveAutomation = async (e) => {
     e.preventDefault();
     try {
-        await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/automacoes_cobranca.json', {
+        const user = auth.currentUser;
+        const idToken = await user.getIdToken();
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/automacoes_cobranca.json?auth=${idToken}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(automationConfig)
@@ -713,7 +746,9 @@ const Financeiro = () => {
     }
     setEditingTransaction(trx);
     try {
-      const clientRes = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json`);
+      const user = auth.currentUser;
+      const idToken = await user.getIdToken();
+      const clientRes = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json?auth=${idToken}`);
       const clientData = await clientRes.json();
       let currentHistory = clientData.dataPagamento || [];
       if (!Array.isArray(currentHistory)) {
@@ -731,7 +766,9 @@ const Financeiro = () => {
   const handleSavePaymentHistory = async () => {
     if (!editingTransaction) return;
     try {
-      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${editingTransaction.id}.json`, {
+      const user = auth.currentUser;
+      const idToken = await user.getIdToken();
+      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${editingTransaction.id}.json?auth=${idToken}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -742,7 +779,7 @@ const Financeiro = () => {
       });
       setEditPaymentModalOpen(false);
       setEditingTransaction(null);
-      await fetchTransacoes();
+      await fetchTransacoes(auth.currentUser, userRole);
       alert('Alterações salvas com sucesso!');
     } catch (error) {
       console.error("Erro ao salvar histórico de pagamento:", error);
@@ -757,10 +794,8 @@ const Financeiro = () => {
 
   const addPaymentHistoryEntry = () => {
     const monthName = editingTransaction.dataObj.toLocaleString('pt-BR', { month: 'long' });
-    const today = new Date().toLocaleDateString('pt-BR');
-    setPaymentHistory([...paymentHistory, `${monthName}: ${today}`]);
+    setPaymentHistory([...paymentHistory, `${monthName}: DD/MM/AAAA - Método`]);
   };
-
   const removePaymentHistoryEntry = (index) => {
     setPaymentHistory(paymentHistory.filter((_, i) => i !== index));
   };
@@ -794,6 +829,8 @@ const Financeiro = () => {
     const { trx } = confirmPaymentModal;
     if (!trx) return;
 
+    const user = auth.currentUser;
+    const idToken = await user.getIdToken();
     const dataPagamento = new Date().toLocaleDateString('pt-BR');
     
     try {
@@ -803,7 +840,7 @@ const Financeiro = () => {
           const paymentEntry = `${monthName}: ${dataPagamento} - ${method}`; // Ex: "janeiro: 10/01/2026 - Pix"
 
           // Busca histórico atual para não sobrescrever
-          const clientRes = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json`);
+          const clientRes = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json?auth=${idToken}`);
           const clientData = await clientRes.json();
           
           let currentHistory = clientData.dataPagamento || [];
@@ -813,7 +850,7 @@ const Financeiro = () => {
 
           const newHistory = [...currentHistory, paymentEntry];
 
-          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json`, {
+          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json?auth=${idToken}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dataPagamento: newHistory })
@@ -821,11 +858,12 @@ const Financeiro = () => {
 
         } else {
           // Lógica para Cobrança Avulsa
-          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json`, {
+          await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json?auth=${idToken}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'Pago', dataPagamento, formaPagamento: method })
           });
+
         }
 
         // Atualiza estado local
@@ -835,9 +873,10 @@ const Financeiro = () => {
                 ...t, 
                 status: 'Pago', 
                 dataPagamento: trx.origem === 'assinatura' ? `${dataPagamento} - ${method}` : dataPagamento,
-                formaPagamento: method
+                formaPagamento: method,
             };
         }));
+            
         setMetrics(prev => ({ ...prev, pagosVal: prev.pagosVal + trx.valor, pagosCount: prev.pagosCount + 1 }));
 
     } catch (error) {
@@ -845,7 +884,6 @@ const Financeiro = () => {
     }
     setConfirmPaymentModal({ isOpen: false, trx: null, isPaidOnline: false, detectedMethod: null });
   };
-
   const syncPayments = async () => {
     const pendingTrx = transacoes.filter(t => t.status !== 'Pago' && t.transactionId);
     if (pendingTrx.length === 0) {
@@ -855,6 +893,14 @@ const Financeiro = () => {
 
     setIsSyncing(true);
     let updatedCount = 0;
+
+    const user = auth.currentUser;
+    if (!user) {
+        setIsSyncing(false);
+        alert("Usuário não autenticado.");
+        return;
+    }
+    const idToken = await user.getIdToken();
 
     for (const trx of pendingTrx) {
         try {
@@ -874,7 +920,7 @@ const Financeiro = () => {
                     const monthName = trx.dataObj.toLocaleString('pt-BR', { month: 'long' });
                     const paymentEntry = `${monthName}: ${dataPagamento} - ${method}`;
                     
-                    const clientRes = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json`);
+                    const clientRes = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json?auth=${idToken}`);
                     const clientData = await clientRes.json();
                     let currentHistory = clientData.dataPagamento || [];
                     if (!Array.isArray(currentHistory)) {
@@ -883,15 +929,15 @@ const Financeiro = () => {
                     // Evita duplicidade
                     if (!currentHistory.some(h => h.includes(monthName) && h.includes(dataPagamento))) {
                          const newHistory = [...currentHistory, paymentEntry];
-                         await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json`, {
+                         await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${trx.id}.json?auth=${idToken}`, {
                               method: 'PATCH',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ dataPagamento: newHistory })
                          });
                          updatedCount++;
-                    }
+                     }
                 } else {
-                    await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json`, {
+                    await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas/${trx.id}.json?auth=${idToken}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: 'Pago', dataPagamento, formaPagamento: method })
@@ -907,12 +953,11 @@ const Financeiro = () => {
     setIsSyncing(false);
     if (updatedCount > 0) {
         alert(`${updatedCount} pagamentos foram identificados e atualizados!`);
-        await fetchTransacoes();
+        await fetchTransacoes(auth.currentUser, userRole);
     } else {
         alert("Sincronização concluída. Nenhum novo pagamento identificado.");
     }
   };
-
   const handleSendBulkEmails = async () => {
     if (!window.confirm("ATENÇÃO: Deseja enviar um e-mail de cobrança formal para TODOS os clientes ativos?")) return;
     
@@ -923,6 +968,7 @@ const Financeiro = () => {
             headers: { 'Content-Type': 'application/json' }
         });
         const data = await response.json();
+        setIsSendingEmails(false);
         if (response.ok) {
             alert(data.message);
         } else {
@@ -931,7 +977,6 @@ const Financeiro = () => {
     } catch (error) {
         console.error("Erro ao enviar e-mails:", error);
         alert("Erro de conexão ao enviar e-mails.");
-    } finally {
         setIsSendingEmails(false);
     }
   };

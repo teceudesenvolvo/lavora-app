@@ -58,9 +58,10 @@ const VisaoGeralAdmin = () => {
   useEffect(() => {
     const fetchData = async (user) => {
       try {
+        const idToken = await user.getIdToken();
         const [resClientes, resCobrancas] = await Promise.all([
-          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json'),
-          fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json')
+          fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?auth=${idToken}`),
+          fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/cobrancas.json?auth=${idToken}`)
         ]);
 
         const dataClientes = await resClientes.json();

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaEnvelope, FaIdBadge, FaUser, FaKey } from 'react-icons/fa';
+import { auth } from '../../firebaseConfig';
 
 const Equipe = () => {
   const [equipe, setEquipe] = useState([]);
@@ -18,7 +19,10 @@ const Equipe = () => {
 
   const fetchEquipe = async () => {
     try {
-      const response = await fetch(FIREBASE_URL);
+      const user = auth.currentUser;
+      if (!user) return;
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${FIREBASE_URL}?auth=${idToken}`);
       const data = await response.json();
       if (data) {
         const loadedEquipe = Object.keys(data).map(key => ({
@@ -76,8 +80,10 @@ const Equipe = () => {
 
     try {
       if (currentUser) {
+        const user = auth.currentUser;
+        const idToken = await user.getIdToken();
         // Edição
-        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${currentUser.id}.json`, {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${currentUser.id}.json?auth=${idToken}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -102,8 +108,10 @@ const Equipe = () => {
             throw new Error(createData.error || "Erro ao criar conta.");
         }
 
+        const user = auth.currentUser;
+        const idToken = await user.getIdToken();
         // 2. Salva no Realtime Database usando o UID do Auth como chave
-        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${createData.user.uid}.json`, {
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${createData.user.uid}.json?auth=${idToken}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -127,12 +135,14 @@ const Equipe = () => {
     if (!window.confirm("Tem certeza que deseja excluir este usuário? Esta ação é irreversível e removerá todos os dados associados.")) return;
 
     try {
+      const user = auth.currentUser;
+      const idToken = await user.getIdToken();
       // A Cloud Function 'deleteUser' agora cuida de excluir do Auth e de todas as
       // referências no Realtime Database (equipe, webmail, webmail_users).
       const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/deleteUser`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uid: id })
+          body: JSON.stringify({ uid: id, token: idToken }) // Passando o token para a função validar o chamador se necessário
       });
 
       const data = await response.json();
