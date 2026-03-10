@@ -19,7 +19,8 @@ const Perfil = () => {
       const user = auth.currentUser;
       if (user) {
         try {
-          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`);
+          const idToken = await user.getIdToken();
+          const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json?auth=${idToken}`);
           const data = await response.json();
           if (data) {
             setUserData(prev => ({
@@ -51,7 +52,8 @@ const Perfil = () => {
       // 1. Atualizar Nome no Database e Auth se mudou
       if (userData.nome && userData.nome !== user.displayName) {
          await updateProfile(user, { displayName: userData.nome });
-         await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json`, {
+         const idToken = await user.getIdToken();
+         await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/equipe/${user.uid}.json?auth=${idToken}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nome: userData.nome })

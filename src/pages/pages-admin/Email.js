@@ -31,7 +31,7 @@ const Email = () => {
       if (user) {
         setCurrentUser(user);
         setEmailData(prev => ({ ...prev, fromName: user.displayName || 'Usuário Lavoro' }));
-        fetchEmails(user.uid, activeTab);
+        fetchEmails(user, activeTab);
       } else {
         setCurrentUser(null);
         setEmailsList([]);
@@ -40,14 +40,15 @@ const Email = () => {
     return () => unsubscribe();
   }, [activeTab]);
 
-  const fetchEmails = async (uid, folder) => {
+  const fetchEmails = async (user, folder) => {
     if (folder === 'compose') return;
     setLoading(true);
     setSelectedEmail(null);
     try {
+        const idToken = await user.getIdToken();
         // Mapeamento de abas para caminhos no DB (ex: webmail/UID/sent)
         // Nota: Para 'inbox', como não temos servidor de entrada real, isso listará apenas se houver dados mockados ou inseridos manualmente.
-        const response = await fetch(`${FIREBASE_DB_URL}/webmail/${uid}/${folder}.json`);
+        const response = await fetch(`${FIREBASE_DB_URL}/webmail/${user.uid}/${folder}.json?auth=${idToken}`);
         const data = await response.json();
         if (data) {
             const lista = Object.keys(data).map(key => ({
@@ -187,17 +188,19 @@ const Email = () => {
 
     try {
         if (!isTrash) {
+            const idToken = await currentUser.getIdToken();
             // Mover para Lixeira (Copia para trash e adiciona metadados)
             const { id, ...emailData } = email;
-            await fetch(`${FIREBASE_DB_URL}/webmail/${currentUser.uid}/trash.json`, {
+            await fetch(`${FIREBASE_DB_URL}/webmail/${currentUser.uid}/trash.json?auth=${idToken}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...emailData, deletedAt: new Date().toISOString(), originalFolder: activeTab })
             });
         }
 
+        const idToken = await currentUser.getIdToken();
         // Deletar da pasta atual
-        await fetch(`${FIREBASE_DB_URL}/webmail/${currentUser.uid}/${activeTab}/${email.id}.json`, {
+        await fetch(`${FIREBASE_DB_URL}/webmail/${currentUser.uid}/${activeTab}/${email.id}.json?auth=${idToken}`, {
             method: 'DELETE'
         });
 

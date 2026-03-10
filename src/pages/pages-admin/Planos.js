@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from '../../firebaseConfig';
 import { FaPlus, FaEdit, FaTrash, FaDollarSign, FaClipboardList, FaBed, FaBaby, FaUserFriends } from 'react-icons/fa';
 
 const Planos = () => {
@@ -124,15 +125,19 @@ const Planos = () => {
     };
 
     try {
+      const user = auth.currentUser;
+      if (!user) { alert("Usuário não autenticado."); return; }
+      const idToken = await user.getIdToken();
+
       let url = FIREBASE_URL;
       let method = 'POST';
 
       if (currentPlano) {
-        url = `https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/planos/${currentPlano.id}.json`;
+        url = `https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/planos/${currentPlano.id}.json?auth=${idToken}`;
         method = 'PATCH';
       }
 
-      await fetch(url, {
+      await fetch(url.includes('?') ? url : `${url}?auth=${idToken}`, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -150,8 +155,12 @@ const Planos = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir este plano?")) return;
 
+    const user = auth.currentUser;
+    if (!user) { alert("Usuário não autenticado."); return; }
+
     try {
-      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/planos/${id}.json`, {
+      const idToken = await user.getIdToken();
+      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/planos/${id}.json?auth=${idToken}`, {
         method: 'DELETE'
       });
       alert("Plano excluído com sucesso.");

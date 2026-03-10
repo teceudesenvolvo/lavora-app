@@ -17,8 +17,12 @@ const Configuracoes = () => {
   // Carregar configurações do Firebase ao montar
   useEffect(() => {
     const fetchSettings = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
       try {
-        const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/configuracoes.json');
+        const idToken = await user.getIdToken();
+        const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/configuracoes.json?auth=${idToken}`);
         if (response.ok) {
           const data = await response.json();
           if (data) {
@@ -48,11 +52,14 @@ const Configuracoes = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    const user = auth.currentUser;
+    if (!user) { setIsLoading(false); alert("Usuário não autenticado."); return; }
     
     try {
       // 1. Salvar Configurações Gerais (Database)
       try {
-        await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/configuracoes.json', {
+        const idToken = await user.getIdToken();
+        await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/configuracoes.json?auth=${idToken}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -77,7 +84,6 @@ const Configuracoes = () => {
           return;
         }
 
-        const user = auth.currentUser;
         if (user) {
           const credential = EmailAuthProvider.credential(user.email, settings.senhaAtual);
           try {
@@ -134,7 +140,8 @@ const Configuracoes = () => {
     }
 
     try {
-      const response = await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json');
+      const idToken = await user.getIdToken();
+      const response = await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes.json?auth=${idToken}`);
       const data = await response.json();
       const clientesData = (data && data.Clientes) ? data.Clientes : data;
 
@@ -151,7 +158,7 @@ const Configuracoes = () => {
           if (!isNaN(currentVal)) {
             const newVal = (currentVal * (1 + percentage / 100)).toFixed(2);
             updates.push(
-              fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${key}.json`, {
+              fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/clientes/${key}.json?auth=${idToken}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ MENSALIDADE: newVal })
@@ -164,7 +171,7 @@ const Configuracoes = () => {
       await Promise.all(updates);
 
       // Salva o valor do reajuste aplicado nas configurações do Firebase
-      await fetch('https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/configuracoes.json', {
+      await fetch(`https://lavoro-servicos-c10fd-default-rtdb.firebaseio.com/configuracoes.json?auth=${idToken}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reajusteAnual: settings.reajusteAnual })
